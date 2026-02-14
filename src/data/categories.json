@@ -1,0 +1,298 @@
+{
+  "categories": [
+    {
+      "id": "textile-creation",
+      "nom": "Textile & Création Textile",
+      "icon": "🧵",
+      "description": "Retouches, créations et personnalisations textiles",
+      "sousCategories": [
+        {
+          "id": "retouches-simples",
+          "nom": "Retouches simples",
+          "prestations": [
+            { "id": "ourlet", "nom": "Ourlet" },
+            { "id": "ajustement-taille", "nom": "Ajustement taille" },
+            { "id": "pose-bouton", "nom": "Pose bouton" },
+            { "id": "reparation-couture", "nom": "Réparation couture" },
+            {
+              "id": "changement-fermeture",
+              "nom": "Changement fermeture éclair"
+            },
+            { "id": "reprise-doublure", "nom": "Reprise doublure" },
+            { "id": "retouche-autre", "nom": "Autres" }
+          ]
+        },
+        {
+          "id": "creation-textile",
+          "nom": "Création textile",
+          "prestations": [
+            { "id": "tricot", "nom": "Tricot (bonnets, écharpes, pulls)" },
+            { "id": "couture-sur-mesure", "nom": "Couture sur mesure" },
+            {
+              "id": "accessoires-textiles",
+              "nom": "Accessoires textiles (sacs, pochettes)"
+            },
+            { "id": "housses-personnalisees", "nom": "Housses personnalisées" },
+            {
+              "id": "vetements-enfants",
+              "nom": "Vêtements enfants faits main"
+            },
+            { "id": "creation-autre", "nom": "Autres" }
+          ]
+        },
+        {
+          "id": "personnalisation-textile",
+          "nom": "Personnalisation textile",
+          "prestations": [
+            { "id": "broderie", "nom": "Broderie" },
+            { "id": "flocage", "nom": "Flocage" },
+            { "id": "vinyle-textile", "nom": "Vinyle textile" },
+            { "id": "patch-personnalise", "nom": "Patch personnalisé" },
+            { "id": "impression-textile", "nom": "Impression textile simple" },
+            { "id": "perso-textile-autre", "nom": "Autres" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "personnalisation-objets",
+      "nom": "Personnalisation & Objets Créatifs",
+      "icon": "🎨",
+      "description": "Objets personnalisés et artisanat créatif",
+      "sousCategories": [
+        {
+          "id": "objets-personnalises",
+          "nom": "Objets personnalisés",
+          "prestations": [
+            { "id": "mug-personnalise", "nom": "Mug personnalisé" },
+            { "id": "tshirt-personnalise", "nom": "T-shirt personnalisé" },
+            { "id": "tote-bag", "nom": "Tote bag" },
+            { "id": "gourde-personnalisee", "nom": "Gourde personnalisée" },
+            { "id": "coque-telephone", "nom": "Coque téléphone personnalisée" },
+            { "id": "objet-perso-autre", "nom": "Autres" }
+          ]
+        },
+        {
+          "id": "artisanat-creatif",
+          "nom": "Artisanat créatif",
+          "prestations": [
+            { "id": "decoration-main", "nom": "Décoration faite main" },
+            { "id": "cadeaux-personnalises", "nom": "Cadeaux personnalisés" },
+            { "id": "bougies-artisanales", "nom": "Bougies artisanales" },
+            { "id": "articles-faits-main", "nom": "Articles faits main" },
+            { "id": "decoration-murale", "nom": "Décoration murale" },
+            { "id": "artisanat-autre", "nom": "Autres" }
+          ]
+        },
+        {
+          "id": "maroquinerie-legere",
+          "nom": "Maroquinerie légère",
+          "prestations": [
+            { "id": "porte-cartes", "nom": "Porte-cartes" },
+            { "id": "bracelets-cuir", "nom": "Bracelets cuir" },
+            { "id": "porte-cles-cuir", "nom": "Porte-clés cuir" },
+            { "id": "pochette-cuir", "nom": "Petite pochette cuir" },
+            { "id": "etui-personnalise", "nom": "Étui personnalisé" },
+            { "id": "maroquinerie-autre", "nom": "Autres" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reparation-remise-etat",
+      "nom": "Réparation & Remise en État Légère",
+      "icon": "🔧",
+      "description": "Réparations simples et remise en état d'objets",
+      "sousCategories": [
+        {
+          "id": "reparation-simple",
+          "nom": "Réparation simple",
+          "prestations": [
+            { "id": "lampe-decorative", "nom": "Lampe décorative" },
+            { "id": "jouets", "nom": "Jouets" },
+            { "id": "objets-domestiques", "nom": "Petits objets domestiques" },
+            { "id": "fermoir-sac", "nom": "Fermoir sac" },
+            {
+              "id": "accessoires-non-elec",
+              "nom": "Accessoires non électroniques complexes"
+            },
+            { "id": "reparation-autre", "nom": "Autres" }
+          ]
+        },
+        {
+          "id": "remise-en-etat",
+          "nom": "Remise en état",
+          "prestations": [
+            { "id": "nettoyage-baskets", "nom": "Nettoyage baskets" },
+            { "id": "renovation-cuir", "nom": "Rénovation cuir" },
+            {
+              "id": "reconditionnement-textile",
+              "nom": "Reconditionnement textile"
+            },
+            { "id": "nettoyage-sac", "nom": "Nettoyage sac" },
+            { "id": "reparation-couture-sac", "nom": "Réparation couture sac" },
+            { "id": "remise-etat-autre", "nom": "Autres" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fabrication-numerique",
+      "nom": "Fabrication Numérique & Sur Mesure",
+      "icon": "🖨",
+      "description": "Impression 3D et fabrication personnalisée",
+      "sousCategories": [
+        {
+          "id": "impression-3d",
+          "nom": "Impression 3D",
+          "prestations": [
+            { "id": "pieces-decoratives", "nom": "Pièces décoratives" },
+            { "id": "figurines", "nom": "Figurines" },
+            { "id": "prototypes-simples", "nom": "Prototypes simples" },
+            { "id": "supports-personnalises", "nom": "Supports personnalisés" },
+            {
+              "id": "pieces-plastiques",
+              "nom": "Pièces plastiques utilitaires"
+            },
+            { "id": "impression-3d-autre", "nom": "Autres" }
+          ]
+        },
+        {
+          "id": "fabrication-sur-mesure",
+          "nom": "Fabrication sur mesure",
+          "prestations": [
+            {
+              "id": "petites-pieces-plastiques",
+              "nom": "Petites pièces plastiques"
+            },
+            { "id": "objets-personnalises-fab", "nom": "Objets personnalisés" },
+            {
+              "id": "accessoires-utilitaires",
+              "nom": "Accessoires utilitaires"
+            },
+            {
+              "id": "supports-techniques",
+              "nom": "Supports techniques simples"
+            },
+            {
+              "id": "pieces-remplacement",
+              "nom": "Pièces remplacement non critiques"
+            },
+            { "id": "fab-mesure-autre", "nom": "Autres" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bois-creation",
+      "nom": "Bois & Création Artisanale",
+      "icon": "🪵",
+      "description": "Menuiserie décorative et objets en bois",
+      "sousCategories": [
+        {
+          "id": "menuiserie-decorative",
+          "nom": "Petite menuiserie décorative",
+          "prestations": [
+            { "id": "coffrets", "nom": "Coffrets" },
+            { "id": "cadres", "nom": "Cadres" },
+            { "id": "etageres-legeres", "nom": "Étagères légères" },
+            { "id": "boites-rangement", "nom": "Boîtes de rangement" },
+            { "id": "supports-decoratifs", "nom": "Supports décoratifs" },
+            { "id": "menuiserie-autre", "nom": "Autres" }
+          ]
+        },
+        {
+          "id": "objets-bois-personnalises",
+          "nom": "Objets bois personnalisés",
+          "prestations": [
+            { "id": "gravure-bois", "nom": "Gravure" },
+            { "id": "decoration-bois", "nom": "Décoration" },
+            { "id": "plaques-personnalisees", "nom": "Plaques personnalisées" },
+            { "id": "prenoms-bois", "nom": "Prénoms en bois" },
+            { "id": "objets-cadeaux-bois", "nom": "Objets cadeaux en bois" },
+            { "id": "bois-perso-autre", "nom": "Autres" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cordonnerie",
+      "nom": "Cordonnerie & Entretien Chaussures",
+      "icon": "👞",
+      "description": "Réparation et entretien de chaussures",
+      "sousCategories": [
+        {
+          "id": "reparation-chaussures",
+          "nom": "Réparation de chaussures",
+          "prestations": [
+            { "id": "remplacement-semelle", "nom": "Remplacement semelle" },
+            { "id": "reparation-talon", "nom": "Réparation talon" },
+            { "id": "couture-chaussure", "nom": "Couture chaussure" },
+            {
+              "id": "reparation-fermeture-bottes",
+              "nom": "Réparation fermeture (bottes)"
+            },
+            { "id": "renfort-interieur", "nom": "Renfort intérieur" },
+            { "id": "cordo-reparation-autre", "nom": "Autres" }
+          ]
+        },
+        {
+          "id": "entretien-nettoyage-chaussures",
+          "nom": "Entretien & Nettoyage",
+          "prestations": [
+            { "id": "nettoyage-baskets-cordo", "nom": "Nettoyage baskets" },
+            { "id": "nettoyage-cuir-cordo", "nom": "Nettoyage cuir" },
+            { "id": "deodorisation", "nom": "Déodorisation" },
+            { "id": "renovation-couleur", "nom": "Rénovation couleur" },
+            { "id": "impermeabilisation", "nom": "Imperméabilisation" },
+            { "id": "cordo-entretien-autre", "nom": "Autres" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "creation-cuir",
+      "nom": "Création & Accessoires en Cuir",
+      "icon": "🧵",
+      "description": "Bracelets, accessoires et réparations en cuir",
+      "sousCategories": [
+        {
+          "id": "bracelets-cuir-creation",
+          "nom": "Bracelets cuir",
+          "prestations": [
+            { "id": "bracelet-simple", "nom": "Bracelet simple" },
+            {
+              "id": "bracelet-personnalise",
+              "nom": "Bracelet personnalisé (gravure)"
+            },
+            { "id": "bracelet-tresse", "nom": "Bracelet tressé" },
+            { "id": "bracelet-sur-mesure", "nom": "Bracelet sur mesure" },
+            { "id": "bracelet-autre", "nom": "Autres" }
+          ]
+        },
+        {
+          "id": "accessoires-cuir",
+          "nom": "Petits accessoires cuir",
+          "prestations": [
+            { "id": "porte-cles-cuir-acc", "nom": "Porte-clés" },
+            { "id": "porte-cartes-cuir-acc", "nom": "Porte-cartes" },
+            { "id": "etui-lunettes", "nom": "Étui lunettes" },
+            { "id": "pochette-cuir-acc", "nom": "Petite pochette" },
+            { "id": "accessoire-cuir-autre", "nom": "Autres" }
+          ]
+        },
+        {
+          "id": "reparation-cuir",
+          "nom": "Réparation articles cuir",
+          "prestations": [
+            { "id": "reparation-sac-cuir", "nom": "Réparation sac" },
+            { "id": "couture-cuir-rep", "nom": "Couture cuir" },
+            { "id": "changement-boucle", "nom": "Changement boucle" },
+            { "id": "reparation-ceinture", "nom": "Réparation ceinture" },
+            { "id": "reparation-cuir-autre", "nom": "Autres" }
+          ]
+        }
+      ]
+    }
+  ]
+}
