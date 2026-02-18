@@ -219,10 +219,10 @@ export const borders = {
  */
 export const gradients = {
   // Primary (Rose)
-  primary: "bg-gradient-to-r from-pink-500 to-rose-600",
-  primaryHover: "hover:from-pink-600 hover:to-rose-700",
+  primary: "bg-gradient-to-r from-pink-500 to-pink-600",
+  primaryHover: "hover:from-pink-600 hover:to-pink-700",
   primaryText:
-    "bg-gradient-to-r from-pink-500 to-rose-600 bg-clip-text text-transparent",
+    "bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent",
 
   // Secondary (Vert)
   secondary: "bg-gradient-to-r from-emerald-500 to-teal-600",
@@ -235,7 +235,7 @@ export const gradients = {
   neutralDark: "bg-gradient-to-r from-blue-500 to-indigo-600",
 
   // Backgrounds
-  lightPrimary: "bg-gradient-to-r from-pink-50 to-rose-50",
+  lightPrimary: "bg-gradient-to-r from-pink-50 to-pink-50",
   lightSecondary: "bg-gradient-to-r from-emerald-50 to-teal-50",
   lightNeutral: "bg-gradient-to-r from-blue-50 to-indigo-50",
 

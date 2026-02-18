@@ -7,6 +7,9 @@ import { useMutation } from "@tanstack/react-query";
 import { apiClient, handleApiError } from "@/lib/api-client";
 import { Button } from "@/components/Button";
 import AuthLayout from "@/components/AuthLayout";
+import { colors } from "@/config/colors";
+import { gradients } from "@/config/design-tokens";
+import { routes } from "@/config/routes";
 
 export default function VerifyEmail() {
   const router = useRouter();
@@ -80,11 +83,11 @@ export default function VerifyEmail() {
 
   const handleGoToDashboard = () => {
     if (type === "client") {
-      router.push("/client/dashboard");
+      router.push(routes.client.dashboard);
     } else if (type === "artisan") {
-      router.push("/artisan/dashboard");
+      router.push(routes.artisan.dashboard);
     } else {
-      router.push("/");
+      router.push(routes.public.home);
     }
   };
 
@@ -93,7 +96,9 @@ export default function VerifyEmail() {
     return (
       <AuthLayout variant="neutral">
         <div className="text-center py-12">
-          <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div
+            className={`w-16 h-16 border-4 ${colors.secondary.border} border-t-transparent rounded-full animate-spin mx-auto mb-4`}
+          ></div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">
             Vérification de votre email...
           </h2>
@@ -109,9 +114,11 @@ export default function VerifyEmail() {
       <AuthLayout variant="neutral">
         <div className="text-center">
           {/* Icône email */}
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div
+            className={`w-20 h-20 ${gradients.neutral} rounded-full flex items-center justify-center mx-auto mb-6`}
+          >
             <svg
-              className="w-10 h-10 text-blue-600"
+              className={`w-10 h-10 ${colors.neutral.text}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -131,11 +138,17 @@ export default function VerifyEmail() {
           <p className="text-gray-600 mb-2">
             Un email de confirmation a été envoyé à :
           </p>
-          <p className="text-emerald-600 font-bold text-lg mb-6">{userEmail}</p>
+          <p className={`${colors.secondary.text} font-bold text-lg mb-6`}>
+            {userEmail}
+          </p>
 
           {/* Instructions */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-5 mb-6 text-left">
-            <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+          <div
+            className={`${gradients.neutral} border ${colors.info.border} rounded-lg p-5 mb-6 text-left`}
+          >
+            <h3
+              className={`font-semibold ${colors.info.textDark} mb-3 flex items-center gap-2`}
+            >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
@@ -145,15 +158,19 @@ export default function VerifyEmail() {
               </svg>
               Que faire maintenant ?
             </h3>
-            <ol className="text-sm text-blue-800 space-y-2">
+            <ol className={`text-sm ${colors.info.textDark} space-y-2`}>
               <li className="flex items-start gap-2">
-                <span className="font-bold text-blue-600 flex-shrink-0">
+                <span
+                  className={`font-bold ${colors.neutral.text} flex-shrink-0`}
+                >
                   1.
                 </span>
                 <span>Ouvrez votre boîte email</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="font-bold text-blue-600 flex-shrink-0">
+                <span
+                  className={`font-bold ${colors.neutral.text} flex-shrink-0`}
+                >
                   2.
                 </span>
                 <span>
@@ -161,13 +178,17 @@ export default function VerifyEmail() {
                 </span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="font-bold text-blue-600 flex-shrink-0">
+                <span
+                  className={`font-bold ${colors.neutral.text} flex-shrink-0`}
+                >
                   3.
                 </span>
                 <span>Cliquez sur le lien de vérification</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="font-bold text-blue-600 flex-shrink-0">
+                <span
+                  className={`font-bold ${colors.neutral.text} flex-shrink-0`}
+                >
                   4.
                 </span>
                 <span>Votre compte sera activé instantanément</span>
@@ -176,10 +197,12 @@ export default function VerifyEmail() {
           </div>
 
           {/* Info spam */}
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+          <div
+            className={`${colors.warning.bg} border ${colors.warning.border} rounded-lg p-4 mb-6`}
+          >
             <div className="flex items-start gap-3">
               <svg
-                className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5"
+                className={`w-5 h-5 ${colors.warning.text} flex-shrink-0 mt-0.5`}
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -189,7 +212,7 @@ export default function VerifyEmail() {
                   clipRule="evenodd"
                 />
               </svg>
-              <p className="text-sm text-amber-800">
+              <p className={`text-sm ${colors.warning.textDark}`}>
                 <strong>Email introuvable ?</strong> Vérifiez vos{" "}
                 <strong>spams/courrier indésirable</strong> ! Parfois, nos
                 emails atterrissent là par erreur.
@@ -204,7 +227,7 @@ export default function VerifyEmail() {
               fullWidth
               size="lg"
               isLoading={resendEmailMutation.isPending}
-              className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
+              className={`${colors.secondary.gradient} ${colors.secondary.gradientHover}`}
             >
               📨 Renvoyer l'email de vérification
             </Button>
@@ -231,15 +254,15 @@ export default function VerifyEmail() {
             <p className="text-gray-600">
               Mauvaise adresse email ?{" "}
               <Link
-                href="/auth/register/client"
-                className="font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+                href={routes.auth.register.client}
+                className={`font-medium ${colors.secondary.text} hover:${colors.secondary.textDark} hover:underline`}
               >
                 Créer un nouveau compte
               </Link>
             </p>
             <p className="text-gray-600">
               <Link
-                href="/"
+                href={routes.public.home}
                 className="font-medium text-gray-700 hover:text-gray-900 hover:underline"
               >
                 ← Retour à l'accueil
@@ -257,9 +280,11 @@ export default function VerifyEmail() {
       <AuthLayout variant="neutral">
         <div className="text-center">
           {/* Icône succès avec animation */}
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
+          <div
+            className={`w-20 h-20 ${colors.success.bg} rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce`}
+          >
             <svg
-              className="w-10 h-10 text-green-600"
+              className={`w-10 h-10 ${colors.success.text}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -281,11 +306,15 @@ export default function VerifyEmail() {
           </p>
 
           {/* Message de bienvenue */}
-          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-lg p-6 mb-6">
-            <h3 className="font-bold text-emerald-900 mb-2 text-lg">
+          <div
+            className={`${gradients.lightSecondary} border-2 ${colors.secondary.border} rounded-lg p-6 mb-6`}
+          >
+            <h3
+              className={`font-bold ${colors.secondary.textDark} mb-2 text-lg`}
+            >
               ✨ Bienvenue sur Tasky !
             </h3>
-            <p className="text-sm text-emerald-800">
+            <p className={`text-sm ${colors.secondary.textDark}`}>
               {type === "client"
                 ? "Vous pouvez maintenant publier vos demandes et trouver des prestataires locaux."
                 : "Vous pouvez maintenant proposer vos services et recevoir des demandes de clients."}
@@ -302,7 +331,7 @@ export default function VerifyEmail() {
             onClick={handleGoToDashboard}
             fullWidth
             size="lg"
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
+            className={`${colors.secondary.gradient} ${colors.secondary.gradientHover}`}
           >
             Accéder à mon tableau de bord →
           </Button>
@@ -317,9 +346,11 @@ export default function VerifyEmail() {
     return (
       <AuthLayout variant="neutral">
         <div className="text-center">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div
+            className={`w-20 h-20 ${colors.error.bg} rounded-full flex items-center justify-center mx-auto mb-6`}
+          >
             <svg
-              className="w-10 h-10 text-red-600"
+              className={`w-10 h-10 ${colors.error.text}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -340,36 +371,36 @@ export default function VerifyEmail() {
             Ce lien n'est pas valide ou a été mal copié.
           </p>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left">
-            <h3 className="font-semibold text-amber-900 mb-2">
+          <div
+            className={`${colors.warning.bg} border ${colors.warning.border} rounded-lg p-4 mb-6 text-left`}
+          >
+            <h3 className={`font-semibold ${colors.warning.textDark} mb-2`}>
               💡 Causes possibles :
             </h3>
-            <ul className="text-sm text-amber-800 space-y-1">
+            <ul className={`text-sm ${colors.warning.textDark} space-y-1`}>
               <li>• Le lien a été mal copié/collé</li>
               <li>• Le lien a déjà été utilisé</li>
               <li>• Vous avez déjà vérifié votre email</li>
             </ul>
           </div>
 
-          {/* ✅ MODIFICATION : space-y-4 + couleurs roses */}
-          {/* ✅ MODIFICATION : Ajout de margin-top sur le 2ème bouton */}
           <div>
             <Button
               onClick={handleResendEmail}
               fullWidth
               size="lg"
               isLoading={resendEmailMutation.isPending}
-              className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
+              className={`${colors.secondary.gradient} ${colors.secondary.gradientHover}`}
             >
               Renvoyer un nouveau lien
             </Button>
 
-            <Link href="/auth/login" className="block mt-4">
+            <Link href={routes.auth.login} className="block mt-4">
               <Button
                 variant="outline"
                 fullWidth
                 size="lg"
-                className="border-pink-600 text-pink-600 hover:bg-pink-50 hover:border-pink-700"
+                className={`${colors.primary.border} ${colors.primary.text} ${colors.primary.bgHover} hover:${colors.primary.border}`}
               >
                 Essayer de se connecter
               </Button>
@@ -385,9 +416,11 @@ export default function VerifyEmail() {
     return (
       <AuthLayout variant="neutral">
         <div className="text-center">
-          <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div
+            className={`w-20 h-20 ${colors.warning.bg} rounded-full flex items-center justify-center mx-auto mb-6`}
+          >
             <svg
-              className="w-10 h-10 text-orange-600"
+              className={`w-10 h-10 ${colors.warning.text}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -412,8 +445,10 @@ export default function VerifyEmail() {
             <strong>24 heures</strong>.
           </p>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-blue-800">
+          <div
+            className={`${colors.info.bg} border ${colors.info.border} rounded-lg p-4 mb-6`}
+          >
+            <p className={`text-sm ${colors.info.textDark}`}>
               <strong>Pas d'inquiétude !</strong> Cliquez sur le bouton
               ci-dessous pour recevoir un nouveau lien.
             </p>
@@ -424,7 +459,7 @@ export default function VerifyEmail() {
             fullWidth
             size="lg"
             isLoading={resendEmailMutation.isPending}
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
+            className={`${colors.secondary.gradient} ${colors.secondary.gradientHover}`}
           >
             Recevoir un nouveau lien
           </Button>

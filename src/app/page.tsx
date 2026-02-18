@@ -14,7 +14,7 @@ export default function HomePage() {
             <div className="flex items-center gap-2">
               <div className="w-34 h-16 rounded-lg overflow-hidden flex items-center justify-center">
                 <img
-                  src="images/logo-tasky.png"
+                  src="images/logo-tasky2.png"
                   alt="Tasky Logo"
                   className="w-full h-full object-contain"
                 />
@@ -139,7 +139,7 @@ export default function HomePage() {
                 {/* LIEN 2 */}
                 <Link
                   href={routes.auth.register.artisan.step1}
-                  className={`group px-8 py-4 ${colors.secondary.gradient} font-semibold rounded-xl border-2 border-gray-200 hover:${colors.primary.border} hover:shadow-lg transition-all duration-300 text-center`}
+                  className={`group px-8 py-4 ${colors.premium.gradient} font-semibold rounded-xl border-2 border-gray-200 hover:${colors.primary.border} hover:shadow-lg transition-all duration-300 text-center`}
                 >
                   <div className="font-bold text-lg mt-1 opacity-90">
                     Proposer mes services
@@ -1074,7 +1074,7 @@ export default function HomePage() {
             <div>
               <div className="w-34 h-16 rounded-lg overflow-hidden">
                 <img
-                  src="images/logo-tasky.png"
+                  src="images/logo-tasky2.png"
                   alt="Tasky Logo"
                   className="w-full h-full object-contain"
                 />

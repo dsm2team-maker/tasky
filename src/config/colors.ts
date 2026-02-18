@@ -11,7 +11,7 @@
 
 export const colors = {
   /**
-   * 🌸 PRIMARY - Rose/Pink
+   * 🌸 PRIMARY - Pink (Rose)
    * Utilisé pour : Client, CTA principaux, actions importantes
    */
   primary: {
@@ -20,11 +20,11 @@ export const colors = {
     light: "bg-pink-50",
     dark: "bg-pink-700",
 
-    // Gradients
-    gradient: "bg-gradient-to-r from-pink-500 to-rose-600",
-    gradientHover: "hover:from-pink-600 hover:to-rose-700",
+    // Gradients (CORRIGÉ : rose-600 → pink-600)
+    gradient: "bg-gradient-to-r from-pink-500 to-pink-600",
+    gradientHover: "hover:from-pink-600 hover:to-pink-700",
     gradientText:
-      "bg-gradient-to-r from-pink-500 to-rose-600 bg-clip-text text-transparent",
+      "bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent",
 
     // Textes
     text: "text-pink-600",
@@ -46,7 +46,7 @@ export const colors = {
   },
 
   /**
-   * 🌿 SECONDARY - Emerald/Vert
+   * 🌿 SECONDARY - Emerald/Vert (GARDÉ TEL QUEL)
    * Utilisé pour : Artisan, succès, confirmations
    */
   secondary: {
@@ -78,6 +78,41 @@ export const colors = {
     // Focus states
     focus: "focus:ring-emerald-500 focus:border-emerald-500",
     focusRing: "focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2",
+  },
+
+  /**
+   * 💜 PREMIUM - Indigo/Purple (NOUVEAU !)
+   * Utilisé pour : Badges premium, highlights spéciaux, messagerie
+   */
+  premium: {
+    // Classes de base
+    base: "bg-purple-600 text-white",
+    light: "bg-purple-50",
+    dark: "bg-purple-600",
+
+    // Gradients
+    gradient: "bg-gradient-to-r from-indigo-500 to-purple-600",
+    gradientHover: "hover:from-indigo-600 hover:to-purple-700",
+    gradientText:
+      "bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent",
+
+    // Textes
+    text: "text-purple-600",
+    textLight: "text-purple-500",
+    textDark: "text-purple-700",
+    textMuted: "text-purple-800",
+
+    // Bordures
+    border: "border-purple-600",
+    borderLight: "border-purple-200",
+
+    // Backgrounds
+    bg: "bg-purple-50",
+    bgHover: "hover:bg-purple-50",
+
+    // Focus states
+    focus: "focus:ring-purple-500 focus:border-purple-500",
+    focusRing: "focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
   },
 
   /**
@@ -203,7 +238,6 @@ export const colors = {
 
   /**
    * 📊 STATUS - Couleurs de statut pour demandes/prestations
-   * ANTICIPATION des futures pages
    */
   status: {
     // Demandes

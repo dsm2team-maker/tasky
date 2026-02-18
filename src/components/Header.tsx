@@ -14,7 +14,7 @@ export default function Header() {
           <div className="flex items-center gap-2">
             <div className="w-34 h-16 rounded-lg overflow-hidden flex items-center justify-center">
               <img
-                src="/images/logo-tasky.png"
+                src="/images/logo-tasky2.png"
                 alt="Tasky Logo"
                 className="w-full h-full object-contain"
               />

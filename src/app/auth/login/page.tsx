@@ -68,7 +68,7 @@ export default function LoginPage() {
           <div className="mb-8">
             <Link href={routes.public.home} className="flex items-center gap-2">
               <Image
-                src="/images/logo-tasky.png"
+                src="/images/logo-tasky2.png"
                 alt="Tasky Logo"
                 width={40}
                 height={40}

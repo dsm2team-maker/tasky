@@ -4,6 +4,10 @@ import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/Button";
 
+import { colors } from "@/config/colors";
+import { typography, gradients } from "@/config/design-tokens";
+import { routes } from "@/config/routes";
+
 export default function DashClientDemo() {
   return (
     <div className="min-h-screen bg-gray-50">
@@ -76,11 +80,14 @@ export default function DashClientDemo() {
         </div>
 
         {/* Welcome Banner */}
-        <div className="bg-gradient-to-r from-pink-500 to-rose-600 rounded-2xl p-8 mb-8 text-white shadow-lg">
+        <div
+          className={`${colors.primary.gradient} rounded-2xl p-8 mb-8 text-white shadow-lg`}
+        >
           <h1 className="text-3xl font-bold mb-2">Bienvenue, Marie ! 👋</h1>
           <p className="text-pink-100 mb-6">
             Trouvez des prestataires locaux pour tous vos projets
           </p>
+
           <Button
             size="lg"
             className="bg-white text-pink-600 hover:bg-pink-50 shadow-md"
@@ -192,7 +199,7 @@ export default function DashClientDemo() {
           {/* Trouver un prestataire */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition cursor-pointer group">
             <div className="flex items-start gap-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition">
+              <div className="w-14 h-14 bg-gradient-to-br  {colors.primary.gradient} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition">
                 <svg
                   className="w-7 h-7 text-white"
                   fill="none"

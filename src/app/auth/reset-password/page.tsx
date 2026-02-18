@@ -11,9 +11,9 @@ import { apiClient, handleApiError } from "@/lib/api-client";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import AuthLayout from "@/components/AuthLayout";
+import { typography, gradients } from "@/config/design-tokens";
 
 import { colors } from "@/config/colors";
-import { typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 
 // Schéma de validation
@@ -251,8 +251,7 @@ export default function ResetPassword() {
             className={`w-20 h-20 ${colors.warning.bg} rounded-full flex items-center justify-center mx-auto mb-6`}
           >
             <svg
-              className="w-10 h-10 ${colors.warning.text}"
-              fill="none"
+              className={`w-10 h-10 ${colors.warning.text}`}
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
@@ -342,8 +341,10 @@ export default function ResetPassword() {
           <p className="text-gray-600 mb-2">
             Votre mot de passe a été changé avec succès.
           </p>
-          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-emerald-800 font-medium">
+          <div
+            className={`${colors.success.bg} border ${colors.success.border} rounded-lg p-4 mb-6`}
+          >
+            <p className={`text-sm ${colors.success.textDark} font-medium`}>
               ✨ Vous pouvez maintenant vous connecter avec votre nouveau mot de
               passe
             </p>
@@ -390,15 +391,19 @@ export default function ResetPassword() {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Réinitialisez votre mot de passe
         </h1>
-        <p className="text-emerald-500 font-medium">
+        <p className={`${colors.secondary.text} font-medium`}>
           Choisissez un mot de passe sécurisé pour votre compte
         </p>
       </div>
 
       {/* Règles du mot de passe */}
       {/* Règles du mot de passe */}
-      <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-200 rounded-lg p-4 mb-6">
-        <h3 className="font-semibold text-pink-900 mb-3 flex items-center gap-2">
+      <div
+        className={`${gradients.lightPrimary} border ${colors.primary.border} rounded-lg p-4 mb-6`}
+      >
+        <h3
+          className={`font-semibold ${colors.primary.textDark} mb-3 flex items-center gap-2`}
+        >
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
@@ -411,15 +416,19 @@ export default function ResetPassword() {
         <ul className="text-sm space-y-2">
           <li className="flex items-center gap-2">
             <span
-              className={`font-bold ${passwordValue?.length >= 8 ? "text-emerald-500" : "text-pink-600"}`}
+              className={
+                passwordValue?.length >= 8
+                  ? `${colors.success.textDark} font-bold`
+                  : `${colors.primary.text} font-bold`
+              }
             >
               {passwordValue?.length >= 8 ? "✓" : "○"}
             </span>
             <span
               className={
                 passwordValue?.length >= 8
-                  ? "text-emerald-700 font-medium"
-                  : "text-pink-800"
+                  ? `${colors.success.textDark} font-medium`
+                  : colors.primary.textDark
               }
             >
               Au moins <strong>8 caractères</strong>
@@ -427,15 +436,15 @@ export default function ResetPassword() {
           </li>
           <li className="flex items-center gap-2">
             <span
-              className={`font-bold ${/[A-Z]/.test(passwordValue || "") ? "text-emerald-500" : "text-pink-600"}`}
+              className={`font-bold ${/[A-Z]/.test(passwordValue || "") ? colors.success.text : colors.primary.text}`}
             >
               {/[A-Z]/.test(passwordValue || "") ? "✓" : "○"}
             </span>
             <span
               className={
                 /[A-Z]/.test(passwordValue || "")
-                  ? "text-emerald-700 font-medium"
-                  : "text-pink-800"
+                  ? `${colors.success.textDark} font-medium`
+                  : colors.primary.textDark
               }
             >
               Une <strong>majuscule</strong> (A-Z)
@@ -443,15 +452,15 @@ export default function ResetPassword() {
           </li>
           <li className="flex items-center gap-2">
             <span
-              className={`font-bold ${/[a-z]/.test(passwordValue || "") ? "text-emerald-500" : "text-pink-600"}`}
+              className={`font-bold ${/[a-z]/.test(passwordValue || "") ? colors.success.text : colors.primary.text}`}
             >
               {/[a-z]/.test(passwordValue || "") ? "✓" : "○"}
             </span>
             <span
               className={
                 /[a-z]/.test(passwordValue || "")
-                  ? "text-emerald-700 font-medium"
-                  : "text-pink-800"
+                  ? `${colors.success.textDark} font-medium`
+                  : colors.primary.textDark
               }
             >
               Une <strong>minuscule</strong> (a-z)
@@ -459,15 +468,15 @@ export default function ResetPassword() {
           </li>
           <li className="flex items-center gap-2">
             <span
-              className={`font-bold ${/[0-9]/.test(passwordValue || "") ? "text-emerald-500" : "text-pink-600"}`}
+              className={`font-bold ${/[0-9]/.test(passwordValue || "") ? colors.success.text : colors.primary.text}`}
             >
               {/[0-9]/.test(passwordValue || "") ? "✓" : "○"}
             </span>
             <span
               className={
                 /[0-9]/.test(passwordValue || "")
-                  ? "text-emerald-700 font-medium"
-                  : "text-pink-800"
+                  ? `${colors.success.textDark} font-medium`
+                  : colors.primary.textDark
               }
             >
               Un <strong>chiffre</strong> (0-9)
@@ -475,15 +484,15 @@ export default function ResetPassword() {
           </li>
           <li className="flex items-center gap-2">
             <span
-              className={`font-bold ${/[^A-Za-z0-9]/.test(passwordValue || "") ? "text-emerald-500" : "text-pink-600"}`}
+              className={`font-bold ${/[^A-Za-z0-9]/.test(passwordValue || "") ? colors.success.text : colors.primary.text}`}
             >
               {/[^A-Za-z0-9]/.test(passwordValue || "") ? "✓" : "○"}
             </span>
             <span
               className={
                 /[^A-Za-z0-9]/.test(passwordValue || "")
-                  ? "text-emerald-700 font-medium"
-                  : "text-pink-800"
+                  ? `${colors.success.textDark} font-medium`
+                  : colors.primary.textDark
               }
             >
               Un <strong>caractère spécial</strong> (!@#$%...)

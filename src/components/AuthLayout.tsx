@@ -21,7 +21,7 @@ export default function AuthLayout({
           <div className="mb-8">
             <Link href="/" className="inline-block hover:opacity-80 transition">
               <img
-                src="/images/logo-tasky.png"
+                src="/images/logo-tasky2.png"
                 alt="Tasky Logo"
                 className="h-12 w-auto"
               />
