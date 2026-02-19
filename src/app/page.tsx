@@ -3,6 +3,7 @@ import Link from "next/link";
 import { colors } from "@/config/colors";
 import { typography, gradients } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
+import CategoriesSection from "@/components/CategoriesSection";
 
 export default function HomePage() {
   return (
@@ -838,6 +839,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <CategoriesSection />
 
       {/* Double CTA - Client/Artisan */}
       <section className="py-10 bg-white">
