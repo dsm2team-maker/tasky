@@ -84,7 +84,7 @@ export default function RegisterClient() {
         <h1 className={`${typography.h2.base} ${colors.primary.text} mb-2`}>
           Créer un compte client
         </h1>
-        <p className={`${colors.secondary.text} font-medium`}>
+        <p className={`${colors.premium.text} font-medium`}>
           Rejoignez Tasky et trouvez des prestataires locaux
         </p>
       </div>
@@ -233,7 +233,7 @@ export default function RegisterClient() {
               J'accepte les{" "}
               <Link
                 href={routes.public.legal.cgu}
-                className={`${colors.primary.text} hover:underline`}
+                className={`${colors.premium.text} hover:underline  font-bold`}
               >
                 conditions générales d'utilisation
               </Link>
@@ -262,7 +262,7 @@ export default function RegisterClient() {
         </div>
         <div className="relative flex justify-center text-sm">
           <span
-            className={`px-3 py-1 ${colors.secondary.bg} ${colors.secondary.text} font-semibold rounded-full`}
+            className={`px-3 py-1 ${colors.secondary.bg} ${colors.premium.text} font-semibold rounded-full`}
           >
             Déjà inscrit ?
           </span>
@@ -285,7 +285,7 @@ export default function RegisterClient() {
           Vous êtes prestataire ?{" "}
           <Link
             href={routes.auth.register.artisan.step1}
-            className={`font-medium ${colors.secondary.text} hover:underline`}
+            className={`font-medium ${colors.premium.text} hover:underline`}
           >
             Inscrivez-vous ici
           </Link>

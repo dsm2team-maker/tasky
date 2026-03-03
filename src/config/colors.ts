@@ -21,10 +21,10 @@ export const colors = {
     dark: "bg-pink-700",
 
     // Gradients (CORRIGÉ : rose-600 → pink-600)
-    gradient: "bg-gradient-to-r from-pink-500 to-pink-600",
+    gradient: "bg-gradient-to-r from-pink-500 via-pink-500 to-pink-600",
+
     gradientHover: "hover:from-pink-600 hover:to-pink-700",
-    gradientText:
-      "bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent",
+    gradientText: "text-pink-600", // Rose uni
 
     // Textes
     text: "text-pink-600",

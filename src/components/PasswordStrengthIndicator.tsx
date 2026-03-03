@@ -39,7 +39,7 @@ export const PasswordStrengthIndicator: React.FC<
     <div className="mt-3">
       {/* Règles du mot de passe */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-3">
-        <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2 text-sm">
+        <h3 className="font-semibold mb-3 flex items-center gap-2 text-sm block text-sm text-gray-700 mb-1.5">
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"

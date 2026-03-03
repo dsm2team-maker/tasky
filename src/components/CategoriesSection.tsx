@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import { colors } from "@/config/colors";
 import { typography, spacing } from "@/config/design-tokens";
 
@@ -47,21 +46,18 @@ export default function CategoriesSection() {
 
   return (
     <>
-      {/* Section Catégories */}
-      <section
-        id="categories"
-        className={`${spacing.section} bg-gradient-to-b from-white to-gray-50`}
-      >
+      {/* Section Catégories - VITRINE */}
+      <section id="categories" className={`${spacing.section} bg-white`}>
         <div className={spacing.container}>
           {/* En-tête */}
           <div className="text-center mb-16">
             <h2 className={`${typography.h2.base} ${colors.text.primary} mb-4`}>
-              🎨 Nos Catégories de Services
+              ✨ Découvrez nos prestations
             </h2>
             <p className={`text-lg ${colors.text.secondary} max-w-2xl mx-auto`}>
-              Découvrez toutes les prestations disponibles sur Tasky. De
-              l'artisanat créatif à la réparation, trouvez le prestataire qu'il
-              vous faut !
+              De l'artisanat créatif à la réparation, explorez la variété des
+              services disponibles sur Tasky. Cliquez sur une catégorie pour
+              voir les détails !
             </p>
           </div>
 
@@ -101,12 +97,16 @@ export default function CategoriesSection() {
                     {category.description}
                   </p>
 
-                  {/* Badge nombre de sous-catégories */}
+                  {/* Badge nombre de prestations */}
                   <div className="flex items-center justify-between">
                     <span
                       className={`text-xs ${colors.premium.text} font-semibold`}
                     >
-                      {category.sousCategories.length} sous-catégories
+                      {category.sousCategories.reduce(
+                        (acc, sc) => acc + sc.prestations.length,
+                        0,
+                      )}{" "}
+                      prestations
                     </span>
                     <svg
                       className={`w-5 h-5 ${colors.premium.text} group-hover:translate-x-1 transition-transform`}
@@ -129,17 +129,23 @@ export default function CategoriesSection() {
               </button>
             ))}
           </div>
+
+          {/* Note informative */}
+          <div className={`mt-12 text-center ${colors.text.tertiary} text-sm`}>
+            💡 <strong>Note :</strong> Cette liste n'est pas exhaustive. Vous
+            pouvez publier une demande pour tout type de service artisanal !
+          </div>
         </div>
       </section>
 
-      {/* Modal des sous-catégories */}
+      {/* Modal informatif (lecture seule) */}
       {isModalOpen && selectedCategory && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
           onClick={closeModal}
         >
           <div
-            className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden animate-slideInUp"
+            className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden animate-slideInUp"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header du modal */}
@@ -150,13 +156,19 @@ export default function CategoriesSection() {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
                     <span className="text-4xl">{selectedCategory.icon}</span>
-                    <h3 className="text-2xl font-bold">
-                      {selectedCategory.nom}
-                    </h3>
+                    <div>
+                      <h3 className="text-2xl font-bold">
+                        {selectedCategory.nom}
+                      </h3>
+                      <p className="text-purple-100 text-sm mt-1">
+                        {selectedCategory.description}
+                      </p>
+                    </div>
                   </div>
                   <button
                     onClick={closeModal}
-                    className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                    className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors flex-shrink-0"
+                    aria-label="Fermer"
                   >
                     <svg
                       className="w-6 h-6"
@@ -173,9 +185,6 @@ export default function CategoriesSection() {
                     </svg>
                   </button>
                 </div>
-                <p className="text-purple-100">
-                  {selectedCategory.description}
-                </p>
               </div>
 
               {/* Pattern décoratif */}
@@ -184,12 +193,12 @@ export default function CategoriesSection() {
             </div>
 
             {/* Contenu scrollable */}
-            <div className="overflow-y-auto max-h-[calc(80vh-180px)] p-6">
+            <div className="overflow-y-auto max-h-[calc(85vh-200px)] p-6">
               <div className="space-y-6">
                 {selectedCategory.sousCategories.map((sousCategorie) => (
                   <div
                     key={sousCategorie.id}
-                    className="border border-gray-200 rounded-xl p-5 hover:border-purple-300 hover:shadow-md transition-all"
+                    className="border border-gray-200 rounded-xl p-5 bg-gradient-to-br from-white to-gray-50"
                   >
                     {/* Titre sous-catégorie */}
                     <h4
@@ -201,16 +210,16 @@ export default function CategoriesSection() {
                       {sousCategorie.nom}
                     </h4>
 
-                    {/* Liste des prestations */}
+                    {/* Liste des prestations (lecture seule) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {sousCategorie.prestations.map((prestation) => (
-                        <Link
+                        <div
                           key={prestation.id}
-                          href={`/client/search?category=${selectedCategory.id}&subcategory=${sousCategorie.id}&prestation=${prestation.id}`}
-                          className="group flex items-center gap-2 p-3 rounded-lg hover:bg-purple-50 transition-colors"
+                          className="flex items-center gap-2 text-sm text-gray-700"
                         >
+                          {/* Checkmark */}
                           <svg
-                            className={`w-4 h-4 ${colors.premium.text} flex-shrink-0 group-hover:scale-110 transition-transform`}
+                            className={`w-4 h-4 ${colors.premium.text} flex-shrink-0`}
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -218,16 +227,12 @@ export default function CategoriesSection() {
                             <path
                               strokeLinecap="round"
                               strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
+                              strokeWidth={3}
+                              d="M5 13l4 4L19 7"
                             />
                           </svg>
-                          <span
-                            className={`text-sm ${colors.text.secondary} group-hover:${colors.premium.text} group-hover:font-medium transition-colors`}
-                          >
-                            {prestation.nom}
-                          </span>
-                        </Link>
+                          <span>{prestation.nom}</span>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -236,18 +241,17 @@ export default function CategoriesSection() {
             </div>
 
             {/* Footer du modal */}
-            <div className="border-t border-gray-200 p-6 bg-gray-50">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600">
-                  💡 Cliquez sur une prestation pour trouver des artisans
-                </p>
-                <button
-                  onClick={closeModal}
-                  className={`px-6 py-2 ${colors.premium.gradient} text-white rounded-lg font-semibold hover:shadow-lg transition-shadow`}
-                >
-                  Fermer
-                </button>
-              </div>
+            <div className="border-t border-gray-200 p-6 bg-gray-50 flex items-center justify-between">
+              <p className="text-sm text-gray-600">
+                💡 <strong>Besoin d'un service ?</strong> Inscrivez-vous pour
+                publier votre demande !
+              </p>
+              <button
+                onClick={closeModal}
+                className={`px-6 py-2.5 ${colors.premium.gradient} text-white rounded-lg font-semibold hover:shadow-lg transition-shadow`}
+              >
+                Fermer
+              </button>
             </div>
           </div>
         </div>

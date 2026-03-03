@@ -13,7 +13,8 @@
 ### 🏠 Page d'accueil
 
 #### **`/`**
-- **URL** : `http://localhost:3000/`
+
+- **URL** : `http://localhost:3001/`
 - **Accès** : Public
 - **Rôle** : Page d'atterrissage principale
 - **Contenu** :
@@ -34,6 +35,7 @@
 ### 🔐 Authentification (7 pages)
 
 #### **`/auth/login`**
+
 - **URL** : `http://localhost:3000/auth/login`
 - **Accès** : Public
 - **Rôle** : Connexion pour clients ET artisans
@@ -49,6 +51,7 @@
 ---
 
 #### **`/auth/register/client`**
+
 - **URL** : `http://localhost:3000/auth/register/client`
 - **Accès** : Public
 - **Rôle** : Inscription d'un nouveau client
@@ -57,7 +60,7 @@
   - **Indicateur de force du mot de passe** (temps réel)
   - Validation unicité email (debounced)
   - Couleurs PINK cohérentes
-- **Validation** : 
+- **Validation** :
   - Email unique (vérification API)
   - Mot de passe : 8 caractères min, majuscule, minuscule, chiffre, caractère spécial
   - Confirmation identique
@@ -70,6 +73,7 @@
 ---
 
 #### **`/auth/register/artisan/step-1`**
+
 - **URL** : `http://localhost:3000/auth/register/artisan/step-1`
 - **Accès** : Public
 - **Rôle** : Inscription artisan - Étape 1 sur 4 (Compte de base)
@@ -87,6 +91,7 @@
 ---
 
 #### **`/auth/register/artisan/step-2`**
+
 - **URL** : `http://localhost:3000/auth/register/artisan/step-2`
 - **Accès** : Authentifié (redirige vers step-1 si non connecté)
 - **Rôle** : Inscription artisan - Étape 2 sur 4 (Profil public)
@@ -106,6 +111,7 @@
 ---
 
 #### **`/auth/register/artisan/step-3`**
+
 - **URL** : `http://localhost:3000/auth/register/artisan/step-3`
 - **Accès** : Authentifié (redirige vers step-1 si non connecté)
 - **Rôle** : Inscription artisan - Étape 3 sur 4 (Vérification identité)
@@ -126,6 +132,7 @@
 ---
 
 #### **`/auth/register/artisan/step-4`**
+
 - **URL** : `http://localhost:3000/auth/register/artisan/step-4`
 - **Accès** : Authentifié (redirige vers step-1 si non connecté)
 - **Rôle** : Inscription artisan - Étape 4 sur 4 (CGU Artisan et finalisation)
@@ -144,6 +151,7 @@
 ---
 
 #### **`/auth/forgot-password`**
+
 - **URL** : `http://localhost:3000/auth/forgot-password`
 - **Accès** : Public
 - **Rôle** : Demande de réinitialisation de mot de passe
@@ -163,6 +171,7 @@
 ---
 
 #### **`/auth/reset-password`**
+
 - **URL** : `http://localhost:3000/auth/reset-password?token=XXX`
 - **Accès** : Public (via lien email)
 - **Rôle** : Réinitialisation du mot de passe
@@ -186,6 +195,7 @@
   - **Invalid/Expired** : Bouton "Demander un nouveau lien" → `/auth/forgot-password`
 
 **URLs de test** :
+
 ```
 Valid    : http://localhost:3000/auth/reset-password?token=abc123validtoken456789
 Invalid  : http://localhost:3000/auth/reset-password?token=short
@@ -195,6 +205,7 @@ Expired  : http://localhost:3000/auth/reset-password?token=expired
 ---
 
 #### **`/auth/verify-email`**
+
 - **URL** : `http://localhost:3000/auth/verify-email?type=client` ou `?token=XXX`
 - **Accès** : Public (via lien email ou après inscription)
 - **Rôle** : Vérification de l'adresse email
@@ -224,6 +235,7 @@ Expired  : http://localhost:3000/auth/reset-password?token=expired
   - **Invalid/Expired** : Bouton "Renvoyer" → Renvoie nouveau lien
 
 **URLs de test** :
+
 ```
 Pending  : http://localhost:3000/auth/verify-email?type=client
 Success  : http://localhost:3000/auth/verify-email?token=abc123validtoken456789&type=client
@@ -236,6 +248,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ### 📊 Dashboards - Après connexion (2 pages)
 
 #### **`/client/dashboard`**
+
 - **URL** : `http://localhost:3000/client/dashboard`
 - **Accès** : Authentifié (redirige vers `/auth/login` si non connecté)
 - **Rôle** : Tableau de bord principal du client
@@ -263,6 +276,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/artisan/dashboard`**
+
 - **URL** : `http://localhost:3000/artisan/dashboard`
 - **Accès** : Authentifié (redirige vers `/auth/login` si non connecté)
 - **Rôle** : Tableau de bord principal de l'artisan
@@ -292,6 +306,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ### 🎨 Pages de démonstration (2 pages)
 
 #### **`/demo/dashClient`**
+
 - **URL** : `http://localhost:3000/demo/dashClient`
 - **Accès** : Public (pas de protection)
 - **Rôle** : **Prévisualisation** du dashboard client avec données fictives
@@ -307,7 +322,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
   - Badges de statut colorés (En cours, Propositions, Terminé)
   - Prix affichés
   - Dates relatives ("Il y a 2 jours")
-- **Utilité** : 
+- **Utilité** :
   - Montrer à quoi ressemble le dashboard **avec des données**
   - Tester le design sans créer de compte
   - Présentation du projet
@@ -315,6 +330,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/demo/dashArtisan`**
+
 - **URL** : `http://localhost:3000/demo/dashArtisan`
 - **Accès** : Public (pas de protection)
 - **Rôle** : **Prévisualisation** du dashboard artisan avec données fictives
@@ -346,6 +362,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ### 👤 Client - Après connexion
 
 #### **`/client/profile`**
+
 - **Accès** : Authentifié client
 - **Rôle** : Voir et éditer son profil
 - **Contenu à créer** :
@@ -359,6 +376,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/client/search`**
+
 - **Accès** : Authentifié client
 - **Rôle** : Rechercher des prestataires
 - **Contenu à créer** :
@@ -374,6 +392,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/client/requests`**
+
 - **Accès** : Authentifié client
 - **Rôle** : Liste de toutes mes demandes
 - **Contenu à créer** :
@@ -388,6 +407,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/client/requests/new`**
+
 - **Accès** : Authentifié client
 - **Rôle** : Créer une nouvelle demande
 - **Contenu à créer** :
@@ -403,6 +423,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/client/requests/:id`**
+
 - **Accès** : Authentifié client (propriétaire uniquement)
 - **Rôle** : Détail d'une demande spécifique
 - **Contenu à créer** :
@@ -418,6 +439,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/client/messages`**
+
 - **Accès** : Authentifié client
 - **Rôle** : Messagerie (liste des conversations)
 - **Contenu à créer** :
@@ -430,6 +452,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/client/messages/:id`**
+
 - **Accès** : Authentifié client
 - **Rôle** : Conversation avec un prestataire
 - **Contenu à créer** :
@@ -441,6 +464,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/client/settings`**
+
 - **Accès** : Authentifié client
 - **Rôle** : Paramètres du compte
 - **Contenu à créer** :
@@ -456,6 +480,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ### 🛠️ Artisan - Après connexion
 
 #### **`/artisan/profile`**
+
 - **Accès** : Authentifié artisan
 - **Rôle** : Voir et éditer son profil public
 - **Contenu à créer** :
@@ -472,6 +497,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/artisan/requests`**
+
 - **Accès** : Authentifié artisan
 - **Rôle** : Voir les demandes disponibles
 - **Contenu à créer** :
@@ -487,6 +513,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/artisan/requests/:id`**
+
 - **Accès** : Authentifié artisan
 - **Rôle** : Détail d'une demande + envoyer proposition
 - **Contenu à créer** :
@@ -502,6 +529,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/artisan/services`**
+
 - **Accès** : Authentifié artisan
 - **Rôle** : Liste de mes prestations
 - **Contenu à créer** :
@@ -515,6 +543,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/artisan/services/:id`**
+
 - **Accès** : Authentifié artisan
 - **Rôle** : Détail d'une prestation
 - **Contenu à créer** :
@@ -528,6 +557,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/artisan/messages`**
+
 - **Accès** : Authentifié artisan
 - **Rôle** : Messagerie (liste des conversations)
 - **Contenu** : Identique à `/client/messages`
@@ -535,6 +565,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/artisan/messages/:id`**
+
 - **Accès** : Authentifié artisan
 - **Rôle** : Conversation avec un client
 - **Contenu** : Identique à `/client/messages/:id`
@@ -542,6 +573,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/artisan/earnings`**
+
 - **Accès** : Authentifié artisan
 - **Rôle** : Revenus et historique des paiements
 - **Contenu à créer** :
@@ -556,6 +588,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/artisan/settings`**
+
 - **Accès** : Authentifié artisan
 - **Rôle** : Paramètres du compte
 - **Contenu à créer** :
@@ -572,6 +605,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ### 📄 Pages légales (3 pages)
 
 #### **`/legal/cgu`**
+
 - **Accès** : Public
 - **Rôle** : Conditions Générales d'Utilisation
 - **Contenu à créer** :
@@ -581,6 +615,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/legal/privacy`**
+
 - **Accès** : Public
 - **Rôle** : Politique de confidentialité (RGPD)
 - **Contenu à créer** :
@@ -592,6 +627,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ---
 
 #### **`/contact`**
+
 - **Accès** : Public
 - **Rôle** : Formulaire de contact
 - **Contenu à créer** :
@@ -602,16 +638,16 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 
 ## 📊 Statistiques du projet
 
-| Catégorie | Créées | À créer | Total |
-|-----------|--------|---------|-------|
-| **Accueil** | 1 | 0 | 1 |
-| **Auth** | 7 | 0 | 7 |
-| **Dashboards** | 2 | 0 | 2 |
-| **Démos** | 2 | 0 | 2 |
-| **Client** | 0 | 7 | 7 |
-| **Artisan** | 0 | 7 | 7 |
-| **Légal** | 0 | 3 | 3 |
-| **TOTAL** | **12** | **17** | **29** |
+| Catégorie      | Créées | À créer | Total  |
+| -------------- | ------ | ------- | ------ |
+| **Accueil**    | 1      | 0       | 1      |
+| **Auth**       | 7      | 0       | 7      |
+| **Dashboards** | 2      | 0       | 2      |
+| **Démos**      | 2      | 0       | 2      |
+| **Client**     | 0      | 7       | 7      |
+| **Artisan**    | 0      | 7       | 7      |
+| **Légal**      | 0      | 3       | 3      |
+| **TOTAL**      | **12** | **17**  | **29** |
 
 **Progression** : 41% des pages créées ✅
 
@@ -620,15 +656,18 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ## 🎨 Composants réutilisables créés
 
 ### Layouts
+
 - `AuthLayout` - Structure pour toutes les pages d'auth (logo, fond, carte)
 
 ### Forms
+
 - `Button` - Bouton avec variants (primary, outline, ghost), tailles, loading
 - `Input` - Input avec label, icône, erreur, helper text
 - `Checkbox` - Checkbox avec label et gestion d'erreurs
 - `FileUpload` - Upload de fichiers avec drag & drop et preview
 
 ### Other
+
 - `ProgressSteps` - Indicateur d'étapes (cercles verts validés)
 - `PasswordStrengthIndicator` - Indicateur de force du mot de passe (règles + barres)
 - `Header` - Header avec logo et navigation (à créer pour toutes les pages)
@@ -639,6 +678,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ## 🔧 Configuration technique
 
 ### Validation (Zod)
+
 - `registerClientSchema`
 - `registerArtisanStep1Schema`
 - `artisanProfileSchema`
@@ -649,15 +689,18 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 - `resetPasswordSchema` (dans le composant reset-password)
 
 ### Store (Zustand)
+
 - `auth-store.ts` - Gestion de l'authentification
   - `user`, `token`, `isAuthenticated`
   - `setAuth()`, `updateUser()`, `logout()`
 
 ### API Client (Axios)
+
 - `api-client.ts` - Instance configurée
 - `apiClientUpload` - Pour multipart/form-data
 
 ### Hooks personnalisés
+
 - `useEmailValidation` - Vérification unicité email (debounced 500ms)
 
 ---
@@ -665,17 +708,20 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ## 🚀 Prochaines étapes recommandées
 
 ### Priorité 1 (Essentiel)
+
 1. **Profil Client** (`/client/profile`)
 2. **Profil Artisan** (`/artisan/profile`)
 3. **Changer mot de passe** (dans settings)
 
 ### Priorité 2 (Important)
+
 4. **Rechercher prestataires** (`/client/search`)
 5. **Créer une demande** (`/client/requests/new`)
 6. **Voir demandes disponibles** (`/artisan/requests`)
 7. **Messagerie** (`/client/messages` + `/artisan/messages`)
 
 ### Priorité 3 (Nice to have)
+
 8. **Détails demande** (`/client/requests/:id`)
 9. **Mes prestations** (`/artisan/services`)
 10. **Revenus** (`/artisan/earnings`)
@@ -686,12 +732,14 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 ## 💡 Notes importantes
 
 ### Mode démo actuel
+
 - Toutes les pages d'authentification fonctionnent en **mode simulation**
 - Pas de vrai backend → Les données ne persistent pas
 - `setAuth()` sauvegarde dans localStorage
 - Quand le backend sera prêt, il faudra remplacer les simulations par de vrais appels API
 
 ### Design system
+
 - **Couleurs principales** :
   - Client : Pink/Rose (`from-pink-500 to-rose-600`)
   - Artisan : Emerald/Vert (`from-emerald-500 to-teal-600`)
@@ -700,6 +748,7 @@ Expired  : http://localhost:3000/auth/verify-email?token=expired
 - **Animations** : `animate-float`, `animate-bounce`, `animate-spin`
 
 ### Fichiers clés
+
 ```
 src/
 ├── app/

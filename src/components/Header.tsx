@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { colors } from "@/config/colors";
+import { routes } from "@/config/routes";
 
 export default function Header() {
   const pathname = usePathname();
@@ -23,26 +26,70 @@ export default function Header() {
           <nav className="hidden md:flex items-center gap-6">
             <a
               href="#comment-ca-marche"
-              className="text-gray-700 hover:text-orange-600 transition"
+              onClick={(e) => {
+                e.preventDefault();
+                const element = document.getElementById("comment-ca-marche");
+                if (element) {
+                  const offset = 80; // Hauteur du header
+                  const elementPosition = element.getBoundingClientRect().top;
+                  const offsetPosition =
+                    elementPosition + window.pageYOffset - offset;
+                  window.scrollTo({
+                    top: offsetPosition,
+                    behavior: "smooth",
+                  });
+                }
+              }}
+              className={`${colors.text.secondary} hover:${colors.premium.text} transition cursor-pointer`}
             >
               Comment ça marche
             </a>
             <a
-              href="#avantages"
-              className="text-gray-700 hover:text-orange-600 transition"
+              href="#pourquoi-nous-choisir"
+              onClick={(e) => {
+                e.preventDefault();
+                const element = document.getElementById(
+                  "pourquoi-nous-choisir",
+                );
+                if (element) {
+                  const offset = 80; // Hauteur du header
+                  const elementPosition = element.getBoundingClientRect().top;
+                  const offsetPosition =
+                    elementPosition + window.pageYOffset - offset;
+                  window.scrollTo({
+                    top: offsetPosition,
+                    behavior: "smooth",
+                  });
+                }
+              }}
+              className={`${colors.text.secondary} hover:${colors.premium.text} transition cursor-pointer`}
             >
               Avantages
             </a>
             <a
               href="#temoignages"
-              className="text-gray-700 hover:text-orange-600 transition"
+              onClick={(e) => {
+                e.preventDefault();
+                const element = document.getElementById("temoignages");
+                if (element) {
+                  const offset = 80; // Hauteur du header
+                  const elementPosition = element.getBoundingClientRect().top;
+                  const offsetPosition =
+                    elementPosition + window.pageYOffset - offset;
+                  window.scrollTo({
+                    top: offsetPosition,
+                    behavior: "smooth",
+                  });
+                }
+              }}
+              className={`${colors.text.secondary} hover:${colors.premium.text} transition cursor-pointer`}
             >
               Témoignages
             </a>
           </nav>
           <Link
-            href="/auth/login"
-            className="px-4 py-2 font-medium text-gray-700 hover:text-orange-600 transition"
+            href={routes.auth.login}
+            className={`px-4 py-2 font-medium ${colors.text.secondary} hover:${colors.premium.text} transition`}
           >
             Se connecter
           </Link>

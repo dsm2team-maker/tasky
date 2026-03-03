@@ -101,7 +101,7 @@ export default function RegisterArtisanStep1() {
         <h1 className={`${typography.h2.base} ${colors.secondary.text} mb-2`}>
           Devenir prestataire
         </h1>
-        <p className={`${colors.secondary.text} font-medium`}>
+        <p className={`${colors.premium.text} font-medium`}>
           Étape 1 : Créez votre compte
         </p>
       </div>
@@ -260,7 +260,9 @@ export default function RegisterArtisanStep1() {
         />
 
         {/* Bouton submit - EMERALD */}
+
         <Button
+          variant="secondary"
           type="submit"
           fullWidth
           size="lg"
@@ -277,7 +279,7 @@ export default function RegisterArtisanStep1() {
           Vous êtes client ?{" "}
           <Link
             href={routes.auth.register.client}
-            className={`font-medium ${colors.primary.text} hover:underline`}
+            className={`font-medium ${colors.premium.text} hover:underline`}
           >
             Inscrivez-vous ici
           </Link>

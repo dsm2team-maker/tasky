@@ -4,99 +4,19 @@ import { colors } from "@/config/colors";
 import { typography, gradients } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 import CategoriesSection from "@/components/CategoriesSection";
+import { Button } from "@/components/Button";
+import Header from "@/components/Header";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header / Navigation */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-34 h-16 rounded-lg overflow-hidden flex items-center justify-center">
-                <img
-                  src="images/logo-tasky2.png"
-                  alt="Tasky Logo"
-                  className="w-full h-full object-contain"
-                />
-              </div>
-            </div>
-            <nav className="hidden md:flex items-center gap-6">
-              <a
-                href="#comment-ca-marche"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const element = document.getElementById("comment-ca-marche");
-                  if (element) {
-                    const offset = 80; // Hauteur du header
-                    const elementPosition = element.getBoundingClientRect().top;
-                    const offsetPosition =
-                      elementPosition + window.pageYOffset - offset;
-                    window.scrollTo({
-                      top: offsetPosition,
-                      behavior: "smooth",
-                    });
-                  }
-                }}
-                className={`${colors.text.secondary} hover:${colors.primary.text} transition cursor-pointer`}
-              >
-                Comment ça marche
-              </a>
-              <a
-                href="#pourquoi-nous-choisir"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const element = document.getElementById(
-                    "pourquoi-nous-choisir",
-                  );
-                  if (element) {
-                    const offset = 80; // Hauteur du header
-                    const elementPosition = element.getBoundingClientRect().top;
-                    const offsetPosition =
-                      elementPosition + window.pageYOffset - offset;
-                    window.scrollTo({
-                      top: offsetPosition,
-                      behavior: "smooth",
-                    });
-                  }
-                }}
-                className={`${colors.text.secondary} hover:${colors.primary.text} transition cursor-pointer`}
-              >
-                Avantages
-              </a>
-              <a
-                href="#temoignages"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const element = document.getElementById("temoignages");
-                  if (element) {
-                    const offset = 80; // Hauteur du header
-                    const elementPosition = element.getBoundingClientRect().top;
-                    const offsetPosition =
-                      elementPosition + window.pageYOffset - offset;
-                    window.scrollTo({
-                      top: offsetPosition,
-                      behavior: "smooth",
-                    });
-                  }
-                }}
-                className={`${colors.text.secondary} hover:${colors.primary.text} transition cursor-pointer`}
-              >
-                Témoignages
-              </a>
-            </nav>
-            <Link
-              href={routes.auth.login}
-              className={`px-4 py-2 font-medium ${colors.text.secondary} hover:${colors.primary.text} transition`}
-            >
-              Se connecter
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Hero Section */}
-      <section className="{`relative overflow-hidden ${gradients.lightPrimary}`}">
+      <section
+        className={`relative overflow-hidden  ${gradients.lightPrimary}`}
+      >
         <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
         <div className="max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8 lg:py-20">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -129,7 +49,7 @@ export default function HomePage() {
                 {/* LIEN 1 - Comme votre exemple qui fonctionne */}
                 <Link
                   href={routes.auth.register.client}
-                  className={`group px-8 py-4 ${colors.primary.gradient} font-semibold rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 text-center`}
+                  className={`group px-8 py-4 ${colors.primary.gradient} font-semibold rounded-xl border-2 border-gray-200 hover:${colors.primary.border} hover:shadow-lg transition-all duration-300 text-center`}
                 >
                   {/* Pas de div parent supplémentaire ! */}
                   <div className="font-bold text-lg mt-1 opacity-90">
@@ -140,7 +60,7 @@ export default function HomePage() {
                 {/* LIEN 2 */}
                 <Link
                   href={routes.auth.register.artisan.step1}
-                  className={`group px-8 py-4 ${colors.premium.gradient} font-semibold rounded-xl border-2 border-gray-200 hover:${colors.primary.border} hover:shadow-lg transition-all duration-300 text-center`}
+                  className={`group px-8 py-4 ${colors.secondary.gradient} font-semibold rounded-xl border-2 border-gray-200 hover:${colors.primary.border} hover:shadow-lg transition-all duration-300 text-center`}
                 >
                   <div className="font-bold text-lg mt-1 opacity-90">
                     Proposer mes services
@@ -226,14 +146,6 @@ export default function HomePage() {
             </h2>
 
             {/* ✅ NOUVEAU : 2 phrases mises en avant */}
-            <div className="max-w-4xl mx-auto space-y-3">
-              <p className={`text-xl font-semibold ${colors.secondary.text}`}>
-                💰 Transformez votre savoir-faire en revenus depuis chez vous.
-              </p>
-              <p className={`text-xl font-semibold ${colors.primary.text}`}>
-                🔍 Trouvez le bon artisan en quelques clics, en toute confiance.
-              </p>
-            </div>
           </div>
 
           {/* Pour les Clients */}
@@ -241,6 +153,11 @@ export default function HomePage() {
             <h3 className="text-2xl font-bold text-center text-gray-900 mb-8 flex items-center justify-center gap-3">
               <span className="text-3xl">👤</span> Pour les clients
             </h3>
+            <div className="max-w-4xl mx-auto space-y-3 text-center">
+              <p className={`text-xl font-semibold ${colors.primary.text} `}>
+                🔍 Trouvez le bon artisan en quelques clics, en toute confiance.
+              </p>
+            </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Client 1 - Trouver près de chez soi */}
               <div
@@ -373,6 +290,11 @@ export default function HomePage() {
             <h3 className="text-2xl font-bold text-center text-gray-900 mb-8 flex items-center justify-center gap-3">
               <span className="text-3xl">🛠️</span> Pour les prestataires
             </h3>
+            <div className="max-w-4xl mx-auto space-y-3 text-center">
+              <p className={`text-xl font-semibold ${colors.secondary.text}`}>
+                💰 Transformez votre savoir-faire en revenus depuis chez vous.
+              </p>
+            </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Prestataire 1 - Augmenter revenus */}
               <div
@@ -498,7 +420,7 @@ export default function HomePage() {
           {/* Messagerie instantanée */}
           <div className="mt-16 max-w-4xl mx-auto bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-8 border-2 border-indigo-200">
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
                 <svg
                   className="w-7 h-7 text-white"
                   fill="none"
@@ -543,7 +465,7 @@ export default function HomePage() {
       {/* Comment ça marche - Double parcours */}
       <section
         id="comment-ca-marche"
-        className="py-20 bg-gradient-to-br from-gray-50 to-gray-100"
+        className={`py-20 ${gradients.lightPrimary}`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
@@ -560,11 +482,9 @@ export default function HomePage() {
           {/* Parcours Client */}
           <div className="mb-20">
             <div className="text-center mb-12">
-              <div
-                className={`inline-flex items-center gap-3 px-6 py-3 ${colors.primary.gradient} rounded-full mb-4`}
-              >
-                <span className="text-3xl">👤</span>
-                <h3 className="text-2xl font-bold text-white">
+              <div className="flex items-center justify-center gap-3 mb-8">
+                <span className="text-4xl">👤</span>
+                <h3 className={`${typography.h3.base} ${colors.premium.text}`}>
                   Besoin d'un service ?
                 </h3>
               </div>
@@ -577,7 +497,7 @@ export default function HomePage() {
               {/* Client Étape 1 */}
               <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-blue-300">
                 <div
-                  className={`w-16 h-16 ${colors.primary.gradient} rounded-full flex items-center justify-center mb-4`}
+                  className={`w-12 h-12 ${colors.primary.gradient} rounded-full flex items-center justify-center mb-4`}
                 >
                   <span className="text-white text-2xl font-bold">1</span>
                 </div>
@@ -598,7 +518,7 @@ export default function HomePage() {
 
               <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-blue-300">
                 <div
-                  className={`w-16 h-16 ${colors.primary.gradient} rounded-full flex items-center justify-center mb-4`}
+                  className={`w-12 h-12 ${colors.primary.gradient} rounded-full flex items-center justify-center mb-4`}
                 >
                   <span className="text-white text-2xl font-bold">2</span>
                 </div>
@@ -619,7 +539,7 @@ export default function HomePage() {
               {/* Client Étape 3 */}
               <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-blue-300">
                 <div
-                  className={`w-16 h-16 ${colors.primary.gradient} rounded-full flex items-center justify-center mb-4`}
+                  className={`w-12 h-12 ${colors.primary.gradient} rounded-full flex items-center justify-center mb-4`}
                 >
                   <span className="text-white text-2xl font-bold">3</span>
                 </div>
@@ -639,7 +559,7 @@ export default function HomePage() {
               {/* Client Étape 4 */}
               <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-blue-300">
                 <div
-                  className={`w-16 h-16 ${colors.primary.gradient} rounded-full flex items-center justify-center mb-4`}
+                  className={`w-12 h-12 ${colors.primary.gradient} rounded-full flex items-center justify-center mb-4`}
                 >
                   <span className="text-white text-2xl font-bold">4</span>
                 </div>
@@ -663,11 +583,9 @@ export default function HomePage() {
           {/* Parcours Prestataire */}
           <div className="mb-12">
             <div className="text-center mb-12">
-              <div
-                className={`inline-flex items-center gap-3 px-6 py-3 ${colors.secondary.gradient} rounded-full mb-4`}
-              >
-                <span className="text-3xl">🛠️</span>
-                <h3 className="text-2xl font-bold text-white">
+              <div className="flex items-center justify-center gap-3 mb-8">
+                <span className="text-4xl">🛠️</span>
+                <h3 className={`${typography.h3.base} ${colors.premium.text}`}>
                   Vous avez un savoir-faire ?
                 </h3>
               </div>
@@ -680,7 +598,7 @@ export default function HomePage() {
               {/* Prestataire Étape 1 */}
               <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-blue-300">
                 <div
-                  className={`w-16 h-16 ${colors.secondary.gradient} rounded-full flex items-center justify-center mb-4`}
+                  className={`w-12 h-12 ${colors.secondary.gradient} rounded-full flex items-center justify-center mb-4`}
                 >
                   <span className="text-white text-2xl font-bold">1</span>
                 </div>
@@ -702,7 +620,7 @@ export default function HomePage() {
               {/* Prestataire Étape 2 */}
               <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-blue-300">
                 <div
-                  className={`w-16 h-16 ${colors.secondary.gradient} rounded-full flex items-center justify-center mb-4`}
+                  className={`w-12 h-12 ${colors.secondary.gradient} rounded-full flex items-center justify-center mb-4`}
                 >
                   <span className="text-white text-2xl font-bold">2</span>
                 </div>
@@ -722,7 +640,7 @@ export default function HomePage() {
               {/* Prestataire Étape 3 */}
               <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-blue-300">
                 <div
-                  className={`w-16 h-16 ${colors.secondary.gradient} rounded-full flex items-center justify-center mb-4`}
+                  className={`w-12 h-12 ${colors.secondary.gradient} rounded-full flex items-center justify-center mb-4`}
                 >
                   <span className="text-white text-2xl font-bold">3</span>
                 </div>
@@ -742,7 +660,7 @@ export default function HomePage() {
               {/* Prestataire Étape 4 */}
               <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-blue-300">
                 <div
-                  className={`w-16 h-16 ${colors.secondary.gradient} rounded-full flex items-center justify-center mb-4`}
+                  className={`w-12 h-12 ${colors.secondary.gradient} rounded-full flex items-center justify-center mb-4`}
                 >
                   <span className="text-white text-2xl font-bold">4</span>
                 </div>
@@ -769,7 +687,7 @@ export default function HomePage() {
           >
             <div className="flex items-start gap-4">
               <div
-                className={`w-16 h-16 ${colors.primary.gradient} rounded-xl flex items-center justify-center flex-shrink-0`}
+                className={`w-12 h-12 ${colors.premium.gradient} rounded-xl flex items-center justify-center flex-shrink-0`}
               >
                 <svg
                   className="w-8 h-8 text-white"
@@ -786,7 +704,7 @@ export default function HomePage() {
                 </svg>
               </div>
               <div className="flex-1">
-                <h4 className="text-2xl font-bold text-gray-900 mb-3">
+                <h4 className="text-xl font-bold text-gray-900 mb-3">
                   🔒 Votre sécurité, notre priorité
                 </h4>
                 <p className="text-gray-700 mb-4 leading-relaxed">
@@ -843,7 +761,7 @@ export default function HomePage() {
       <CategoriesSection />
 
       {/* Double CTA - Client/Artisan */}
-      <section className="py-10 bg-white">
+      <section className={`py-10 ${gradients.lightPrimary}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className={`${typography.h2.base} ${colors.text.primary} mb-4`}>
@@ -889,10 +807,7 @@ export default function HomePage() {
                     href={routes.auth.register.client}
                     className={`group px-8 py-4 ${colors.primary.gradient} text-white font-bold rounded-xl hover:shadow-2xl hover:scale-105 transition-all text-center`}
                   >
-                    <span className="text-lg">
-                      {" "}
-                      📝Publier ma première demande
-                    </span>
+                    <span className="text-lg"> 📝Publier une demande</span>
                     <div className="text-sm mt-1 opacity-90">
                       Sans engagement
                     </div>
@@ -949,10 +864,7 @@ export default function HomePage() {
       </section>
 
       {/* Témoignages */}
-      <section
-        id="temoignages"
-        className="py-20 bg-gradient-to-br from-purple-50 to-pink-50"
-      >
+      <section id="temoignages" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -1044,27 +956,25 @@ export default function HomePage() {
       </section>
 
       {/* CTA Final */}
-      <section className="py-20 bg-gradient-to-r from-orange-600 to-pink-600">
+      <section className={`py-10 ${gradients.lightPrimary}`}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">
             Prêt à utiliser Tasky ?
           </h2>
-          <p className="text-xl text-white/90 mb-8">
+          <p className="text-xl text-gray-600">
             Rejoignez des milliers d'utilisateurs qui trouvent ou proposent des
             services en toute sécurité
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href={routes.auth.register.client}
-              className={`px-8 py-4 bg-white ${colors.primary.text} font-bold rounded-xl hover:bg-gray-100 transition-all hover:scale-105 shadow-xl`}
-            >
-              Publier une demande
+            <Link href={routes.auth.register.client}>
+              <Button variant="primary" size="lg" className="shadow-xl">
+                Publier une demande
+              </Button>
             </Link>
-            <Link
-              href={routes.auth.register.artisan.step1}
-              className="px-8 py-4 bg-transparent text-white font-bold rounded-xl border-2 border-white hover:bg-white/10 transition-all"
-            >
-              Proposer mes services
+            <Link href={routes.auth.register.artisan.step1}>
+              <Button variant="secondary" size="lg" className="shadow-xl">
+                Proposer mes services
+              </Button>
             </Link>
           </div>
         </div>
@@ -1074,10 +984,10 @@ export default function HomePage() {
       <footer className="bg-gray-900 text-gray-300 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="w-34 h-16 rounded-lg overflow-hidden">
+            <div className="text-center">
+              <div className="w-34 h-16 rounded-lg overflow-hidden mx-auto">
                 <img
-                  src="images/logo-tasky2.png"
+                  src="/images/logo-tasky2.png"
                   alt="Tasky Logo"
                   className="w-full h-full object-contain"
                 />

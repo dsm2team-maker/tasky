@@ -1,9 +1,10 @@
-// Composant Button réutilisable avec variants
+// Composant Button réutilisable avec variants - MIGRÉ AU DESIGN SYSTEM
 import React from "react";
 import { cn } from "@/lib/utils";
+import { colors } from "@/config/colors";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "outline" | "ghost";
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "premium";
   size?: "sm" | "md" | "lg";
   isLoading?: boolean;
   fullWidth?: boolean;
@@ -23,12 +24,10 @@ export const Button: React.FC<ButtonProps> = ({
     "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
   const variants = {
-    primary:
-      "bg-gradient-to-r from-pink-600 to-emerald-500 text-white hover:from-emerald-600 hover:to-emerald-700 focus:ring-emerald-500",
-    secondary:
-      "bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500",
-    outline:
-      "border-2 border-emerald-600 text-emerald-600 hover:bg-emerald-50 focus:ring-emerald-500",
+    primary: `${colors.primary.gradient} text-white hover:shadow-lg ${colors.primary.focusRing}`,
+    secondary: `${colors.secondary.gradient} text-white hover:shadow-lg ${colors.secondary.focusRing}`,
+    premium: `${colors.premium.gradient} text-white hover:shadow-lg ${colors.premium.focusRing}`,
+    outline: `border-2 ${colors.primary.border} ${colors.primary.text} ${colors.primary.bgHover} ${colors.primary.focusRing}`,
     ghost: "text-gray-700 hover:bg-gray-100 focus:ring-gray-500",
   };
 
