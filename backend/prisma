@@ -1,0 +1,291 @@
+// ===========================================
+// TASKY - Schéma Prisma complet
+// ===========================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===========================================
+// UTILISATEURS
+// ===========================================
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  role          Role     @default(CLIENT)
+  firstName     String
+  lastName      String
+  phone         String?
+  city          String?
+  avatar        String?
+  emailVerified Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  client        Client?
+  artisan       Artisan?
+  
+  // Token de refresh JWT
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+enum Role {
+  CLIENT
+  ARTISAN
+  ADMIN
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+// ===========================================
+// PROFIL CLIENT
+// ===========================================
+
+model Client {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relations
+  demandes Demande[]
+  reviews  Review[]
+
+  @@map("clients")
+}
+
+// ===========================================
+// PROFIL ARTISAN
+// ===========================================
+
+model Artisan {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio         String?
+  siret       String?
+  verified    Boolean @default(false)
+  rating      Float   @default(0)
+  reviewCount Int     @default(0)
+  
+  // Vérification identité (step-3)
+  identityDocumentType String? // "CNI" | "PASSEPORT"
+  identityDocumentUrl  String?
+  identityVerified     Boolean @default(false)
+  
+  // CGU acceptées (step-4)
+  cguAcceptedAt DateTime?
+
+  // Relations
+  competences  Competence[]
+  devis        Devis[]
+  prestations  Prestation[]
+  reviews      Review[]
+  portfolio    PortfolioImage[]
+
+  @@map("artisans")
+}
+
+// ===========================================
+// CATÉGORIES
+// ===========================================
+
+model Category {
+  id          String  @id @default(cuid())
+  nom         String
+  slug        String  @unique
+  icon        String
+  description String?
+
+  // Relations
+  subCategories SubCategory[]
+  competences   Competence[]
+  demandes      Demande[]
+
+  @@map("categories")
+}
+
+model SubCategory {
+  id         String   @id @default(cuid())
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  nom        String
+  slug       String
+
+  // Relations
+  prestations Prestation[]
+  demandes    Demande[]
+
+  @@map("sub_categories")
+}
+
+model Competence {
+  id         String   @id @default(cuid())
+  artisanId  String
+  artisan    Artisan  @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@unique([artisanId, categoryId])
+  @@map("competences")
+}
+
+// ===========================================
+// DEMANDES (Client publie une demande)
+// ===========================================
+
+model Demande {
+  id            String        @id @default(cuid())
+  clientId      String
+  client        Client        @relation(fields: [clientId], references: [id])
+  titre         String
+  description   String
+  categoryId    String
+  category      Category      @relation(fields: [categoryId], references: [id])
+  subCategoryId String?
+  subCategory   SubCategory?  @relation(fields: [subCategoryId], references: [id])
+  budget        Float?
+  ville         String?
+  photos        String[]      // URLs des photos
+  status        StatusDemande @default(PUBLIEE)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  devis      Devis[]
+  prestation Prestation?
+
+  @@map("demandes")
+}
+
+enum StatusDemande {
+  PUBLIEE
+  EN_ATTENTE
+  ACCEPTEE
+  EN_COURS
+  TERMINEE
+  ANNULEE
+}
+
+// ===========================================
+// DEVIS (Artisan répond à une demande)
+// ===========================================
+
+model Devis {
+  id          String      @id @default(cuid())
+  demandeId   String
+  demande     Demande     @relation(fields: [demandeId], references: [id])
+  artisanId   String
+  artisan     Artisan     @relation(fields: [artisanId], references: [id])
+  montant     Float
+  delai       Int         // en jours
+  description String
+  status      StatusDevis @default(ENVOYE)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("devis")
+}
+
+enum StatusDevis {
+  ENVOYE
+  ACCEPTE
+  REFUSE
+}
+
+// ===========================================
+// PRESTATIONS (Devis accepté → Prestation en cours)
+// ===========================================
+
+model Prestation {
+  id            String            @id @default(cuid())
+  demandeId     String            @unique
+  demande       Demande           @relation(fields: [demandeId], references: [id])
+  artisanId     String
+  artisan       Artisan           @relation(fields: [artisanId], references: [id])
+  subCategoryId String?
+  subCategory   SubCategory?      @relation(fields: [subCategoryId], references: [id])
+  montant       Float
+  status        StatusPrestation  @default(EN_COURS)
+  createdAt     DateTime          @default(now())
+  completedAt   DateTime?
+
+  // Relations
+  review Review?
+
+  @@map("prestations")
+}
+
+enum StatusPrestation {
+  EN_COURS
+  TERMINEE
+  ANNULEE
+}
+
+// ===========================================
+// MESSAGERIE
+// ===========================================
+
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  content    String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@map("messages")
+}
+
+// ===========================================
+// AVIS
+// ===========================================
+
+model Review {
+  id          String     @id @default(cuid())
+  prestationId String    @unique
+  prestation  Prestation @relation(fields: [prestationId], references: [id])
+  clientId    String
+  client      Client     @relation(fields: [clientId], references: [id])
+  artisanId   String
+  artisan     Artisan    @relation(fields: [artisanId], references: [id])
+  rating      Int        // 1-5
+  comment     String?
+  createdAt   DateTime   @default(now())
+
+  @@map("reviews")
+}
+
+// ===========================================
+// PORTFOLIO ARTISAN
+// ===========================================
+
+model PortfolioImage {
+  id        String   @id @default(cuid())
+  artisanId String
+  artisan   Artisan  @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+  url       String
+  caption   String?
+  createdAt DateTime @default(now())
+
+  @@map("portfolio_images")
+}

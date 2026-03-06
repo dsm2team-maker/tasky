@@ -47,12 +47,12 @@ export default function CategoriesSection() {
   return (
     <>
       {/* Section Catégories - VITRINE */}
-      <section id="categories" className={`${spacing.section} bg-white`}>
+      <section id="categories" className={`${spacing.section} py-10 bg-white"`}>
         <div className={spacing.container}>
           {/* En-tête */}
           <div className="text-center mb-16">
             <h2 className={`${typography.h2.base} ${colors.text.primary} mb-4`}>
-              ✨ Découvrez nos prestations
+              Découvrez nos prestations
             </h2>
             <p className={`text-lg ${colors.text.secondary} max-w-2xl mx-auto`}>
               De l'artisanat créatif à la réparation, explorez la variété des

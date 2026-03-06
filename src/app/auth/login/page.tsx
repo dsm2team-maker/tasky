@@ -12,8 +12,6 @@ import { apiClient, handleApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
-
-// ✅ IMPORTS DU DESIGN SYSTEM
 import { colors } from "@/config/colors";
 import { typography, gradients } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
@@ -22,6 +20,7 @@ export default function LoginPage() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -38,10 +37,14 @@ export default function LoginPage() {
       return response.data;
     },
     onSuccess: (data) => {
-      setAuth(data.user, data.token);
+      // ✅ Correction : le backend retourne data.tokens.accessToken
+      setAuth(data.data.user, data.data.tokens.accessToken);
 
-      // ✅ Utilisation des routes du Design System
-      if (data.user.role === "ARTISAN") {
+      // Stocker aussi le refresh token
+      localStorage.setItem("refresh_token", data.data.tokens.refreshToken);
+
+      // Redirection selon le rôle
+      if (data.data.user.role === "ARTISAN") {
         router.push(routes.artisan.dashboard);
       } else {
         router.push(routes.client.dashboard);
@@ -49,16 +52,16 @@ export default function LoginPage() {
     },
     onError: (error: any) => {
       const apiError = handleApiError(error);
-      alert(apiError.message);
+      setErrorMessage(apiError.message);
     },
   });
 
   const onSubmit = (data: LoginInput) => {
+    setErrorMessage(null);
     loginMutation.mutate(data);
   };
 
   return (
-    // ✅ Background avec gradient du Design System
     <div
       className={`flex items-center justify-center min-h-screen ${gradients.lightSecondary}`}
     >
@@ -77,9 +80,8 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          {/* Header du formulaire */}
+          {/* Header */}
           <div className="text-center mb-8">
-            {/* ✅ Icône avec gradient du Design System */}
             <div
               className={`w-16 h-16 ${gradients.neutral} rounded-full flex items-center justify-center mx-auto mb-4`}
             >
@@ -97,19 +99,21 @@ export default function LoginPage() {
                 />
               </svg>
             </div>
-
-            {/* ✅ Titre avec typography du Design System */}
-            <h1 className={`${typography.h2.base} ${colors.neutral.text} mb-2`}>
+            <h1 className={`${typography.h2.base} ${colors.premium.text} mb-2`}>
               Connexion
             </h1>
-
-            {/* ✅ Sous-titre avec couleur du Design System */}
             <p className={colors.text.secondary}>Accédez à votre compte</p>
           </div>
 
+          {/* Message d'erreur global */}
+          {errorMessage && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm text-center">{errorMessage}</p>
+            </div>
+          )}
+
           {/* Formulaire */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            {/* Email */}
             <Input
               label="Adresse email"
               type="email"
@@ -134,7 +138,6 @@ export default function LoginPage() {
               }
             />
 
-            {/* Mot de passe */}
             <div className="relative">
               <Input
                 label="Mot de passe"
@@ -202,19 +205,15 @@ export default function LoginPage() {
               </button>
             </div>
 
-            {/* Mot de passe oublié */}
             <div className="text-right">
-              {/* ✅ Route du Design System */}
               <Link
                 href={routes.auth.forgotPassword}
-                className={`text-sm ${colors.neutral.text} hover:underline`}
+                className={`text-sm ${colors.premium.text} hover:underline`}
               >
                 Mot de passe oublié ?
               </Link>
             </div>
 
-            {/* Bouton submit */}
-            {/* ✅ Le Button utilise déjà le gradient primary par défaut */}
             <Button
               type="submit"
               fullWidth
@@ -226,23 +225,17 @@ export default function LoginPage() {
           </form>
 
           {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              {/* ✅ Badge avec couleurs du Design System */}
-              <span
-                className={`px-3 py-1 ${colors.primary.bg} ${colors.primary.text} font-bold rounded-full`}
-              >
-                Nouveau sur Tasky ?
-              </span>
-            </div>
+          <div className="my-6 flex flex-col items-center gap-2">
+            <span
+              className={`px-3 py-1 ${colors.primary.bg} ${colors.premium.text} font-bold rounded-full`}
+            >
+              Nouveau sur Tasky ?
+            </span>
+            <div className="border-t border-gray-300 w-full" />
           </div>
 
-          {/* Liens d'inscription */}
+          {/* Liens inscription */}
           <div className="space-y-3">
-            {/* ✅ Routes du Design System */}
             <Link href={routes.auth.register.client}>
               <Button
                 variant="outline"

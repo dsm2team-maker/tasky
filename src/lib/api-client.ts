@@ -1,7 +1,7 @@
 // Configuration du client API avec gestion des tokens JWT
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 // Instance Axios principale
 export const apiClient: AxiosInstance = axios.create({

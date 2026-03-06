@@ -6,6 +6,7 @@ import { routes } from "@/config/routes";
 import CategoriesSection from "@/components/CategoriesSection";
 import { Button } from "@/components/Button";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 export default function HomePage() {
   return (
@@ -138,7 +139,7 @@ export default function HomePage() {
       </section>
 
       {/* Pourquoi nous choisir - Avantages clés */}
-      <section id="pourquoi-nous-choisir" className="py-20 bg-white">
+      <section id="pourquoi-nous-choisir" className="py-10 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className={`${typography.h2.base} ${colors.text.primary} mb-4`}>
@@ -149,8 +150,8 @@ export default function HomePage() {
           </div>
 
           {/* Pour les Clients */}
-          <div className="mb-16">
-            <h3 className="text-2xl font-bold text-center text-gray-900 mb-8 flex items-center justify-center gap-3">
+          <div className="mb-12">
+            <h3 className="text-2xl font-bold text-center text-gray-900 mb-2 flex items-center justify-center gap-3">
               <span className="text-3xl">👤</span> Pour les clients
             </h3>
             <div className="max-w-4xl mx-auto space-y-3 text-center">
@@ -186,6 +187,7 @@ export default function HomePage() {
                     />
                   </svg>
                 </div>
+
                 <h4 className="text-lg font-bold text-gray-900 mb-2">
                   📍 Artisans locaux
                 </h4>
@@ -287,7 +289,7 @@ export default function HomePage() {
 
           {/* Pour les Prestataires */}
           <div>
-            <h3 className="text-2xl font-bold text-center text-gray-900 mb-8 flex items-center justify-center gap-3">
+            <h3 className="text-2xl font-bold text-center text-gray-900 mb-2 flex items-center justify-center gap-3">
               <span className="text-3xl">🛠️</span> Pour les prestataires
             </h3>
             <div className="max-w-4xl mx-auto space-y-3 text-center">
@@ -465,11 +467,11 @@ export default function HomePage() {
       {/* Comment ça marche - Double parcours */}
       <section
         id="comment-ca-marche"
-        className={`py-20 ${gradients.lightPrimary}`}
+        className={`py-10 ${gradients.lightPrimary}`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
             <h2 className={`${typography.h2.base} ${colors.text.primary} mb-4`}>
               Comment ça marche ?
             </h2>
@@ -757,8 +759,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      <CategoriesSection />
+      <div id="categories">
+        <CategoriesSection />
+      </div>
 
       {/* Double CTA - Client/Artisan */}
       <section className={`py-10 ${gradients.lightPrimary}`}>
@@ -864,10 +867,10 @@ export default function HomePage() {
       </section>
 
       {/* Témoignages */}
-      <section id="temoignages" className="py-20 bg-white">
+      <section id="temoignages" className="py-10 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-12">
+            <h2 className={`${typography.h2.base} ${colors.text.primary} mb-4`}>
               Ils nous font confiance
             </h2>
             <p className="text-xl text-gray-600">
@@ -958,10 +961,10 @@ export default function HomePage() {
       {/* CTA Final */}
       <section className={`py-10 ${gradients.lightPrimary}`}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+          <h2 className={`${typography.h2.base} ${colors.text.primary} mb-4`}>
             Prêt à utiliser Tasky ?
           </h2>
-          <p className="text-xl text-gray-600">
+          <p className="text-xl text-gray-600 mb-4">
             Rejoignez des milliers d'utilisateurs qui trouvent ou proposent des
             services en toute sécurité
           </p>
@@ -981,113 +984,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer Professionnel */}
-      <footer className="bg-gray-900 text-gray-300 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div className="text-center">
-              <div className="w-34 h-16 rounded-lg overflow-hidden mx-auto">
-                <img
-                  src="/images/logo-tasky2.png"
-                  alt="Tasky Logo"
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <p className="text-sm text-gray-400">
-                La plateforme qui connecte clients et prestataires en toute
-                sécurité.
-              </p>
-            </div>
-
-            <div>
-              <h4 className="text-white font-semibold mb-4">Clients</h4>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Trouver un artisan
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Comment ça marche
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Catégories
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Avis clients
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-white font-semibold mb-4">Artisans</h4>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <Link
-                    href={routes.auth.register.artisan.step1}
-                    className="hover:text-white transition"
-                  >
-                    Devenir partenaire
-                  </Link>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Tarifs
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Espace pro
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Success stories
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-white font-semibold mb-4">À propos</h4>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <Link
-                    href={routes.public.legal.cgu}
-                    className="hover:text-white transition"
-                  >
-                    CGU
-                  </Link>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Confidentialité
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Contact
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition">
-                    Aide
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 pt-8 text-center text-sm text-gray-400">
-            <p>© 2026 Artisan Marketplace. Tous droits réservés.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

@@ -67,6 +67,26 @@ export default function Header() {
               Avantages
             </a>
             <a
+              href="#categories"
+              onClick={(e) => {
+                e.preventDefault();
+                const element = document.getElementById("categories");
+                if (element) {
+                  const offset = 80; // Hauteur du header
+                  const elementPosition = element.getBoundingClientRect().top;
+                  const offsetPosition =
+                    elementPosition + window.pageYOffset - offset;
+                  window.scrollTo({
+                    top: offsetPosition,
+                    behavior: "smooth",
+                  });
+                }
+              }}
+              className={`${colors.text.secondary} hover:${colors.premium.text} transition cursor-pointer`}
+            >
+              Prestations
+            </a>
+            <a
               href="#temoignages"
               onClick={(e) => {
                 e.preventDefault();

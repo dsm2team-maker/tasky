@@ -21,6 +21,7 @@ export const routes = {
       cgu: "/legal/cgu",
       privacy: "/legal/privacy",
       cookies: "/legal/cookies",
+      mentions: "/legal/mentions",
     },
   },
 
