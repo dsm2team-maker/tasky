@@ -20,6 +20,11 @@ export const passwordSchema = z
 // US1 - Inscription Client
 export const registerClientSchema = z
   .object({
+    firstName: z
+      .string()
+      .min(2, "Le prénom doit contenir au moins 2 caractères"),
+    lastName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+    city: z.string().min(2, "La ville est requise"),
     email: emailSchema,
     password: passwordSchema,
     confirmPassword: z.string().min(1, "Confirmez votre mot de passe"),
@@ -37,6 +42,12 @@ export type RegisterClientInput = z.infer<typeof registerClientSchema>;
 // US2 - Étape 1 : Inscription Artisan (compte de base)
 export const registerArtisanStep1Schema = z
   .object({
+    firstName: z
+      .string()
+      .min(2, "Le prénom doit contenir au moins 2 caractères"),
+    lastName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+    city: z.string().min(2, "La ville est requise"),
+    phone: z.string().min(10, "Téléphone invalide"),
     email: emailSchema,
     password: passwordSchema,
     confirmPassword: z.string().min(1, "Confirmez votre mot de passe"),

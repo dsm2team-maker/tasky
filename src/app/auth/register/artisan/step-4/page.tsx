@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -18,7 +18,7 @@ import { routes } from "@/config/routes";
 
 export default function RegisterArtisanStep4() {
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   const {
     register,
@@ -29,20 +29,45 @@ export default function RegisterArtisanStep4() {
     mode: "onBlur",
   });
 
-  React.useEffect(() => {
-    if (!isAuthenticated) {
+  // Vérifier que les steps précédents ont été complétés
+  useEffect(() => {
+    const step1Data = sessionStorage.getItem("artisan_step1");
+    if (!step1Data) {
       router.push(routes.auth.register.artisan.step1);
     }
-  }, [isAuthenticated, router]);
+  }, [router]);
 
   const finalizeMutation = useMutation({
     mutationFn: async (data: ArtisanTermsInput) => {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      return { success: true };
+      // ✅ Récupérer toutes les données des steps précédents
+      const step1 = JSON.parse(sessionStorage.getItem("artisan_step1") || "{}");
+      const step2 = JSON.parse(sessionStorage.getItem("artisan_step2") || "{}");
+
+      // ✅ Appel API avec toutes les données
+      const response = await apiClient.post("/api/auth/register/artisan", {
+        email: step1.email,
+        password: step1.password,
+        firstName: step1.firstName,
+        lastName: step1.lastName,
+        city: step1.city,
+        phone: step1.phone,
+        competences: step2.competences || [],
+        cguAccepted: true,
+      });
+
+      return response.data;
     },
-    onSuccess: () => {
-      alert("🎉 Félicitations ! Votre compte prestataire est créé !");
-      router.push(routes.public.home);
+    onSuccess: (data) => {
+      // ✅ Connecter l'utilisateur
+      setAuth(data.data.user, data.data.tokens.accessToken);
+      localStorage.setItem("refresh_token", data.data.tokens.refreshToken);
+
+      // ✅ Nettoyer le sessionStorage
+      sessionStorage.removeItem("artisan_step1");
+      sessionStorage.removeItem("artisan_step2");
+      sessionStorage.removeItem("artisan_step3");
+
+      router.push(routes.artisan.dashboard);
     },
     onError: (error: any) => {
       const apiError = handleApiError(error);
@@ -53,10 +78,6 @@ export default function RegisterArtisanStep4() {
   const onSubmit = (data: ArtisanTermsInput) => {
     finalizeMutation.mutate(data);
   };
-
-  if (!isAuthenticated) {
-    return null;
-  }
 
   return (
     <AuthLayout variant="artisan">
@@ -82,7 +103,6 @@ export default function RegisterArtisanStep4() {
           <h3 className="text-lg font-bold text-gray-900 mb-4">
             Conditions Générales d'Utilisation - Prestataires
           </h3>
-
           <div className="space-y-4 text-sm text-gray-700">
             <section>
               <h4 className="font-semibold text-gray-900 mb-2">
@@ -94,7 +114,6 @@ export default function RegisterArtisanStep4() {
                 vos clients.
               </p>
             </section>
-
             <section>
               <h4 className="font-semibold text-gray-900 mb-2">
                 2. Vérification d'identité
@@ -104,7 +123,6 @@ export default function RegisterArtisanStep4() {
                 entraînera la fermeture immédiate de votre compte.
               </p>
             </section>
-
             <section>
               <h4 className="font-semibold text-gray-900 mb-2">
                 3. Paiement et commission
@@ -114,7 +132,6 @@ export default function RegisterArtisanStep4() {
                 réalisée. Le paiement vous est versé après validation du client.
               </p>
             </section>
-
             <section>
               <h4 className="font-semibold text-gray-900 mb-2">
                 4. Lieux neutres
@@ -125,7 +142,6 @@ export default function RegisterArtisanStep4() {
                 domicile n'est autorisé.
               </p>
             </section>
-
             <section>
               <h4 className="font-semibold text-gray-900 mb-2">
                 5. Responsabilité
@@ -135,7 +151,6 @@ export default function RegisterArtisanStep4() {
                 assurance responsabilité civile professionnelle est recommandée.
               </p>
             </section>
-
             <section>
               <h4 className="font-semibold text-gray-900 mb-2">
                 6. Annulation et litiges
@@ -145,7 +160,6 @@ export default function RegisterArtisanStep4() {
                 annulations abusives peuvent entraîner des pénalités.
               </p>
             </section>
-
             <section>
               <h4 className="font-semibold text-gray-900 mb-2">
                 7. Avis clients
@@ -158,7 +172,7 @@ export default function RegisterArtisanStep4() {
           </div>
         </div>
 
-        {/* Checkbox acceptation */}
+        {/* Checkbox */}
         <Checkbox
           label={
             <span className="text-gray-900">
@@ -172,7 +186,7 @@ export default function RegisterArtisanStep4() {
           {...register("acceptArtisanTerms")}
         />
 
-        {/* Encadré de bienvenue */}
+        {/* Encadré bienvenue */}
         <div
           className={`${colors.secondary.bg} border-2 ${colors.secondary.borderLight} rounded-lg p-6`}
         >

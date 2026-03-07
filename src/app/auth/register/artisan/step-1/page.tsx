@@ -5,13 +5,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useMutation } from "@tanstack/react-query";
 import {
   registerArtisanStep1Schema,
   RegisterArtisanStep1Input,
 } from "@/lib/schemas";
-import { apiClient, handleApiError } from "@/lib/api-client";
-import { useAuthStore } from "@/stores/auth-store";
 import { useEmailValidation } from "@/hooks/useEmailValidation";
 import { Input } from "@/components/Input";
 import { Checkbox } from "@/components/Checkbox";
@@ -25,8 +22,8 @@ import { routes } from "@/config/routes";
 
 export default function RegisterArtisanStep1() {
   const router = useRouter();
-  const { setAuth } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -41,45 +38,33 @@ export default function RegisterArtisanStep1() {
   const emailValue = watch("email");
   const { isChecking, isAvailable } = useEmailValidation(emailValue);
 
-  const registerMutation = useMutation({
-    mutationFn: async (data: RegisterArtisanStep1Input) => {
-      // MODE DÉMO - Simulation sans backend
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      return {
-        user: {
-          id: "demo-artisan-" + Date.now(),
-          email: data.email,
-          role: "ARTISAN" as const,
-          isVerified: false,
-        },
-        token: "demo-token-" + Math.random().toString(36).substring(7),
-      };
-    },
-    onSuccess: (data) => {
-      setAuth(data.user, data.token);
-      router.push(routes.auth.register.artisan.step2);
-    },
-    onError: (error: any) => {
-      const apiError = handleApiError(error);
-      alert(apiError.message);
-    },
-  });
-
   const onSubmit = (data: RegisterArtisanStep1Input) => {
     if (isAvailable === false) {
-      alert("Cet email est déjà utilisé");
+      setErrorMessage("Cet email est déjà utilisé");
       return;
     }
-    registerMutation.mutate(data);
+    setErrorMessage(null);
+
+    // ✅ Sauvegarder les données du step 1 dans sessionStorage
+    sessionStorage.setItem(
+      "artisan_step1",
+      JSON.stringify({
+        email: data.email,
+        password: data.password,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        city: data.city,
+        phone: data.phone,
+      }),
+    );
+
+    router.push(routes.auth.register.artisan.step2);
   };
 
   return (
     <AuthLayout variant="artisan">
-      {/* Indicateur de progression */}
       <ProgressSteps currentStep={1} totalSteps={4} completedSteps={[]} />
 
-      {/* Header avec icône */}
       <div className="text-center mb-8">
         <div
           className={`w-16 h-16 ${colors.secondary.gradient} rounded-full flex items-center justify-center mx-auto mb-4`}
@@ -106,8 +91,115 @@ export default function RegisterArtisanStep1() {
         </p>
       </div>
 
-      {/* Formulaire */}
+      {errorMessage && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600 text-sm text-center">{errorMessage}</p>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {/* Prénom + Nom */}
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            label="Prénom"
+            type="text"
+            placeholder="Jean"
+            error={errors.firstName?.message}
+            {...register("firstName")}
+            icon={
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+            }
+          />
+          <Input
+            label="Nom"
+            type="text"
+            placeholder="Dupont"
+            error={errors.lastName?.message}
+            {...register("lastName")}
+            icon={
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+            }
+          />
+        </div>
+
+        {/* Ville */}
+        <Input
+          label="Ville"
+          type="text"
+          placeholder="Paris"
+          error={errors.city?.message}
+          {...register("city")}
+          icon={
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+          }
+        />
+
+        {/* Téléphone */}
+        <Input
+          label="Téléphone"
+          type="tel"
+          placeholder="06 12 34 56 78"
+          error={errors.phone?.message}
+          {...register("phone")}
+          icon={
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+              />
+            </svg>
+          }
+        />
+
         {/* Email */}
         <div className="relative">
           <Input
@@ -214,7 +306,6 @@ export default function RegisterArtisanStep1() {
               </svg>
             )}
           </button>
-          {/* ✅ AJOUT : Indicateur de force */}
           <PasswordStrengthIndicator password={watch("password") || ""} />
         </div>
 
@@ -259,21 +350,17 @@ export default function RegisterArtisanStep1() {
           {...register("acceptTerms")}
         />
 
-        {/* Bouton submit - EMERALD */}
-
         <Button
           variant="secondary"
           type="submit"
           fullWidth
           size="lg"
-          isLoading={registerMutation.isPending}
           className={`${colors.secondary.gradient} ${colors.secondary.gradientHover}`}
         >
           Continuer →
         </Button>
       </form>
 
-      {/* Lien retour */}
       <div className="mt-6 text-center">
         <p className={`text-sm ${colors.text.secondary}`}>
           Vous êtes client ?{" "}

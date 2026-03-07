@@ -21,6 +21,7 @@ import { routes } from "@/config/routes";
 export default function RegisterClient() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -40,6 +41,9 @@ export default function RegisterClient() {
       const response = await apiClient.post("/api/auth/register/client", {
         email: data.email,
         password: data.password,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        city: data.city,
       });
       return response.data;
     },
@@ -48,15 +52,16 @@ export default function RegisterClient() {
     },
     onError: (error: any) => {
       const apiError = handleApiError(error);
-      alert(apiError.message);
+      setErrorMessage(apiError.message);
     },
   });
 
   const onSubmit = (data: RegisterClientInput) => {
     if (isAvailable === false) {
-      alert("Cet email est déjà utilisé");
+      setErrorMessage("Cet email est déjà utilisé");
       return;
     }
+    setErrorMessage(null);
     registerMutation.mutate(data);
   };
 
@@ -89,8 +94,93 @@ export default function RegisterClient() {
         </p>
       </div>
 
+      {/* Message d'erreur global */}
+      {errorMessage && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600 text-sm text-center">{errorMessage}</p>
+        </div>
+      )}
+
       {/* Formulaire */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {/* Prénom + Nom */}
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            label="Prénom"
+            type="text"
+            placeholder="Jean"
+            error={errors.firstName?.message}
+            {...register("firstName")}
+            icon={
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+            }
+          />
+          <Input
+            label="Nom"
+            type="text"
+            placeholder="Dupont"
+            error={errors.lastName?.message}
+            {...register("lastName")}
+            icon={
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+            }
+          />
+        </div>
+
+        {/* Ville */}
+        <Input
+          label="Ville"
+          type="text"
+          placeholder="Paris"
+          error={errors.city?.message}
+          {...register("city")}
+          icon={
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+          }
+        />
+
         {/* Email */}
         <div className="relative">
           <Input
@@ -197,8 +287,6 @@ export default function RegisterClient() {
               </svg>
             )}
           </button>
-
-          {/* ✅ AJOUT : Indicateur de force */}
           <PasswordStrengthIndicator password={watch("password") || ""} />
         </div>
 
@@ -233,7 +321,7 @@ export default function RegisterClient() {
               J'accepte les{" "}
               <Link
                 href={routes.public.legal.cgu}
-                className={`${colors.premium.text} hover:underline  font-bold`}
+                className={`${colors.premium.text} hover:underline font-bold`}
               >
                 conditions générales d'utilisation
               </Link>
@@ -243,7 +331,7 @@ export default function RegisterClient() {
           {...register("acceptTerms")}
         />
 
-        {/* Bouton submit - PINK */}
+        {/* Bouton submit */}
         <Button
           type="submit"
           fullWidth
@@ -280,7 +368,6 @@ export default function RegisterClient() {
             Se connecter
           </Button>
         </Link>
-
         <p className="text-center text-sm text-gray-600">
           Vous êtes prestataire ?{" "}
           <Link

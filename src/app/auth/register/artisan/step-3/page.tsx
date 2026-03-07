@@ -1,71 +1,42 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
 import Webcam from "react-webcam";
-import {
-  identityVerificationSchema,
-  IdentityVerificationInput,
-} from "@/lib/schemas";
-import { apiClientUpload, handleApiError } from "@/lib/api-client";
-import { useAuthStore } from "@/stores/auth-store";
 import { Button } from "@/components/Button";
 import { ProgressSteps } from "@/components/ProgressSteps";
 import AuthLayout from "@/components/AuthLayout";
 import { colors } from "@/config/colors";
 import { typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
+
 export default function RegisterArtisanStep3() {
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
   const webcamRef = useRef<Webcam>(null);
   const [showWebcam, setShowWebcam] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [documentType, setDocumentType] = useState<"CNI" | "PASSPORT">("CNI");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const {
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm<IdentityVerificationInput>({
-    resolver: zodResolver(identityVerificationSchema),
-    mode: "onBlur",
-  });
-
-  React.useEffect(() => {
-    if (!isAuthenticated) {
+  // Vérifier que step2 a été complété
+  useEffect(() => {
+    const step1Data = sessionStorage.getItem("artisan_step1");
+    if (!step1Data) {
       router.push(routes.auth.register.artisan.step1);
     }
-  }, [isAuthenticated, router]);
+  }, [router]);
 
   const capture = () => {
     const imageSrc = webcamRef.current?.getScreenshot();
     if (imageSrc) {
       setCapturedImage(imageSrc);
       setShowWebcam(false);
-
-      // Convertir base64 en File
-      fetch(imageSrc)
-        .then((res) => res.blob())
-        .then((blob) => {
-          const file = new File([blob], "identity-photo.jpg", {
-            type: "image/jpeg",
-          });
-          setValue("identityDocument", file);
-        });
     }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setUploadedFile(file);
-      setValue("identityDocument", file);
-
       const reader = new FileReader();
       reader.onloadend = () => {
         setCapturedImage(reader.result as string);
@@ -74,28 +45,26 @@ export default function RegisterArtisanStep3() {
     }
   };
 
-  const verifyMutation = useMutation({
-    mutationFn: async (data: IdentityVerificationInput) => {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      return { success: true };
-    },
-    onSuccess: () => {
-      router.push(routes.auth.register.artisan.step4);
-    },
-    onError: (error: any) => {
-      const apiError = handleApiError(error);
-      alert(apiError.message);
-    },
-  });
+  const handleSubmit = () => {
+    if (!capturedImage) {
+      setErrorMessage("Veuillez fournir une photo de votre document");
+      return;
+    }
+    setErrorMessage(null);
 
-  const onSubmit = (data: IdentityVerificationInput) => {
-    setValue("documentType", documentType);
-    verifyMutation.mutate({ ...data, documentType });
+    // ✅ Sauvegarder les infos identité dans sessionStorage
+    sessionStorage.setItem(
+      "artisan_step3",
+      JSON.stringify({
+        documentType,
+        // On ne stocke pas l'image en sessionStorage (trop lourd)
+        // Elle sera uploadée sur Cloudinary/S3 plus tard
+        hasDocument: true,
+      }),
+    );
+
+    router.push(routes.auth.register.artisan.step4);
   };
-
-  if (!isAuthenticated) {
-    return null;
-  }
 
   return (
     <AuthLayout variant="artisan">
@@ -111,7 +80,13 @@ export default function RegisterArtisanStep3() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {errorMessage && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600 text-sm text-center">{errorMessage}</p>
+        </div>
+      )}
+
+      <div className="space-y-6">
         {/* Type de document */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -121,11 +96,7 @@ export default function RegisterArtisanStep3() {
             <button
               type="button"
               onClick={() => setDocumentType("CNI")}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                documentType === "CNI"
-                  ? `${colors.secondary.border} ${colors.secondary.bg}`
-                  : "border-gray-200 hover:border-gray-300"
-              }`}
+              className={`p-4 rounded-lg border-2 transition-all ${documentType === "CNI" ? `${colors.secondary.border} ${colors.secondary.bg}` : "border-gray-200 hover:border-gray-300"}`}
             >
               <div className="text-3xl mb-2">🪪</div>
               <div className="font-semibold">Carte d'identité</div>
@@ -133,11 +104,7 @@ export default function RegisterArtisanStep3() {
             <button
               type="button"
               onClick={() => setDocumentType("PASSPORT")}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                documentType === "PASSPORT"
-                  ? `${colors.secondary.border} ${colors.secondary.bg}`
-                  : "border-gray-200 hover:border-gray-300"
-              }`}
+              className={`p-4 rounded-lg border-2 transition-all ${documentType === "PASSPORT" ? `${colors.secondary.border} ${colors.secondary.bg}` : "border-gray-200 hover:border-gray-300"}`}
             >
               <div className="text-3xl mb-2">📘</div>
               <div className="font-semibold">Passeport</div>
@@ -148,7 +115,7 @@ export default function RegisterArtisanStep3() {
         {/* Webcam ou Upload */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
-            Photo du document (RECTO uniquement) *
+            Photo du document (RECTO) *
           </label>
 
           {!capturedImage && !showWebcam && (
@@ -162,15 +129,12 @@ export default function RegisterArtisanStep3() {
               >
                 📷 Prendre une photo
               </Button>
-
-              <div className="relative">
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={handleFileUpload}
-                  className={`block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold ${colors.secondary.bg} ${colors.secondary.text} hover:file:bg-emerald-100`}
-                />
-              </div>
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                onChange={handleFileUpload}
+                className={`block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold ${colors.secondary.bg} ${colors.secondary.text}`}
+              />
             </div>
           )}
 
@@ -213,21 +177,12 @@ export default function RegisterArtisanStep3() {
                 type="button"
                 fullWidth
                 variant="outline"
-                onClick={() => {
-                  setCapturedImage(null);
-                  setUploadedFile(null);
-                }}
+                onClick={() => setCapturedImage(null)}
                 className="border-gray-300 text-gray-700"
               >
                 🔄 Reprendre la photo
               </Button>
             </div>
-          )}
-
-          {errors.identityDocument && (
-            <p className={`mt-2 text-sm ${colors.error.text}`}>
-              {errors.identityDocument.message}
-            </p>
           )}
         </div>
 
@@ -266,16 +221,16 @@ export default function RegisterArtisanStep3() {
             ← Retour
           </Button>
           <Button
-            type="submit"
+            type="button"
             fullWidth
             size="lg"
-            isLoading={verifyMutation.isPending}
+            onClick={handleSubmit}
             className={`${colors.secondary.gradient} ${colors.secondary.gradientHover}`}
           >
             Continuer →
           </Button>
         </div>
-      </form>
+      </div>
     </AuthLayout>
   );
 }
