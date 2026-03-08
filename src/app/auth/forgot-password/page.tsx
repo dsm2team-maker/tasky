@@ -206,10 +206,10 @@ export default function ForgotPassword() {
 
         <Button
           type="submit"
+          variant="premium"
           fullWidth
           size="lg"
           isLoading={forgotPasswordMutation.isPending}
-          className={`${colors.secondary.gradient} ${colors.secondary.gradientHover}`}
         >
           Envoyer le lien de réinitialisation
         </Button>

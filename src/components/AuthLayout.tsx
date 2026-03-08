@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import React from "react";
+import Logo from "@/components/Logo";
 
 interface AuthLayoutProps {
   variant?: "client" | "artisan" | "neutral";
@@ -20,11 +21,7 @@ export default function AuthLayout({
           {/* Logo Tasky en haut à gauche DANS la carte */}
           <div className="mb-8">
             <Link href="/" className="inline-block hover:opacity-80 transition">
-              <img
-                src="/images/logo-tasky2.png"
-                alt="Tasky Logo"
-                className="h-12 w-auto"
-              />
+              <Logo />
             </Link>
           </div>
 

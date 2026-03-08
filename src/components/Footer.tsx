@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { routes } from "@/config/routes";
+import Logo from "@/components/Logo";
 
 export default function Footer() {
   return (
@@ -11,11 +12,7 @@ export default function Footer() {
           {/* Logo et description */}
           <div>
             <div className="w-34 h-16 rounded-lg overflow-hidden mb-4">
-              <img
-                src="/images/logo-tasky2.png"
-                alt="Tasky Logo"
-                className="w-full h-full object-contain"
-              />
+              <Logo />
             </div>
             <p className="text-sm text-gray-400">
               La plateforme qui connecte clients et prestataires en toute

@@ -1,51 +1,57 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/stores/auth-store";
 import { Button } from "@/components/Button";
 import { colors } from "@/config/colors";
-import { typography } from "@/config/design-tokens";
+import { spacing, transitions } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
+import Logo from "@/components/Logo";
 
 export default function ClientDashboard() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  // Protection : rediriger si non authentifié
+  // ✅ Fix refresh
   useEffect(() => {
-    if (!isAuthenticated) {
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (isHydrated && !isAuthenticated) {
       router.push(routes.auth.login);
     }
-  }, [isAuthenticated, router]);
+  }, [isHydrated, isAuthenticated, router]);
 
   const handleLogout = () => {
     logout();
-    router.push("/");
+    router.push(routes.public.home);
   };
 
-  if (!isAuthenticated) {
-    return null;
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
+      </div>
+    );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href={routes.public.home} className="flex items-center gap-2">
-              <img src="/logo-tasky.png" alt="Tasky" className="h-10 w-auto" />
-              <span
-                className={`text-xl font-bold bg-gradient-to-r from-pink-500 to-emerald-500 bg-clip-text text-transparent`}
-              >
-                Tasky
-              </span>
-            </Link>
+  if (!isAuthenticated) return null;
 
-            {/* Navigation */}
+  return (
+    <div className={`min-h-screen ${colors.background.gray}`}>
+      {/* Header */}
+      <header
+        className={`${colors.background.white} shadow-sm border-b ${colors.border.light}`}
+      >
+        <div className={spacing.container}>
+          <div className="flex items-center justify-between h-16">
+            <Link href={routes.public.home}>
+              <Logo />
+            </Link>
             <nav className="hidden md:flex items-center gap-6">
               <Link
                 href={routes.client.dashboard}
@@ -55,26 +61,24 @@ export default function ClientDashboard() {
               </Link>
               <Link
                 href={routes.client.search.base}
-                className={`text-gray-700 hover:${colors.primary.text}`}
+                className={`${colors.text.secondary} hover:text-purple-600 transition-colors`}
               >
                 Trouver un prestataire
               </Link>
               <Link
                 href={routes.client.requests.list}
-                className={`text-gray-700 hover:${colors.primary.text}`}
+                className={`${colors.text.secondary} hover:text-purple-600 transition-colors`}
               >
                 Mes demandes
               </Link>
               <Link
                 href={routes.client.messages.list}
-                className={`text-gray-700 hover:${colors.primary.text}`}
+                className={`${colors.text.secondary} hover:text-purple-600 transition-colors`}
               >
                 Messages
               </Link>
             </nav>
-
-            {/* User Menu */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Link href={routes.client.profile.view}>
                 <Button
                   variant="outline"
@@ -86,7 +90,7 @@ export default function ClientDashboard() {
               <Button
                 onClick={handleLogout}
                 variant="ghost"
-                className="text-gray-700"
+                className={colors.text.secondary}
               >
                 Déconnexion
               </Button>
@@ -95,19 +99,20 @@ export default function ClientDashboard() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main */}
+      <main className={`${spacing.container} py-8`}>
         {/* Welcome Banner */}
         <div
           className={`${colors.primary.gradient} rounded-2xl p-8 mb-8 text-white`}
         >
           <h1 className="text-3xl font-bold mb-2">
-            Bienvenue, {user?.email?.split("@")[0] || "Client"} ! 👋
+            Bienvenue,{" "}
+            {user?.firstName || user?.email?.split("@")[0] || "Client"} ! 👋
           </h1>
-          <p className={`${colors.primary.textLight} mb-6`}>
+          <p className="text-pink-100 mb-6">
             Trouvez des prestataires locaux pour vos projets
           </p>
-          <Link href="/client/requests/new">
+          <Link href={routes.client.requests.new}>
             <Button
               size="lg"
               className={`bg-white ${colors.primary.text} ${colors.primary.bgHover}`}
@@ -117,14 +122,17 @@ export default function ClientDashboard() {
           </Link>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          {/* Demandes actives */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+          <div
+            className={`${colors.background.white} rounded-xl p-6 shadow-sm border ${colors.border.light}`}
+          >
+            <div className="mb-4">
+              <div
+                className={`w-12 h-12 ${colors.neutral.bg} rounded-lg flex items-center justify-center`}
+              >
                 <svg
-                  className="w-6 h-6 text-blue-600"
+                  className={`w-6 h-6 ${colors.neutral.text}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -138,16 +146,23 @@ export default function ClientDashboard() {
                 </svg>
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">0</h3>
-            <p className="text-sm text-gray-600">Demandes actives</p>
+            <h3 className={`text-2xl font-bold ${colors.text.primary} mb-1`}>
+              0
+            </h3>
+            <p className={`text-sm ${colors.text.secondary}`}>
+              Demandes actives
+            </p>
           </div>
 
-          {/* En cours */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+          <div
+            className={`${colors.background.white} rounded-xl p-6 shadow-sm border ${colors.border.light}`}
+          >
+            <div className="mb-4">
+              <div
+                className={`w-12 h-12 ${colors.warning.bg} rounded-lg flex items-center justify-center`}
+              >
                 <svg
-                  className="w-6 h-6 text-amber-600"
+                  className={`w-6 h-6 ${colors.warning.text}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -161,14 +176,19 @@ export default function ClientDashboard() {
                 </svg>
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">0</h3>
-            <p className="text-sm text-gray-600">En cours</p>
+            <h3 className={`text-2xl font-bold ${colors.text.primary} mb-1`}>
+              0
+            </h3>
+            <p className={`text-sm ${colors.text.secondary}`}>En cours</p>
           </div>
 
-          {/* Terminées */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+          <div
+            className={`${colors.background.white} rounded-xl p-6 shadow-sm border ${colors.border.light}`}
+          >
+            <div className="mb-4">
+              <div
+                className={`w-12 h-12 ${colors.success.bg} rounded-lg flex items-center justify-center`}
+              >
                 <svg
                   className={`w-6 h-6 ${colors.success.text}`}
                   fill="none"
@@ -184,13 +204,16 @@ export default function ClientDashboard() {
                 </svg>
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">0</h3>
-            <p className="text-sm text-gray-600">Terminées</p>
+            <h3 className={`text-2xl font-bold ${colors.text.primary} mb-1`}>
+              0
+            </h3>
+            <p className={`text-sm ${colors.text.secondary}`}>Terminées</p>
           </div>
 
-          {/* Messages */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
+          <div
+            className={`${colors.background.white} rounded-xl p-6 shadow-sm border ${colors.border.light}`}
+          >
+            <div className="mb-4">
               <div
                 className={`w-12 h-12 ${colors.primary.bg} rounded-lg flex items-center justify-center`}
               >
@@ -209,19 +232,24 @@ export default function ClientDashboard() {
                 </svg>
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">0</h3>
-            <p className="text-sm text-gray-600">Nouveaux messages</p>
+            <h3 className={`text-2xl font-bold ${colors.text.primary} mb-1`}>
+              0
+            </h3>
+            <p className={`text-sm ${colors.text.secondary}`}>
+              Nouveaux messages
+            </p>
           </div>
         </div>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Trouver un prestataire */}
-          <Link href="/client/search">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition cursor-pointer group">
+          <Link href={routes.client.search.base}>
+            <div
+              className={`${colors.background.white} rounded-xl p-6 shadow-sm border ${colors.border.light} hover:shadow-md ${transitions.base} cursor-pointer group`}
+            >
               <div className="flex items-start gap-4">
                 <div
-                  className={`w-14 h-14 ${colors.primary.gradient} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition`}
+                  className={`w-14 h-14 ${colors.primary.gradient} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 ${transitions.base}`}
                 >
                   <svg
                     className="w-7 h-7 text-white"
@@ -239,11 +267,11 @@ export default function ClientDashboard() {
                 </div>
                 <div className="flex-1">
                   <h3
-                    className={`text-lg font-bold text-gray-900 mb-2 group-hover:${colors.primary.text} transition`}
+                    className={`text-lg font-bold ${colors.text.primary} mb-2`}
                   >
                     Trouver un prestataire
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className={`text-sm ${colors.text.secondary}`}>
                     Recherchez des artisans qualifiés près de chez vous
                   </p>
                 </div>
@@ -251,12 +279,13 @@ export default function ClientDashboard() {
             </div>
           </Link>
 
-          {/* Créer une demande */}
-          <Link href="/client/requests/new">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition cursor-pointer group">
+          <Link href={routes.client.requests.new}>
+            <div
+              className={`${colors.background.white} rounded-xl p-6 shadow-sm border ${colors.border.light} hover:shadow-md ${transitions.base} cursor-pointer group`}
+            >
               <div className="flex items-start gap-4">
                 <div
-                  className={`w-14 h-14 ${colors.secondary.gradient} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition`}
+                  className={`w-14 h-14 ${colors.secondary.gradient} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 ${transitions.base}`}
                 >
                   <svg
                     className="w-7 h-7 text-white"
@@ -274,11 +303,11 @@ export default function ClientDashboard() {
                 </div>
                 <div className="flex-1">
                   <h3
-                    className={`text-lg font-bold text-gray-900 mb-2 group-hover:${colors.secondary.text} transition`}
+                    className={`text-lg font-bold ${colors.text.primary} mb-2`}
                   >
                     Créer une demande
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className={`text-sm ${colors.text.secondary}`}>
                     Décrivez votre projet et recevez des propositions
                   </p>
                 </div>
@@ -288,10 +317,14 @@ export default function ClientDashboard() {
         </div>
 
         {/* Empty State */}
-        <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-200">
-          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div
+          className={`${colors.background.white} rounded-xl p-12 text-center shadow-sm border ${colors.border.light}`}
+        >
+          <div
+            className={`w-20 h-20 ${colors.background.light} rounded-full flex items-center justify-center mx-auto mb-4`}
+          >
             <svg
-              className="w-10 h-10 text-gray-400"
+              className={`w-10 h-10 ${colors.text.muted}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -304,22 +337,23 @@ export default function ClientDashboard() {
               />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">
+          <h3 className={`text-xl font-bold ${colors.text.primary} mb-2`}>
             Aucune demande pour le moment
           </h3>
-          <p className="text-gray-600 mb-6">
+          <p className={`${colors.text.secondary} mb-6`}>
             Commencez par créer votre première demande ou parcourez les
             prestataires disponibles
           </p>
           <div className="flex items-center justify-center gap-4">
-            <Link href="/client/requests/new">
+            <Link href={routes.client.requests.new}>
               <Button
-                className={`${colors.primary.gradient} ${colors.primary.gradientHover}`}
+                size="lg"
+                className={`${colors.primary.gradient} ${colors.primary.gradientHover} text-white`}
               >
                 Créer une demande
               </Button>
             </Link>
-            <Link href="/client/search">
+            <Link href={routes.client.search.base}>
               <Button
                 variant="outline"
                 className={`${colors.primary.border} ${colors.primary.text} ${colors.primary.bgHover}`}

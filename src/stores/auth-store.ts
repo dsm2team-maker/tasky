@@ -5,13 +5,14 @@ import { persist } from "zustand/middleware";
 interface User {
   id: string;
   email: string;
-  role: "CLIENT" | "ARTISAN";
-  isVerified: boolean;
-  profile?: {
-    firstName?: string;
-    lastName?: string;
-    profilePicture?: string;
-  };
+  role: "CLIENT" | "ARTISAN" | "ADMIN";
+  firstName: string;
+  lastName: string;
+  city?: string | null;
+  phone?: string | null;
+  avatar?: string | null;
+  emailVerified: boolean;
+  createdAt?: string;
 }
 
 interface AuthState {
@@ -47,17 +48,19 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         localStorage.removeItem("auth_token");
         localStorage.removeItem("user_data");
+        localStorage.removeItem("refresh_token");
         set({ user: null, token: null, isAuthenticated: false });
       },
 
       clearAuth: () => {
         localStorage.removeItem("auth_token");
         localStorage.removeItem("user_data");
+        localStorage.removeItem("refresh_token");
         set({ user: null, token: null, isAuthenticated: false });
       },
     }),
     {
-      name: "artisan-auth-storage",
+      name: "tasky-auth-storage",
       partialize: (state) => ({
         user: state.user,
         token: state.token,

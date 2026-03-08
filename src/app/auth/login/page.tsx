@@ -71,7 +71,7 @@ export default function LoginPage() {
           <div className="mb-8">
             <Link href={routes.public.home} className="flex items-center gap-2">
               <Image
-                src="/images/logo-tasky2.png"
+                src="/images/logo-tasky.png"
                 alt="Tasky Logo"
                 width={40}
                 height={40}
@@ -137,7 +137,6 @@ export default function LoginPage() {
                 </svg>
               }
             />
-
             <div className="relative">
               <Input
                 label="Mot de passe"
@@ -204,7 +203,6 @@ export default function LoginPage() {
                 )}
               </button>
             </div>
-
             <div className="text-right">
               <Link
                 href={routes.auth.forgotPassword}
@@ -215,6 +213,7 @@ export default function LoginPage() {
             </div>
 
             <Button
+              variant="premium"
               type="submit"
               fullWidth
               size="lg"

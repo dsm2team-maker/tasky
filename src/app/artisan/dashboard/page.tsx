@@ -1,80 +1,91 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuthStore } from "@/stores/auth-store";
 import { Button } from "@/components/Button";
 import { colors } from "@/config/colors";
+import { gradients, spacing, transitions } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
-import { typography, gradients } from "@/config/design-tokens";
+import Logo from "@/components/Logo";
 
 export default function ArtisanDashboard() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  // Protection : rediriger si non authentifié
+  // ✅ Fix refresh : attendre que Zustand soit hydraté
   useEffect(() => {
-    if (!isAuthenticated) {
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (isHydrated && !isAuthenticated) {
       router.push(routes.auth.login);
     }
-  }, [isAuthenticated, router]);
+  }, [isHydrated, isAuthenticated, router]);
 
   const handleLogout = () => {
     logout();
     router.push(routes.public.home);
   };
 
-  if (!isAuthenticated) {
-    return null;
+  // Loader pendant l'hydration
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+      </div>
+    );
   }
 
+  if (!isAuthenticated) return null;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className={`min-h-screen ${colors.background.gray}`}>
+      {/* ===== HEADER PRESTATAIRE ===== */}
+      <header
+        className={`${colors.background.white} shadow-sm border-b ${colors.border.light}`}
+      >
+        <div className={spacing.container}>
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href={routes.public.home} className="flex items-center gap-2">
-              <img src="/logo-tasky.png" alt="Tasky" className="h-10 w-auto" />
-              <span
-                className={`text-xl font-bold bg-gradient-to-r from-pink-500 to-emerald-500 bg-clip-text text-transparent`}
-              >
-                Tasky
-              </span>
+              <Logo />
             </Link>
 
             {/* Navigation */}
             <nav className="hidden md:flex items-center gap-6">
               <Link
                 href={routes.artisan.dashboard}
-                className={`${colors.secondary.text} font-semibold`}
+                className={`${colors.premium.text} font-semibold`}
               >
                 Tableau de bord
               </Link>
               <Link
                 href={routes.artisan.requests.list}
-                className={`text-gray-700 hover:${colors.secondary.text}`}
+                className={`${colors.text.secondary} hover:text-purple-600 transition-colors`}
               >
                 Demandes disponibles
               </Link>
               <Link
                 href={routes.artisan.services.list}
-                className={`text-gray-700 hover:${colors.secondary.text}`}
+                className={`${colors.text.secondary} hover:text-purple-600 transition-colors`}
               >
                 Mes prestations
               </Link>
               <Link
                 href={routes.artisan.messages.list}
-                className={`text-gray-700 hover:${colors.secondary.text}`}
+                className={`${colors.text.secondary} hover:text-purple-600 transition-colors`}
               >
                 Messages
               </Link>
             </nav>
 
             {/* User Menu */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Link href={routes.artisan.profile.view}>
                 <Button
                   variant="outline"
@@ -86,7 +97,7 @@ export default function ArtisanDashboard() {
               <Button
                 onClick={handleLogout}
                 variant="ghost"
-                className="text-gray-700"
+                className={colors.text.secondary}
               >
                 Déconnexion
               </Button>
@@ -95,16 +106,18 @@ export default function ArtisanDashboard() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* ===== MAIN CONTENT ===== */}
+      <main className={`${spacing.container} py-8`}>
         {/* Welcome Banner */}
         <div
           className={`${colors.secondary.gradient} rounded-2xl p-8 mb-8 text-white`}
         >
           <h1 className="text-3xl font-bold mb-2">
-            Bienvenue, {user?.email?.split("@")[0] || "Prestataire"} ! 🛠️
+            Bienvenue,{" "}
+            {user?.firstName || user?.email?.split("@")[0] || "Prestataire"} !
+            🛠️
           </h1>
-          <p className={`${colors.secondary.textLight} mb-6`}>
+          <p className="text-emerald-100 mb-6">
             Gérez vos prestations et développez votre activité
           </p>
           <Link href={routes.artisan.requests.list}>
@@ -119,12 +132,15 @@ export default function ArtisanDashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          {/* Nouvelles demandes */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+          <div
+            className={`${colors.background.white} rounded-xl p-6 shadow-sm border ${colors.border.light}`}
+          >
+            <div className="mb-4">
+              <div
+                className={`w-12 h-12 ${colors.neutral.bg} rounded-lg flex items-center justify-center`}
+              >
                 <svg
-                  className="w-6 h-6 text-blue-600"
+                  className={`w-6 h-6 ${colors.neutral.text}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -138,16 +154,23 @@ export default function ArtisanDashboard() {
                 </svg>
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">0</h3>
-            <p className="text-sm text-gray-600">Nouvelles demandes</p>
+            <h3 className={`text-2xl font-bold ${colors.text.primary} mb-1`}>
+              0
+            </h3>
+            <p className={`text-sm ${colors.text.secondary}`}>
+              Nouvelles demandes
+            </p>
           </div>
 
-          {/* En cours */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+          <div
+            className={`${colors.background.white} rounded-xl p-6 shadow-sm border ${colors.border.light}`}
+          >
+            <div className="mb-4">
+              <div
+                className={`w-12 h-12 ${colors.warning.bg} rounded-lg flex items-center justify-center`}
+              >
                 <svg
-                  className="w-6 h-6 text-amber-600"
+                  className={`w-6 h-6 ${colors.warning.text}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -161,16 +184,23 @@ export default function ArtisanDashboard() {
                 </svg>
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">0</h3>
-            <p className="text-sm text-gray-600">Prestations en cours</p>
+            <h3 className={`text-2xl font-bold ${colors.text.primary} mb-1`}>
+              0
+            </h3>
+            <p className={`text-sm ${colors.text.secondary}`}>
+              Prestations en cours
+            </p>
           </div>
 
-          {/* Terminées */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+          <div
+            className={`${colors.background.white} rounded-xl p-6 shadow-sm border ${colors.border.light}`}
+          >
+            <div className="mb-4">
+              <div
+                className={`w-12 h-12 ${colors.success.bg} rounded-lg flex items-center justify-center`}
+              >
                 <svg
-                  className="w-6 h-6 text-green-600"
+                  className={`w-6 h-6 ${colors.success.text}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -184,19 +214,23 @@ export default function ArtisanDashboard() {
                 </svg>
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">0</h3>
-            <p className="text-sm text-gray-600">Terminées ce mois</p>
+            <h3 className={`text-2xl font-bold ${colors.text.primary} mb-1`}>
+              0
+            </h3>
+            <p className={`text-sm ${colors.text.secondary}`}>
+              Terminées ce mois
+            </p>
           </div>
 
-          {/* Revenus */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
+          <div
+            className={`${colors.background.white} rounded-xl p-6 shadow-sm border ${colors.border.light}`}
+          >
+            <div className="mb-4">
               <div
                 className={`w-12 h-12 ${colors.secondary.bg} rounded-lg flex items-center justify-center`}
               >
-                00 rounded-lg flex items-center justify-center"
                 <svg
-                  className="w-6 h-6 text-emerald-600"
+                  className={`w-6 h-6 ${colors.secondary.text}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -210,19 +244,24 @@ export default function ArtisanDashboard() {
                 </svg>
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">0 €</h3>
-            <p className="text-sm text-gray-600">Revenus ce mois</p>
+            <h3 className={`text-2xl font-bold ${colors.text.primary} mb-1`}>
+              0 €
+            </h3>
+            <p className={`text-sm ${colors.text.secondary}`}>
+              Revenus ce mois
+            </p>
           </div>
         </div>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Consulter les demandes */}
           <Link href={routes.artisan.requests.list}>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition cursor-pointer group">
+            <div
+              className={`${colors.background.white} rounded-xl p-6 shadow-sm border ${colors.border.light} hover:shadow-md ${transitions.base} cursor-pointer group`}
+            >
               <div className="flex items-start gap-4">
                 <div
-                  className={`w-14 h-14 ${colors.secondary.gradient} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition`}
+                  className={`w-14 h-14 ${colors.secondary.gradient} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 ${transitions.base}`}
                 >
                   <svg
                     className="w-7 h-7 text-white"
@@ -240,11 +279,11 @@ export default function ArtisanDashboard() {
                 </div>
                 <div className="flex-1">
                   <h3
-                    className={`text-lg font-bold text-gray-900 mb-2 group-hover:${colors.secondary.text} transition`}
+                    className={`text-lg font-bold ${colors.text.primary} mb-2`}
                   >
                     Demandes disponibles
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className={`text-sm ${colors.text.secondary}`}>
                     Consultez les nouvelles demandes de clients près de chez
                     vous
                   </p>
@@ -253,12 +292,13 @@ export default function ArtisanDashboard() {
             </div>
           </Link>
 
-          {/* Mes prestations */}
           <Link href={routes.artisan.services.list}>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition cursor-pointer group">
+            <div
+              className={`${colors.background.white} rounded-xl p-6 shadow-sm border ${colors.border.light} hover:shadow-md ${transitions.base} cursor-pointer group`}
+            >
               <div className="flex items-start gap-4">
                 <div
-                  className={`w-14 h-14 ${gradients.neutralDark} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition`}
+                  className={`w-14 h-14 ${gradients.neutralDark} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 ${transitions.base}`}
                 >
                   <svg
                     className="w-7 h-7 text-white"
@@ -276,11 +316,11 @@ export default function ArtisanDashboard() {
                 </div>
                 <div className="flex-1">
                   <h3
-                    className={`text-lg font-bold text-gray-900 mb-2 group-hover:${colors.neutral.text} transition`}
+                    className={`text-lg font-bold ${colors.text.primary} mb-2`}
                   >
                     Mes prestations
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className={`text-sm ${colors.text.secondary}`}>
                     Gérez vos prestations en cours et votre historique
                   </p>
                 </div>
@@ -290,10 +330,14 @@ export default function ArtisanDashboard() {
         </div>
 
         {/* Empty State */}
-        <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-200">
-          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div
+          className={`${colors.background.white} rounded-xl p-12 text-center shadow-sm border ${colors.border.light}`}
+        >
+          <div
+            className={`w-20 h-20 ${colors.background.light} rounded-full flex items-center justify-center mx-auto mb-4`}
+          >
             <svg
-              className="w-10 h-10 text-gray-400"
+              className={`w-10 h-10 ${colors.text.muted}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -302,20 +346,23 @@ export default function ArtisanDashboard() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
               />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">
+          <h3 className={`text-xl font-bold ${colors.text.primary} mb-2`}>
             Aucune prestation en cours
           </h3>
-          <p className="text-gray-600 mb-6">
+          <p className={`${colors.text.secondary} mb-6`}>
             Commencez par consulter les demandes disponibles et proposez vos
             services
           </p>
+
           <Link href={routes.artisan.requests.list}>
             <Button
-              className={`${colors.secondary.gradient} ${colors.secondary.gradientHover}`}
+              variant="secondary"
+              size="lg"
+              className="shadow-xl text-white"
             >
               Voir les demandes
             </Button>
