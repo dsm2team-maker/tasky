@@ -9,6 +9,10 @@ import { useAuthStore } from "@/stores/auth-store";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/Button";
 
+/**
+ * 🌐 Header — Header public (landing page)
+ * Auth-aware : affiche le bon dashboard selon le rôle
+ */
 export default function Header() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -27,58 +31,35 @@ export default function Header() {
     e.preventDefault();
     const element = document.getElementById(id);
     if (element) {
-      const offset = 80;
-      const offsetPosition =
-        element.getBoundingClientRect().top + window.pageYOffset - offset;
+      const offsetPosition = element.getBoundingClientRect().top + window.pageYOffset - 80;
       window.scrollTo({ top: offsetPosition, behavior: "smooth" });
     }
   };
 
   const dashboardRoute =
-    user?.role === "CLIENT"
-      ? routes.client.dashboard
-      : routes.artisan.dashboard;
+    user?.role === "CLIENT" ? routes.client.dashboard : routes.prestataire.dashboard;
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div className="w-34 h-16 rounded-lg overflow-hidden flex items-center justify-center">
-              <Logo />
-            </div>
-          </div>
+          <Logo />
 
-          {/* Navigation */}
           <nav className="hidden md:flex items-center gap-6">
-            <a
-              onClick={scrollTo("comment-ca-marche")}
-              className={`${colors.text.secondary} hover:${colors.premium.text} transition cursor-pointer`}
-            >
+            <a onClick={scrollTo("comment-ca-marche")} className={`${colors.text.secondary} hover:text-purple-600 transition cursor-pointer`}>
               Comment ça marche
             </a>
-            <a
-              onClick={scrollTo("pourquoi-nous-choisir")}
-              className={`${colors.text.secondary} hover:${colors.premium.text} transition cursor-pointer`}
-            >
+            <a onClick={scrollTo("pourquoi-nous-choisir")} className={`${colors.text.secondary} hover:text-purple-600 transition cursor-pointer`}>
               Avantages
             </a>
-            <a
-              onClick={scrollTo("categories")}
-              className={`${colors.text.secondary} hover:${colors.premium.text} transition cursor-pointer`}
-            >
+            <a onClick={scrollTo("categories")} className={`${colors.text.secondary} hover:text-purple-600 transition cursor-pointer`}>
               Prestations
             </a>
-            <a
-              onClick={scrollTo("temoignages")}
-              className={`${colors.text.secondary} hover:${colors.premium.text} transition cursor-pointer`}
-            >
+            <a onClick={scrollTo("temoignages")} className={`${colors.text.secondary} hover:text-purple-600 transition cursor-pointer`}>
               Témoignages
             </a>
           </nav>
 
-          {/* Boutons droite — selon état connexion */}
           <div className="flex items-center gap-3">
             {!isHydrated ? null : isAuthenticated ? (
               <>
@@ -94,19 +75,12 @@ export default function Header() {
                     Mon dashboard
                   </Button>
                 </Link>
-                <Button
-                  onClick={handleLogout}
-                  variant="ghost"
-                  className={colors.text.secondary}
-                >
+                <Button onClick={handleLogout} variant="ghost" className={colors.text.secondary}>
                   Déconnexion
                 </Button>
               </>
             ) : (
-              <Link
-                href={routes.auth.login}
-                className={`px-4 py-2 font-medium ${colors.text.secondary} hover:${colors.premium.text} transition`}
-              >
+              <Link href={routes.auth.login} className={`px-4 py-2 font-medium ${colors.text.secondary} hover:text-purple-600 transition`}>
                 Se connecter
               </Link>
             )}

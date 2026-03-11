@@ -22,7 +22,7 @@ model User {
   role          Role     @default(CLIENT)
   firstName     String
   lastName      String
-  phone         String?
+  phone         String?  @unique
   city          String?
   avatar        String?
   emailVerified Boolean  @default(false)
@@ -32,8 +32,8 @@ model User {
 
   // Relations
   client        Client?
-  artisan       Artisan?
-  
+  prestataire   Prestataire?
+
   // Token de refresh JWT
   refreshTokens RefreshToken[]
 
@@ -42,7 +42,7 @@ model User {
 
 enum Role {
   CLIENT
-  ARTISAN
+  PRESTATAIRE
   ADMIN
 }
 
@@ -74,10 +74,10 @@ model Client {
 }
 
 // ===========================================
-// PROFIL ARTISAN
+// PROFIL PRESTATAIRE
 // ===========================================
 
-model Artisan {
+model Prestataire {
   id          String  @id @default(cuid())
   userId      String  @unique
   user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -86,12 +86,12 @@ model Artisan {
   verified    Boolean @default(false)
   rating      Float   @default(0)
   reviewCount Int     @default(0)
-  
+
   // Vérification identité (step-3)
   identityDocumentType String? // "CNI" | "PASSEPORT"
   identityDocumentUrl  String?
   identityVerified     Boolean @default(false)
-  
+
   // CGU acceptées (step-4)
   cguAcceptedAt DateTime?
 
@@ -102,7 +102,7 @@ model Artisan {
   reviews      Review[]
   portfolio    PortfolioImage[]
 
-  @@map("artisans")
+  @@map("prestataires")
 }
 
 // ===========================================
@@ -139,13 +139,13 @@ model SubCategory {
 }
 
 model Competence {
-  id         String   @id @default(cuid())
-  artisanId  String
-  artisan    Artisan  @relation(fields: [artisanId], references: [id], onDelete: Cascade)
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
+  id            String      @id @default(cuid())
+  prestataireId String
+  prestataire   Prestataire @relation(fields: [prestataireId], references: [id], onDelete: Cascade)
+  categoryId    String
+  category      Category    @relation(fields: [categoryId], references: [id])
 
-  @@unique([artisanId, categoryId])
+  @@unique([prestataireId, categoryId])
   @@map("competences")
 }
 
@@ -165,7 +165,7 @@ model Demande {
   subCategory   SubCategory?  @relation(fields: [subCategoryId], references: [id])
   budget        Float?
   ville         String?
-  photos        String[]      // URLs des photos
+  photos        String[]
   status        StatusDemande @default(PUBLIEE)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -187,21 +187,21 @@ enum StatusDemande {
 }
 
 // ===========================================
-// DEVIS (Artisan répond à une demande)
+// DEVIS (Prestataire répond à une demande)
 // ===========================================
 
 model Devis {
-  id          String      @id @default(cuid())
-  demandeId   String
-  demande     Demande     @relation(fields: [demandeId], references: [id])
-  artisanId   String
-  artisan     Artisan     @relation(fields: [artisanId], references: [id])
-  montant     Float
-  delai       Int         // en jours
-  description String
-  status      StatusDevis @default(ENVOYE)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id            String      @id @default(cuid())
+  demandeId     String
+  demande       Demande     @relation(fields: [demandeId], references: [id])
+  prestataireId String
+  prestataire   Prestataire @relation(fields: [prestataireId], references: [id])
+  montant       Float
+  delai         Int
+  description   String
+  status        StatusDevis @default(ENVOYE)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   @@map("devis")
 }
@@ -213,20 +213,20 @@ enum StatusDevis {
 }
 
 // ===========================================
-// PRESTATIONS (Devis accepté → Prestation en cours)
+// PRESTATIONS
 // ===========================================
 
 model Prestation {
-  id            String            @id @default(cuid())
-  demandeId     String            @unique
-  demande       Demande           @relation(fields: [demandeId], references: [id])
-  artisanId     String
-  artisan       Artisan           @relation(fields: [artisanId], references: [id])
+  id            String           @id @default(cuid())
+  demandeId     String           @unique
+  demande       Demande          @relation(fields: [demandeId], references: [id])
+  prestataireId String
+  prestataire   Prestataire      @relation(fields: [prestataireId], references: [id])
   subCategoryId String?
-  subCategory   SubCategory?      @relation(fields: [subCategoryId], references: [id])
+  subCategory   SubCategory?     @relation(fields: [subCategoryId], references: [id])
   montant       Float
-  status        StatusPrestation  @default(EN_COURS)
-  createdAt     DateTime          @default(now())
+  status        StatusPrestation @default(EN_COURS)
+  createdAt     DateTime         @default(now())
   completedAt   DateTime?
 
   // Relations
@@ -261,31 +261,31 @@ model Message {
 // ===========================================
 
 model Review {
-  id          String     @id @default(cuid())
-  prestationId String    @unique
-  prestation  Prestation @relation(fields: [prestationId], references: [id])
-  clientId    String
-  client      Client     @relation(fields: [clientId], references: [id])
-  artisanId   String
-  artisan     Artisan    @relation(fields: [artisanId], references: [id])
-  rating      Int        // 1-5
-  comment     String?
-  createdAt   DateTime   @default(now())
+  id            String      @id @default(cuid())
+  prestationId  String      @unique
+  prestation    Prestation  @relation(fields: [prestationId], references: [id])
+  clientId      String
+  client        Client      @relation(fields: [clientId], references: [id])
+  prestataireId String
+  prestataire   Prestataire @relation(fields: [prestataireId], references: [id])
+  rating        Int
+  comment       String?
+  createdAt     DateTime    @default(now())
 
   @@map("reviews")
 }
 
 // ===========================================
-// PORTFOLIO ARTISAN
+// PORTFOLIO PRESTATAIRE
 // ===========================================
 
 model PortfolioImage {
-  id        String   @id @default(cuid())
-  artisanId String
-  artisan   Artisan  @relation(fields: [artisanId], references: [id], onDelete: Cascade)
-  url       String
-  caption   String?
-  createdAt DateTime @default(now())
+  id            String      @id @default(cuid())
+  prestataireId String
+  prestataire   Prestataire @relation(fields: [prestataireId], references: [id], onDelete: Cascade)
+  url           String
+  caption       String?
+  createdAt     DateTime    @default(now())
 
   @@map("portfolio_images")
 }

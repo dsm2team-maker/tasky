@@ -1,18 +1,8 @@
 /**
  * 🛣️ TASKY - Configuration des routes
- *
- * Centralisation de TOUTES les routes de l'application.
- * Facilite la navigation et la maintenance.
- *
- * Usage:
- * import { routes } from '@/config/routes';
- * <Link href={routes.client.dashboard}>Dashboard</Link>
+ * ✅ "artisan" → "prestataire" partout
  */
-
 export const routes = {
-  /**
-   * 🏠 PUBLIC - Pages publiques
-   */
   public: {
     home: "/",
     about: "/about",
@@ -25,18 +15,15 @@ export const routes = {
     },
   },
 
-  /**
-   * 🔐 AUTH - Authentification
-   */
   auth: {
     login: "/auth/login",
     register: {
       client: "/auth/register/client",
-      artisan: {
-        step1: "/auth/register/artisan/step-1",
-        step2: "/auth/register/artisan/step-2",
-        step3: "/auth/register/artisan/step-3",
-        step4: "/auth/register/artisan/step-4",
+      prestataire: {
+        step1: "/auth/register/prestataire/step-1",
+        step2: "/auth/register/prestataire/step-2",
+        step3: "/auth/register/prestataire/step-3",
+        step4: "/auth/register/prestataire/step-4",
       },
     },
     forgotPassword: "/auth/forgot-password",
@@ -44,79 +31,53 @@ export const routes = {
     verifyEmail: "/auth/verify-email",
   },
 
-  /**
-   * 👤 CLIENT - Pages client
-   */
   client: {
-    // Dashboard
     dashboard: "/client/dashboard",
-
-    // Profil
     profile: {
       view: "/client/profile",
       edit: "/client/profile/edit",
       settings: "/client/settings",
     },
-
-    // Demandes
     requests: {
       list: "/client/requests",
       new: "/client/requests/new",
       detail: (id: string) => `/client/requests/${id}`,
       edit: (id: string) => `/client/requests/${id}/edit`,
     },
-
-    // Devis reçus
     devis: {
       list: (requestId: string) => `/client/requests/${requestId}/devis`,
       detail: (requestId: string, devisId: string) =>
         `/client/requests/${requestId}/devis/${devisId}`,
     },
-
-    // Recherche de prestataires
     search: {
       base: "/client/search",
       category: (categoryId: string) => `/client/search?category=${categoryId}`,
       results: "/client/search/results",
     },
-
-    // Prestataires
     prestataires: {
       list: "/client/prestataires",
       detail: (id: string) => `/client/prestataires/${id}`,
     },
-
-    // Messages
     messages: {
       list: "/client/messages",
       conversation: (id: string) => `/client/messages/${id}`,
     },
-
-    // Prestations en cours
     prestations: {
       list: "/client/prestations",
       detail: (id: string) => `/client/prestations/${id}`,
       timeline: (id: string) => `/client/prestations/${id}/timeline`,
     },
-
-    // Paiement
     payment: {
       methods: "/client/payment/methods",
       history: "/client/payment/history",
       invoice: (id: string) => `/client/payment/invoices/${id}`,
     },
-
-    // Avis
     reviews: {
       list: "/client/reviews",
       create: (prestationId: string) =>
         `/client/reviews/new?prestation=${prestationId}`,
     },
-
-    // Notifications
     notifications: "/client/notifications",
-
-    // Paramètres
     settings: {
       account: "/client/settings/account",
       password: "/client/settings/password",
@@ -128,107 +89,70 @@ export const routes = {
   },
 
   /**
-   * 🛠️ ARTISAN - Pages artisan/prestataire
+   * 🛠️ PRESTATAIRE
    */
-  artisan: {
-    // Dashboard
-    dashboard: "/artisan/dashboard",
-
-    // Profil
+  prestataire: {
+    dashboard: "/prestataire/dashboard",
     profile: {
-      view: "/artisan/profile",
-      edit: "/artisan/profile/edit",
-      public: (id: string) => `/artisan/profile/${id}`,
-      settings: "/artisan/settings",
+      view: "/prestataire/profile",
+      edit: "/prestataire/profile/edit",
+      public: (id: string) => `/prestataire/profile/${id}`,
+      settings: "/prestataire/settings",
     },
-
-    // Demandes disponibles
     requests: {
-      list: "/artisan/requests",
-      available: "/artisan/requests/available",
-      detail: (id: string) => `/artisan/requests/${id}`,
-      sendDevis: (id: string) => `/artisan/requests/${id}/devis/new`,
+      list: "/prestataire/requests",
+      available: "/prestataire/requests/available",
+      detail: (id: string) => `/prestataire/requests/${id}`,
+      sendDevis: (id: string) => `/prestataire/requests/${id}/devis/new`,
     },
-
-    // Mes prestations
     services: {
-      list: "/artisan/services",
-      enCours: "/artisan/services/en-cours",
-      terminees: "/artisan/services/terminees",
-      detail: (id: string) => `/artisan/services/${id}`,
-      timeline: (id: string) => `/artisan/services/${id}/timeline`,
+      list: "/prestataire/services",
+      enCours: "/prestataire/services/en-cours",
+      terminees: "/prestataire/services/terminees",
+      detail: (id: string) => `/prestataire/services/${id}`,
+      timeline: (id: string) => `/prestataire/services/${id}/timeline`,
     },
-
-    // Devis envoyés
     devis: {
-      list: "/artisan/devis",
-      enAttente: "/artisan/devis/en-attente",
-      acceptes: "/artisan/devis/acceptes",
-      refuses: "/artisan/devis/refuses",
-      detail: (id: string) => `/artisan/devis/${id}`,
-      edit: (id: string) => `/artisan/devis/${id}/edit`,
+      list: "/prestataire/devis",
+      enAttente: "/prestataire/devis/en-attente",
+      acceptes: "/prestataire/devis/acceptes",
+      refuses: "/prestataire/devis/refuses",
+      detail: (id: string) => `/prestataire/devis/${id}`,
+      edit: (id: string) => `/prestataire/devis/${id}/edit`,
     },
-
-    // Messages
     messages: {
-      list: "/artisan/messages",
-      conversation: (id: string) => `/artisan/messages/${id}`,
+      list: "/prestataire/messages",
+      conversation: (id: string) => `/prestataire/messages/${id}`,
     },
-
-    // Points neutres
     pointsNeutres: {
-      list: "/artisan/points-neutres",
-      add: "/artisan/points-neutres/new",
-      edit: (id: string) => `/artisan/points-neutres/${id}/edit`,
+      list: "/prestataire/points-neutres",
+      add: "/prestataire/points-neutres/new",
+      edit: (id: string) => `/prestataire/points-neutres/${id}/edit`,
     },
-
-    // Revenus
     earnings: {
-      overview: "/artisan/earnings",
-      history: "/artisan/earnings/history",
-      payout: "/artisan/earnings/payout",
+      overview: "/prestataire/earnings",
+      history: "/prestataire/earnings/history",
+      payout: "/prestataire/earnings/payout",
     },
-
-    // Statistiques
-    stats: "/artisan/stats",
-
-    // Avis reçus
+    stats: "/prestataire/stats",
     reviews: {
-      list: "/artisan/reviews",
-      detail: (id: string) => `/artisan/reviews/${id}`,
+      list: "/prestataire/reviews",
+      detail: (id: string) => `/prestataire/reviews/${id}`,
     },
-
-    // Calendrier / Disponibilités
-    calendar: "/artisan/calendar",
-
-    // Notifications
-    notifications: "/artisan/notifications",
-
-    // Paramètres
+    calendar: "/prestataire/calendar",
+    notifications: "/prestataire/notifications",
     settings: {
-      account: "/artisan/settings/account",
-      password: "/artisan/settings/password",
-      email: "/artisan/settings/email",
-      paiement: "/artisan/settings/paiement",
-      notifications: "/artisan/settings/notifications",
-      privacy: "/artisan/settings/privacy",
-      identity: "/artisan/settings/identity",
-      delete: "/artisan/settings/delete-account",
+      account: "/prestataire/settings/account",
+      password: "/prestataire/settings/password",
+      email: "/prestataire/settings/email",
+      paiement: "/prestataire/settings/paiement",
+      notifications: "/prestataire/settings/notifications",
+      privacy: "/prestataire/settings/privacy",
+      identity: "/prestataire/settings/identity",
+      delete: "/prestataire/settings/delete-account",
     },
   },
 
-  /**
-   * 🎨 DEMO - Pages de démonstration
-   */
-  demo: {
-    dashClient: "/demo/dashClient",
-    dashArtisan: "/demo/dashArtisan",
-    categoryTest: "/demo/category-test",
-  },
-
-  /**
-   * 👨‍💼 ADMIN - Pages admin (futures)
-   */
   admin: {
     dashboard: "/admin/dashboard",
     users: {
@@ -248,9 +172,6 @@ export const routes = {
     settings: "/admin/settings",
   },
 
-  /**
-   * 🔔 API - Routes API (pour le backend)
-   */
   api: {
     auth: {
       register: "/api/auth/register",
@@ -315,37 +236,19 @@ export const routes = {
   },
 };
 
-/**
- * 🔗 Helpers pour la navigation
- */
 export const navigation = {
-  /**
-   * Navigation principale client
-   */
   clientNav: [
     { label: "Dashboard", href: routes.client.dashboard, icon: "🏠" },
     { label: "Recherche", href: routes.client.search.base, icon: "🔍" },
     { label: "Mes demandes", href: routes.client.requests.list, icon: "📋" },
     { label: "Messages", href: routes.client.messages.list, icon: "💬" },
   ],
-
-  /**
-   * Navigation principale artisan
-   */
-  artisanNav: [
-    { label: "Dashboard", href: routes.artisan.dashboard, icon: "🏠" },
-    { label: "Demandes", href: routes.artisan.requests.list, icon: "📋" },
-    {
-      label: "Mes prestations",
-      href: routes.artisan.services.list,
-      icon: "🛠️",
-    },
-    { label: "Messages", href: routes.artisan.messages.list, icon: "💬" },
+  prestataireNav: [
+    { label: "Dashboard", href: routes.prestataire.dashboard, icon: "🏠" },
+    { label: "Demandes", href: routes.prestataire.requests.list, icon: "📋" },
+    { label: "Mes prestations", href: routes.prestataire.services.list, icon: "🛠️" },
+    { label: "Messages", href: routes.prestataire.messages.list, icon: "💬" },
   ],
-
-  /**
-   * Navigation footer
-   */
   footerNav: [
     { label: "À propos", href: routes.public.about },
     { label: "Contact", href: routes.public.contact },
@@ -353,25 +256,5 @@ export const navigation = {
     { label: "Confidentialité", href: routes.public.legal.privacy },
   ],
 };
-
-/**
- * 🔒 Routes protégées (nécessitent authentification)
- */
-export const protectedRoutes = {
-  client: Object.values(routes.client).flat(),
-  artisan: Object.values(routes.artisan).flat(),
-  admin: Object.values(routes.admin).flat(),
-};
-
-/**
- * 🌐 Routes publiques (accessibles sans auth)
- */
-export const publicRoutes = [
-  routes.public.home,
-  routes.public.about,
-  routes.public.contact,
-  ...Object.values(routes.auth),
-  ...Object.values(routes.demo),
-];
 
 export default routes;

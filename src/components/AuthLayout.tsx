@@ -5,7 +5,7 @@ import React from "react";
 import Logo from "@/components/Logo";
 
 interface AuthLayoutProps {
-  variant?: "client" | "artisan" | "neutral";
+  variant?: "client" | "prestataire" | "neutral";
   children: React.ReactNode;
 }
 

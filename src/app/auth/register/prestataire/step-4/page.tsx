@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
-import { artisanTermsSchema, ArtisanTermsInput } from "@/lib/schemas";
+import { prestataireTermsSchema, PrestataireTermsInput } from "@/lib/schemas";
 import { apiClient, handleApiError } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
 import { Checkbox } from "@/components/Checkbox";
@@ -16,7 +16,7 @@ import { colors } from "@/config/colors";
 import { typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 
-export default function RegisterArtisanStep4() {
+export default function RegisterPrestataireStep4() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
 
@@ -24,27 +24,32 @@ export default function RegisterArtisanStep4() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<ArtisanTermsInput>({
-    resolver: zodResolver(artisanTermsSchema),
+  } = useForm<PrestataireTermsInput>({
+    resolver: zodResolver(prestataireTermsSchema),
     mode: "onBlur",
   });
 
-  // Vérifier que les steps précédents ont été complétés
   useEffect(() => {
-    const step1Data = sessionStorage.getItem("artisan_step1");
-    if (!step1Data) {
-      router.push(routes.auth.register.artisan.step1);
-    }
+    const step1Data = sessionStorage.getItem("prestataire_step1");
+    if (!step1Data) router.push(routes.auth.register.prestataire.step1);
   }, [router]);
 
-  const finalizeMutation = useMutation({
-    mutationFn: async (data: ArtisanTermsInput) => {
-      // ✅ Récupérer toutes les données des steps précédents
-      const step1 = JSON.parse(sessionStorage.getItem("artisan_step1") || "{}");
-      const step2 = JSON.parse(sessionStorage.getItem("artisan_step2") || "{}");
+  const handleStepClick = (step: number) => {
+    if (step === 1) router.push(routes.auth.register.prestataire.step1);
+    if (step === 2) router.push(routes.auth.register.prestataire.step2);
+    if (step === 3) router.push(routes.auth.register.prestataire.step3);
+  };
 
-      // ✅ Appel API avec toutes les données
-      const response = await apiClient.post("/api/auth/register/artisan", {
+  const finalizeMutation = useMutation({
+    mutationFn: async () => {
+      const step1 = JSON.parse(
+        sessionStorage.getItem("prestataire_step1") || "{}",
+      );
+      const step2 = JSON.parse(
+        sessionStorage.getItem("prestataire_step2") || "{}",
+      );
+
+      const response = await apiClient.post("/api/auth/register/prestataire", {
         email: step1.email,
         password: step1.password,
         firstName: step1.firstName,
@@ -58,16 +63,15 @@ export default function RegisterArtisanStep4() {
       return response.data;
     },
     onSuccess: (data) => {
-      // ✅ Connecter l'utilisateur
       setAuth(data.data.user, data.data.tokens.accessToken);
       localStorage.setItem("refresh_token", data.data.tokens.refreshToken);
 
-      // ✅ Nettoyer le sessionStorage
-      sessionStorage.removeItem("artisan_step1");
-      sessionStorage.removeItem("artisan_step2");
-      sessionStorage.removeItem("artisan_step3");
+      sessionStorage.removeItem("prestataire_step1");
+      sessionStorage.removeItem("prestataire_step2");
+      sessionStorage.removeItem("prestataire_step3");
 
-      router.push(routes.artisan.dashboard);
+      // Meme logique que le client
+      router.push(routes.auth.verifyEmail + "?type=prestataire");
     },
     onError: (error: any) => {
       const apiError = handleApiError(error);
@@ -75,118 +79,93 @@ export default function RegisterArtisanStep4() {
     },
   });
 
-  const onSubmit = (data: ArtisanTermsInput) => {
-    finalizeMutation.mutate(data);
-  };
+  const onSubmit = () => finalizeMutation.mutate();
 
   return (
-    <AuthLayout variant="artisan">
+    <AuthLayout variant="prestataire">
       <ProgressSteps
         currentStep={4}
         totalSteps={4}
         completedSteps={[1, 2, 3]}
+        onStepClick={handleStepClick}
       />
 
       <div className="text-center mb-8">
         <div className="text-5xl mb-4">🛠️</div>
-        <h1 className={`${typography.h2.base} ${colors.secondary.text} mb-2`}>
-          Dernière étape !
+        <h1 className={`${typography.h2.base} ${colors.premium.text} mb-2`}>
+          Derniere etape !
         </h1>
-        <p className={`${colors.secondary.text} font-medium`}>
+        <p className={`${colors.premium.text} font-medium`}>
           Acceptez les conditions prestataire
         </p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* CGU Artisan */}
         <div className="bg-gray-50 rounded-lg p-6 max-h-96 overflow-y-auto border border-gray-200">
           <h3 className="text-lg font-bold text-gray-900 mb-4">
-            Conditions Générales d'Utilisation - Prestataires
+            Conditions Generales Prestataires
           </h3>
           <div className="space-y-4 text-sm text-gray-700">
             <section>
               <h4 className="font-semibold text-gray-900 mb-2">
-                1. Engagement qualité
+                1. Engagement qualite
               </h4>
               <p>
-                En tant que prestataire sur Tasky, vous vous engagez à fournir
-                des services de qualité et à respecter les délais convenus avec
+                En tant que prestataire sur Tasky, vous vous engagez a fournir
+                des services de qualite et a respecter les delais convenus avec
                 vos clients.
               </p>
             </section>
             <section>
               <h4 className="font-semibold text-gray-900 mb-2">
-                2. Vérification d'identité
+                2. Verification identite
               </h4>
               <p>
-                Votre identité a été vérifiée. Toute usurpation d'identité
-                entraînera la fermeture immédiate de votre compte.
+                Toute usurpation d identite entrainera la fermeture immediate de
+                votre compte.
               </p>
             </section>
             <section>
               <h4 className="font-semibold text-gray-900 mb-2">
-                3. Paiement et commission
+                3. Commission
               </h4>
               <p>
-                Tasky prélève une commission de 15% sur chaque prestation
-                réalisée. Le paiement vous est versé après validation du client.
+                Tasky preleve une commission de 15% sur chaque prestation. Le
+                paiement est verse apres validation client.
               </p>
             </section>
             <section>
               <h4 className="font-semibold text-gray-900 mb-2">
-                4. Lieux neutres
+                4. Responsabilite
               </h4>
               <p>
-                Tous les échanges d'objets doivent se faire en lieux neutres
-                (points relais, commerces partenaires). Aucun déplacement à
-                domicile n'est autorisé.
+                Vous etes responsable des objets confies par les clients. Une
+                assurance RC pro est recommandee.
               </p>
             </section>
             <section>
               <h4 className="font-semibold text-gray-900 mb-2">
-                5. Responsabilité
+                5. Annulations et litiges
               </h4>
               <p>
-                Vous êtes responsable des objets confiés par les clients. Une
-                assurance responsabilité civile professionnelle est recommandée.
-              </p>
-            </section>
-            <section>
-              <h4 className="font-semibold text-gray-900 mb-2">
-                6. Annulation et litiges
-              </h4>
-              <p>
-                En cas de litige, notre équipe intervient comme médiateur. Les
-                annulations abusives peuvent entraîner des pénalités.
-              </p>
-            </section>
-            <section>
-              <h4 className="font-semibold text-gray-900 mb-2">
-                7. Avis clients
-              </h4>
-              <p>
-                Les avis clients sont authentiques et vérifiés. Votre réputation
-                est essentielle sur la plateforme.
+                En cas de litige, notre equipe intervient comme mediateur. Les
+                annulations abusives peuvent entrainer des penalites.
               </p>
             </section>
           </div>
         </div>
 
-        {/* Checkbox */}
         <Checkbox
           label={
             <span className="text-gray-900">
-              J'ai lu et j'accepte les{" "}
-              <strong className={colors.secondary.text}>
-                Conditions Générales d'Utilisation Prestataire
-              </strong>
+              J ai lu et j accepte les{" "}
+              <strong className={colors.premium.text}>CGU Prestataire</strong>
             </span>
           }
-          error={errors.acceptArtisanTerms?.message}
-          {...register("acceptArtisanTerms")}
+          error={errors.acceptPrestataireTerms?.message}
+          {...register("acceptPrestataireTerms")}
         />
 
-        {/* Encadré bienvenue */}
         <div
           className={`${colors.secondary.bg} border-2 ${colors.secondary.borderLight} rounded-lg p-6`}
         >
@@ -197,32 +176,31 @@ export default function RegisterArtisanStep4() {
                 Bienvenue sur Tasky !
               </h4>
               <p className={`text-sm ${colors.secondary.textMuted}`}>
-                Une fois validé, vous pourrez commencer à recevoir des demandes
-                de clients près de chez vous. Bonne chance ! 🚀
+                Une fois votre email verifie, vous pourrez recevoir des demandes
+                de clients pres de chez vous.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Boutons */}
         <div className="flex gap-3">
           <Button
             type="button"
             variant="outline"
             fullWidth
-            onClick={() => router.push(routes.auth.register.artisan.step3)}
+            onClick={() => router.push(routes.auth.register.prestataire.step3)}
             className="border-gray-300 text-gray-700 hover:bg-gray-50"
           >
-            ← Retour
+            Retour
           </Button>
           <Button
             type="submit"
+            variant="secondary"
             fullWidth
             size="lg"
             isLoading={finalizeMutation.isPending}
-            className={`${colors.secondary.gradient} ${colors.secondary.gradientHover}`}
           >
-            🎉 Créer mon compte prestataire
+            Creer mon compte prestataire
           </Button>
         </div>
       </form>

@@ -8,7 +8,7 @@ const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "30d";
 export interface JwtPayload {
   userId: string;
   email: string;
-  role: "CLIENT" | "ARTISAN" | "ADMIN";
+  role: "CLIENT" | "PRESTATAIRE" | "ADMIN";
 }
 
 // Générer un access token (courte durée)

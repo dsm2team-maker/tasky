@@ -9,6 +9,8 @@ import { useMutation } from "@tanstack/react-query";
 import { registerClientSchema, RegisterClientInput } from "@/lib/schemas";
 import { apiClient, handleApiError } from "@/lib/api-client";
 import { useEmailValidation } from "@/hooks/useEmailValidation";
+import { usePhoneValidation } from "@/hooks/usePhoneValidation";
+import { DuplicateAccountModal } from "@/components/DuplicateAccountModal";
 import { Input } from "@/components/Input";
 import { Checkbox } from "@/components/Checkbox";
 import { Button } from "@/components/Button";
@@ -22,6 +24,14 @@ export default function RegisterClient() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [modal, setModal] = useState<{
+    open: boolean;
+    type: "email" | "phone" | null;
+    value?: string;
+  }>({
+    open: false,
+    type: null,
+  });
 
   const {
     register,
@@ -34,7 +44,9 @@ export default function RegisterClient() {
   });
 
   const emailValue = watch("email");
-  const { isChecking, isAvailable } = useEmailValidation(emailValue);
+  const phoneValue = watch("phone");
+  const { isAvailable: emailAvailable } = useEmailValidation(emailValue);
+  const { isAvailable: phoneAvailable } = usePhoneValidation(phoneValue);
 
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterClientInput) => {
@@ -44,21 +56,21 @@ export default function RegisterClient() {
         firstName: data.firstName,
         lastName: data.lastName,
         city: data.city,
+        phone: data.phone,
       });
       return response.data;
     },
-    onSuccess: () => {
-      router.push(routes.auth.verifyEmail + "?type=client");
-    },
-    onError: (error: any) => {
-      const apiError = handleApiError(error);
-      setErrorMessage(apiError.message);
-    },
+    onSuccess: () => router.push(routes.auth.verifyEmail + "?type=client"),
+    onError: (error: any) => setErrorMessage(handleApiError(error).message),
   });
 
   const onSubmit = (data: RegisterClientInput) => {
-    if (isAvailable === false) {
-      setErrorMessage("Cet email est déjà utilisé");
+    if (emailAvailable === false) {
+      setModal({ open: true, type: "email", value: data.email });
+      return;
+    }
+    if (phoneAvailable === false) {
+      setModal({ open: true, type: "phone", value: data.phone });
       return;
     }
     setErrorMessage(null);
@@ -67,7 +79,6 @@ export default function RegisterClient() {
 
   return (
     <AuthLayout variant="client">
-      {/* Header avec icône */}
       <div className="text-center mb-8">
         <div
           className={`w-16 h-16 ${colors.primary.gradient} rounded-full flex items-center justify-center mx-auto mb-4`}
@@ -94,16 +105,13 @@ export default function RegisterClient() {
         </p>
       </div>
 
-      {/* Message d'erreur global */}
       {errorMessage && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-600 text-sm text-center">{errorMessage}</p>
         </div>
       )}
 
-      {/* Formulaire */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        {/* Prénom + Nom */}
         <div className="grid grid-cols-2 gap-3">
           <Input
             label="Prénom"
@@ -151,7 +159,6 @@ export default function RegisterClient() {
           />
         </div>
 
-        {/* Ville */}
         <Input
           label="Ville"
           type="text"
@@ -181,14 +188,13 @@ export default function RegisterClient() {
           }
         />
 
-        {/* Email */}
-        <div className="relative">
+        <div>
           <Input
-            label="Adresse email"
-            type="email"
-            placeholder="vous@exemple.com"
-            error={errors.email?.message}
-            {...register("email")}
+            label="Téléphone"
+            type="tel"
+            placeholder="06 12 34 56 78"
+            error={errors.phone?.message}
+            {...register("phone")}
             icon={
               <svg
                 className="w-5 h-5"
@@ -200,29 +206,39 @@ export default function RegisterClient() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
+                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                 />
               </svg>
             }
           />
-          {isChecking && (
-            <p className={`mt-1.5 text-sm ${colors.text.tertiary}`}>
-              Vérification...
-            </p>
-          )}
-          {isAvailable === false && (
-            <p className={`mt-1.5 text-sm ${colors.error.text}`}>
-              Email déjà utilisé
-            </p>
-          )}
-          {isAvailable === true && (
-            <p className={`mt-1.5 text-sm ${colors.success.text}`}>
-              Email disponible ✓
-            </p>
-          )}
+          <p className={`mt-1.5 text-xs ${colors.text.tertiary}`}>
+            🔒 Utilisé uniquement pour les notifications SMS — jamais partagé
+          </p>
         </div>
 
-        {/* Mot de passe */}
+        <Input
+          label="Adresse email"
+          type="email"
+          placeholder="vous@exemple.com"
+          error={errors.email?.message}
+          {...register("email")}
+          icon={
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
+              />
+            </svg>
+          }
+        />
+
         <div className="relative">
           <Input
             label="Mot de passe"
@@ -290,7 +306,6 @@ export default function RegisterClient() {
           <PasswordStrengthIndicator password={watch("password") || ""} />
         </div>
 
-        {/* Confirmation mot de passe */}
         <Input
           label="Confirmer le mot de passe"
           type="password"
@@ -314,7 +329,6 @@ export default function RegisterClient() {
           }
         />
 
-        {/* CGU */}
         <Checkbox
           label={
             <>
@@ -331,7 +345,6 @@ export default function RegisterClient() {
           {...register("acceptTerms")}
         />
 
-        {/* Bouton submit */}
         <Button
           type="submit"
           fullWidth
@@ -343,7 +356,6 @@ export default function RegisterClient() {
         </Button>
       </form>
 
-      {/* Divider */}
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-gray-300" />
@@ -357,7 +369,6 @@ export default function RegisterClient() {
         </div>
       </div>
 
-      {/* Liens */}
       <div className="space-y-3">
         <Link href={routes.auth.login}>
           <Button
@@ -371,13 +382,20 @@ export default function RegisterClient() {
         <p className="text-center text-sm text-gray-600">
           Vous êtes prestataire ?{" "}
           <Link
-            href={routes.auth.register.artisan.step1}
+            href={routes.auth.register.prestataire.step1}
             className={`font-medium ${colors.premium.text} hover:underline`}
           >
             Inscrivez-vous ici
           </Link>
         </p>
       </div>
+
+      <DuplicateAccountModal
+        isOpen={modal.open}
+        type={modal.type}
+        value={modal.value}
+        onClose={() => setModal({ open: false, type: null })}
+      />
     </AuthLayout>
   );
 }

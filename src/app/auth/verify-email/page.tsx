@@ -84,8 +84,8 @@ export default function VerifyEmail() {
   const handleGoToDashboard = () => {
     if (type === "client") {
       router.push(routes.client.dashboard);
-    } else if (type === "artisan") {
-      router.push(routes.artisan.dashboard);
+    } else if (type === "prestataire") {
+      router.push(routes.prestataire.dashboard);
     } else {
       router.push(routes.public.home);
     }
@@ -138,7 +138,7 @@ export default function VerifyEmail() {
           <p className="text-gray-600 mb-2">
             Un email de confirmation a été envoyé à :
           </p>
-          <p className={`${colors.secondary.text} font-bold text-lg mb-6`}>
+          <p className={`${colors.premium.text} font-bold text-lg mb-6`}>
             {userEmail}
           </p>
 
@@ -223,11 +223,11 @@ export default function VerifyEmail() {
           {/* Boutons d'action */}
           <div className="space-y-3">
             <Button
+              variant="premium"
               onClick={handleResendEmail}
               fullWidth
               size="lg"
               isLoading={resendEmailMutation.isPending}
-              className={`${colors.secondary.gradient} ${colors.secondary.gradientHover}`}
             >
               📨 Renvoyer l'email de vérification
             </Button>
@@ -255,7 +255,7 @@ export default function VerifyEmail() {
               Mauvaise adresse email ?{" "}
               <Link
                 href={routes.auth.register.client}
-                className={`font-medium ${colors.secondary.text} hover:${colors.secondary.textDark} hover:underline`}
+                className={`font-medium ${colors.premium.text} hover:${colors.premium.textDark} hover:underline`}
               >
                 Créer un nouveau compte
               </Link>

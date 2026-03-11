@@ -6,8 +6,8 @@ import { QueryProvider } from "@/providers/query-provider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Tasky - Marketplace de services artisanaux",
-  description: "Trouvez et réservez des artisans locaux pour vos projets",
+  title: "Tasky - Marketplace de services à la demande",
+  description: "Trouvez et réservez des prestataires locaux pour vos projets",
 };
 
 export default function RootLayout({

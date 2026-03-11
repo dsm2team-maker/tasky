@@ -5,7 +5,7 @@ import { persist } from "zustand/middleware";
 interface User {
   id: string;
   email: string;
-  role: "CLIENT" | "ARTISAN" | "ADMIN";
+  role: "CLIENT" | "PRESTATAIRE" | "ADMIN";
   firstName: string;
   lastName: string;
   city?: string | null;

@@ -25,19 +25,17 @@ const registerClientSchema = z.object({
   phone: z.string().optional(),
 });
 
-const registerArtisanSchema = z.object({
+const registerPrestataireSchema = z.object({
   email: z.string().email("Email invalide"),
   password: z.string().min(8, "Mot de passe trop court (min 8 caractères)"),
   firstName: z.string().min(2, "Prénom trop court"),
   lastName: z.string().min(2, "Nom trop court"),
   city: z.string().min(2, "Ville requise"),
   phone: z.string().min(10, "Téléphone invalide"),
-  // Step 2 - compétences
   competences: z
     .array(z.string())
     .min(1, "Au moins une compétence requise")
     .max(3, "Maximum 3 compétences"),
-  // Step 4 - CGU
   cguAccepted: z.boolean().refine((val) => val === true, {
     message: "Vous devez accepter les CGU",
   }),
@@ -54,7 +52,6 @@ const loginSchema = z.object({
 
 export const registerClient = async (req: Request, res: Response) => {
   try {
-    // Validation
     const validation = registerClientSchema.safeParse(req.body);
     if (!validation.success) {
       return res.status(400).json({
@@ -67,7 +64,6 @@ export const registerClient = async (req: Request, res: Response) => {
     const { email, password, firstName, lastName, city, phone } =
       validation.data;
 
-    // Vérifier si l'email existe déjà
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(409).json({
@@ -76,11 +72,19 @@ export const registerClient = async (req: Request, res: Response) => {
       });
     }
 
-    // Hasher le mot de passe
+    if (phone) {
+      const existingPhone = await prisma.user.findFirst({ where: { phone } });
+      if (existingPhone) {
+        return res.status(409).json({
+          success: false,
+          message: "Un compte existe déjà avec ce numéro de téléphone",
+        });
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-    // Créer l'utilisateur + profil client en transaction
-    const user = await prisma.$transaction(async (tx) => {
+    const user = await prisma.$transaction(async (tx: any) => {
       const newUser = await tx.user.create({
         data: {
           email,
@@ -92,20 +96,18 @@ export const registerClient = async (req: Request, res: Response) => {
           phone,
         },
       });
-
-      await tx.client.create({
-        data: { userId: newUser.id },
-      });
-
+      await tx.client.create({ data: { userId: newUser.id } });
       return newUser;
     });
 
-    // Générer les tokens
-    const payload = { userId: user.id, email: user.email, role: user.role as "CLIENT" };
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role as "CLIENT",
+    };
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
-    // Sauvegarder le refresh token
     await prisma.refreshToken.create({
       data: {
         token: refreshToken,
@@ -142,13 +144,12 @@ export const registerClient = async (req: Request, res: Response) => {
 };
 
 // =============================================
-// INSCRIPTION ARTISAN
+// INSCRIPTION PRESTATAIRE
 // =============================================
 
-export const registerArtisan = async (req: Request, res: Response) => {
+export const registerPrestataire = async (req: Request, res: Response) => {
   try {
-    // Validation
-    const validation = registerArtisanSchema.safeParse(req.body);
+    const validation = registerPrestataireSchema.safeParse(req.body);
     if (!validation.success) {
       return res.status(400).json({
         success: false,
@@ -160,7 +161,6 @@ export const registerArtisan = async (req: Request, res: Response) => {
     const { email, password, firstName, lastName, city, phone, competences } =
       validation.data;
 
-    // Vérifier si l'email existe déjà
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(409).json({
@@ -169,7 +169,16 @@ export const registerArtisan = async (req: Request, res: Response) => {
       });
     }
 
-    // Vérifier que les catégories existent
+    if (phone) {
+      const existingPhone = await prisma.user.findFirst({ where: { phone } });
+      if (existingPhone) {
+        return res.status(409).json({
+          success: false,
+          message: "Un compte existe déjà avec ce numéro de téléphone",
+        });
+      }
+    }
+
     const categories = await prisma.category.findMany({
       where: { id: { in: competences } },
     });
@@ -180,16 +189,14 @@ export const registerArtisan = async (req: Request, res: Response) => {
       });
     }
 
-    // Hasher le mot de passe
     const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-    // Créer l'utilisateur + profil artisan + compétences en transaction
-    const user = await prisma.$transaction(async (tx) => {
+    const user = await prisma.$transaction(async (tx: any) => {
       const newUser = await tx.user.create({
         data: {
           email,
           password: hashedPassword,
-          role: "ARTISAN",
+          role: "PRESTATAIRE",
           firstName,
           lastName,
           city,
@@ -197,17 +204,16 @@ export const registerArtisan = async (req: Request, res: Response) => {
         },
       });
 
-      const artisan = await tx.artisan.create({
+      const prestataire = await tx.prestataire.create({
         data: {
           userId: newUser.id,
           cguAcceptedAt: new Date(),
         },
       });
 
-      // Créer les compétences
       await tx.competence.createMany({
         data: competences.map((categoryId) => ({
-          artisanId: artisan.id,
+          prestataireId: prestataire.id,
           categoryId,
         })),
       });
@@ -215,12 +221,14 @@ export const registerArtisan = async (req: Request, res: Response) => {
       return newUser;
     });
 
-    // Générer les tokens
-    const payload = { userId: user.id, email: user.email, role: user.role as "ARTISAN" };
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role as "PRESTATAIRE",
+    };
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
-    // Sauvegarder le refresh token
     await prisma.refreshToken.create({
       data: {
         token: refreshToken,
@@ -231,7 +239,7 @@ export const registerArtisan = async (req: Request, res: Response) => {
 
     return res.status(201).json({
       success: true,
-      message: "Compte artisan créé avec succès",
+      message: "Compte prestataire créé avec succès",
       data: {
         user: {
           id: user.id,
@@ -248,7 +256,7 @@ export const registerArtisan = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error("Erreur registerArtisan:", error);
+    console.error("Erreur registerPrestataire:", error);
     return res.status(500).json({
       success: false,
       message: "Erreur serveur lors de l'inscription",
@@ -262,7 +270,6 @@ export const registerArtisan = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   try {
-    // Validation
     const validation = loginSchema.safeParse(req.body);
     if (!validation.success) {
       return res.status(400).json({
@@ -274,16 +281,13 @@ export const login = async (req: Request, res: Response) => {
 
     const { email, password } = validation.data;
 
-    // Trouver l'utilisateur
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Email ou mot de passe incorrect",
-      });
+      return res
+        .status(401)
+        .json({ success: false, message: "Email ou mot de passe incorrect" });
     }
 
-    // Vérifier si le compte est actif
     if (!user.isActive) {
       return res.status(403).json({
         success: false,
@@ -291,21 +295,21 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Vérifier le mot de passe
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: "Email ou mot de passe incorrect",
-      });
+      return res
+        .status(401)
+        .json({ success: false, message: "Email ou mot de passe incorrect" });
     }
 
-    // Générer les tokens
-    const payload = { userId: user.id, email: user.email, role: user.role as "CLIENT" | "ARTISAN" | "ADMIN" };
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role as "CLIENT" | "PRESTATAIRE" | "ADMIN",
+    };
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
-    // Sauvegarder le refresh token
     await prisma.refreshToken.create({
       data: {
         token: refreshToken,
@@ -335,15 +339,14 @@ export const login = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Erreur login:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Erreur serveur lors de la connexion",
-    });
+    return res
+      .status(500)
+      .json({ success: false, message: "Erreur serveur lors de la connexion" });
   }
 };
 
 // =============================================
-// MON PROFIL (utilisateur connecté)
+// MON PROFIL
 // =============================================
 
 export const getMe = async (req: AuthRequest, res: Response) => {
@@ -354,7 +357,7 @@ export const getMe = async (req: AuthRequest, res: Response) => {
       where: { id: userId },
       include: {
         client: true,
-        artisan: {
+        prestataire: {
           include: {
             competences: {
               include: { category: true },
@@ -365,10 +368,9 @@ export const getMe = async (req: AuthRequest, res: Response) => {
     });
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "Utilisateur non trouvé",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "Utilisateur non trouvé" });
     }
 
     return res.status(200).json({
@@ -384,15 +386,12 @@ export const getMe = async (req: AuthRequest, res: Response) => {
         avatar: user.avatar,
         emailVerified: user.emailVerified,
         createdAt: user.createdAt,
-        profile: user.client || user.artisan,
+        profile: user.client || user.prestataire,
       },
     });
   } catch (error) {
     console.error("Erreur getMe:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Erreur serveur",
-    });
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
   }
 };
 
@@ -403,18 +402,12 @@ export const getMe = async (req: AuthRequest, res: Response) => {
 export const logout = async (req: AuthRequest, res: Response) => {
   try {
     const { refreshToken } = req.body;
-
     if (refreshToken) {
-      // Supprimer le refresh token de la DB
-      await prisma.refreshToken.deleteMany({
-        where: { token: refreshToken },
-      });
+      await prisma.refreshToken.deleteMany({ where: { token: refreshToken } });
     }
-
-    return res.status(200).json({
-      success: true,
-      message: "Déconnexion réussie",
-    });
+    return res
+      .status(200)
+      .json({ success: true, message: "Déconnexion réussie" });
   } catch (error) {
     console.error("Erreur logout:", error);
     return res.status(500).json({
@@ -433,43 +426,39 @@ export const refreshToken = async (req: Request, res: Response) => {
     const { refreshToken: token } = req.body;
 
     if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: "Refresh token manquant",
-      });
+      return res
+        .status(401)
+        .json({ success: false, message: "Refresh token manquant" });
     }
 
-    // Vérifier le token en DB
     const storedToken = await prisma.refreshToken.findUnique({
       where: { token },
       include: { user: true },
     });
 
     if (!storedToken || storedToken.expiresAt < new Date()) {
-      return res.status(401).json({
-        success: false,
-        message: "Refresh token invalide ou expiré",
-      });
+      return res
+        .status(401)
+        .json({ success: false, message: "Refresh token invalide ou expiré" });
     }
 
-    // Vérifier la signature JWT
     try {
       verifyRefreshToken(token);
     } catch {
-      return res.status(401).json({
-        success: false,
-        message: "Refresh token invalide",
-      });
+      return res
+        .status(401)
+        .json({ success: false, message: "Refresh token invalide" });
     }
 
     const user = storedToken.user;
-
-    // Générer un nouveau access token
-    const payload = { userId: user.id, email: user.email, role: user.role as "CLIENT" | "ARTISAN" | "ADMIN" };
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role as "CLIENT" | "PRESTATAIRE" | "ADMIN",
+    };
     const newAccessToken = generateAccessToken(payload);
     const newRefreshToken = generateRefreshToken(payload);
 
-    // Remplacer l'ancien refresh token
     await prisma.$transaction([
       prisma.refreshToken.delete({ where: { token } }),
       prisma.refreshToken.create({
@@ -484,17 +473,51 @@ export const refreshToken = async (req: Request, res: Response) => {
     return res.status(200).json({
       success: true,
       data: {
-        tokens: {
-          accessToken: newAccessToken,
-          refreshToken: newRefreshToken,
-        },
+        tokens: { accessToken: newAccessToken, refreshToken: newRefreshToken },
       },
     });
   } catch (error) {
     console.error("Erreur refreshToken:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Erreur serveur",
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+};
+
+// =============================================
+// VÉRIFICATION EMAIL DISPONIBLE
+// =============================================
+
+export const checkEmail = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.query as { email: string };
+    if (!email)
+      return res.status(400).json({ success: false, message: "Email requis" });
+
+    const existing = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
     });
+    return res.status(200).json({ success: true, available: !existing });
+  } catch (error) {
+    console.error("Erreur checkEmail:", error);
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+};
+
+// =============================================
+// VÉRIFICATION TÉLÉPHONE DISPONIBLE
+// =============================================
+
+export const checkPhone = async (req: Request, res: Response) => {
+  try {
+    const { phone } = req.query as { phone: string };
+    if (!phone)
+      return res
+        .status(400)
+        .json({ success: false, message: "Téléphone requis" });
+
+    const existing = await prisma.user.findFirst({ where: { phone } });
+    return res.status(200).json({ success: true, available: !existing });
+  } catch (error) {
+    console.error("Erreur checkPhone:", error);
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
   }
 };

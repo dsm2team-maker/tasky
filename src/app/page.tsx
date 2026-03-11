@@ -24,7 +24,7 @@ export default function HomePage() {
   useEffect(() => {
     if (isHydrated && isAuthenticated) {
       if (user?.role === "CLIENT") router.push(routes.client.dashboard);
-      else if (user?.role === "ARTISAN") router.push(routes.artisan.dashboard);
+      else if (user?.role === "PRESTATAIRE") router.push(routes.prestataire.dashboard);
     }
   }, [isHydrated, isAuthenticated, user, router]);
 
@@ -78,7 +78,7 @@ export default function HomePage() {
                   </div>
                 </Link>
                 <Link
-                  href={routes.auth.register.artisan.step1}
+                  href={routes.auth.register.prestataire.step1}
                   className={`group px-8 py-4 ${colors.secondary.gradient} text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 text-center`}
                 >
                   <div className="font-bold text-lg mt-1 opacity-90">
@@ -152,7 +152,7 @@ export default function HomePage() {
             </h3>
             <div className="max-w-4xl mx-auto space-y-3 text-center mb-6">
               <p className={`text-xl font-semibold ${colors.primary.text}`}>
-                🔍 Trouvez le bon artisan en quelques clics, en toute confiance.
+                🔍 Trouvez le bon prestataire en quelques clics, en toute confiance.
               </p>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -356,7 +356,7 @@ export default function HomePage() {
                 },
                 {
                   num: 2,
-                  title: "Les artisans vous contactent",
+                  title: "Les prestataires vous contactent",
                   desc: "Recevez plusieurs propositions de prestataires locaux. Comparez les tarifs, les délais et les avis.",
                   badge: "✓ Vous choisissez le meilleur profil",
                   badgeColor: "bg-blue-50 text-blue-700",
@@ -615,7 +615,7 @@ export default function HomePage() {
                   </li>
                 </ul>
                 <Link
-                  href={routes.auth.register.artisan.step1}
+                  href={routes.auth.register.prestataire.step1}
                   className={`inline-block px-8 py-4 ${colors.secondary.gradient} text-white font-bold rounded-xl hover:shadow-2xl hover:scale-105 transition-all text-center`}
                 >
                   <span className="text-lg">
@@ -711,7 +711,7 @@ export default function HomePage() {
                 Publier une demande
               </Button>
             </Link>
-            <Link href={routes.auth.register.artisan.step1}>
+            <Link href={routes.auth.register.prestataire.step1}>
               <Button variant="secondary" size="lg" className="shadow-xl">
                 Proposer mes services
               </Button>

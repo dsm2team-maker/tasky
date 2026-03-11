@@ -3,13 +3,15 @@ import React from "react";
 interface ProgressStepsProps {
   currentStep: number;
   totalSteps: number;
-  completedSteps?: number[]; // Étapes complétées
+  completedSteps?: number[];
+  onStepClick?: (step: number) => void; // Navigation cliquable
 }
 
 export const ProgressSteps: React.FC<ProgressStepsProps> = ({
   currentStep,
   totalSteps,
   completedSteps = [],
+  onStepClick,
 }) => {
   return (
     <div className="mb-8">
@@ -19,19 +21,24 @@ export const ProgressSteps: React.FC<ProgressStepsProps> = ({
           const isCompleted = completedSteps.includes(stepNumber);
           const isCurrent = stepNumber === currentStep;
           const isPast = stepNumber < currentStep;
+          const isClickable = onStepClick && (isPast || isCompleted);
 
           return (
             <React.Fragment key={stepNumber}>
               {/* Cercle de l'étape */}
               <div className="flex flex-col items-center">
                 <div
+                  onClick={() => isClickable && onStepClick(stepNumber)}
+                  title={
+                    isClickable ? `Retour à l'étape ${stepNumber}` : undefined
+                  }
                   className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all ${
                     isCompleted || isPast
                       ? "bg-emerald-500 text-white"
                       : isCurrent
                         ? "bg-emerald-500 text-white ring-4 ring-emerald-200"
                         : "bg-gray-200 text-gray-400"
-                  }`}
+                  } ${isClickable ? "cursor-pointer hover:opacity-75 hover:scale-105 hover:ring-2 hover:ring-emerald-300" : "cursor-default"}`}
                 >
                   {isCompleted ? (
                     <svg
@@ -49,7 +56,16 @@ export const ProgressSteps: React.FC<ProgressStepsProps> = ({
                     stepNumber
                   )}
                 </div>
-                <span className="text-xs mt-2 text-gray-600 font-medium">
+                <span
+                  onClick={() => isClickable && onStepClick(stepNumber)}
+                  className={`text-xs mt-2 font-medium transition-colors ${
+                    isClickable
+                      ? "text-emerald-600 cursor-pointer hover:text-emerald-700 hover:underline"
+                      : isCurrent
+                        ? "text-emerald-600"
+                        : "text-gray-400"
+                  }`}
+                >
                   Étape {stepNumber}
                 </span>
               </div>

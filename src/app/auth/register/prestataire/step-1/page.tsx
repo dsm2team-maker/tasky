@@ -1,15 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  registerArtisanStep1Schema,
-  RegisterArtisanStep1Input,
+  registerPrestataireStep1Schema,
+  RegisterPrestataireStep1Input,
 } from "@/lib/schemas";
 import { useEmailValidation } from "@/hooks/useEmailValidation";
+import { usePhoneValidation } from "@/hooks/usePhoneValidation";
+import { DuplicateAccountModal } from "@/components/DuplicateAccountModal";
 import { Input } from "@/components/Input";
 import { Checkbox } from "@/components/Checkbox";
 import { Button } from "@/components/Button";
@@ -20,34 +22,60 @@ import { colors } from "@/config/colors";
 import { typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 
-export default function RegisterArtisanStep1() {
+export default function RegisterPrestataireStep1() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [modal, setModal] = useState<{
+    open: boolean;
+    type: "email" | "phone" | null;
+    value?: string;
+  }>({
+    open: false,
+    type: null,
+  });
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
-  } = useForm<RegisterArtisanStep1Input>({
-    resolver: zodResolver(registerArtisanStep1Schema),
+  } = useForm<RegisterPrestataireStep1Input>({
+    resolver: zodResolver(registerPrestataireStep1Schema),
     mode: "onBlur",
   });
 
-  const emailValue = watch("email");
-  const { isChecking, isAvailable } = useEmailValidation(emailValue);
+  // ── Restaurer les données si retour arrière ──
+  useEffect(() => {
+    const saved = sessionStorage.getItem("prestataire_step1");
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        if (data.firstName) setValue("firstName", data.firstName);
+        if (data.lastName) setValue("lastName", data.lastName);
+        if (data.city) setValue("city", data.city);
+        if (data.phone) setValue("phone", data.phone);
+        if (data.email) setValue("email", data.email);
+      } catch {}
+    }
+  }, [setValue]);
 
-  const onSubmit = (data: RegisterArtisanStep1Input) => {
-    if (isAvailable === false) {
-      setErrorMessage("Cet email est déjà utilisé");
+  const emailValue = watch("email");
+  const phoneValue = watch("phone");
+  const { isAvailable: emailAvailable } = useEmailValidation(emailValue);
+  const { isAvailable: phoneAvailable } = usePhoneValidation(phoneValue);
+
+  const onSubmit = (data: RegisterPrestataireStep1Input) => {
+    if (emailAvailable === false) {
+      setModal({ open: true, type: "email", value: data.email });
       return;
     }
-    setErrorMessage(null);
-
-    // ✅ Sauvegarder les données du step 1 dans sessionStorage
+    if (phoneAvailable === false) {
+      setModal({ open: true, type: "phone", value: data.phone });
+      return;
+    }
     sessionStorage.setItem(
-      "artisan_step1",
+      "prestataire_step1",
       JSON.stringify({
         email: data.email,
         password: data.password,
@@ -57,12 +85,11 @@ export default function RegisterArtisanStep1() {
         phone: data.phone,
       }),
     );
-
-    router.push(routes.auth.register.artisan.step2);
+    router.push(routes.auth.register.prestataire.step2);
   };
 
   return (
-    <AuthLayout variant="artisan">
+    <AuthLayout variant="prestataire">
       <ProgressSteps currentStep={1} totalSteps={4} completedSteps={[]} />
 
       <div className="text-center mb-8">
@@ -83,7 +110,7 @@ export default function RegisterArtisanStep1() {
             />
           </svg>
         </div>
-        <h1 className={`${typography.h2.base} ${colors.secondary.text} mb-2`}>
+        <h1 className={`${typography.h2.base} ${colors.premium.text} mb-2`}>
           Devenir prestataire
         </h1>
         <p className={`${colors.premium.text} font-medium`}>
@@ -91,14 +118,7 @@ export default function RegisterArtisanStep1() {
         </p>
       </div>
 
-      {errorMessage && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-600 text-sm text-center">{errorMessage}</p>
-        </div>
-      )}
-
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        {/* Prénom + Nom */}
         <div className="grid grid-cols-2 gap-3">
           <Input
             label="Prénom"
@@ -146,7 +166,6 @@ export default function RegisterArtisanStep1() {
           />
         </div>
 
-        {/* Ville */}
         <Input
           label="Ville"
           type="text"
@@ -176,38 +195,13 @@ export default function RegisterArtisanStep1() {
           }
         />
 
-        {/* Téléphone */}
-        <Input
-          label="Téléphone"
-          type="tel"
-          placeholder="06 12 34 56 78"
-          error={errors.phone?.message}
-          {...register("phone")}
-          icon={
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-              />
-            </svg>
-          }
-        />
-
-        {/* Email */}
-        <div className="relative">
+        <div>
           <Input
-            label="Adresse email"
-            type="email"
-            placeholder="vous@exemple.com"
-            error={errors.email?.message}
-            {...register("email")}
+            label="Téléphone"
+            type="tel"
+            placeholder="06 12 34 56 78"
+            error={errors.phone?.message}
+            {...register("phone")}
             icon={
               <svg
                 className="w-5 h-5"
@@ -219,29 +213,39 @@ export default function RegisterArtisanStep1() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
+                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                 />
               </svg>
             }
           />
-          {isChecking && (
-            <p className={`mt-1.5 text-sm ${colors.text.tertiary}`}>
-              Vérification...
-            </p>
-          )}
-          {isAvailable === false && (
-            <p className={`mt-1.5 text-sm ${colors.error.text}`}>
-              Email déjà utilisé
-            </p>
-          )}
-          {isAvailable === true && (
-            <p className={`mt-1.5 text-sm ${colors.success.text}`}>
-              Email disponible ✓
-            </p>
-          )}
+          <p className={`mt-1.5 text-xs ${colors.text.tertiary}`}>
+            🔒 Utilisé uniquement pour les notifications SMS — jamais partagé
+          </p>
         </div>
 
-        {/* Mot de passe */}
+        <Input
+          label="Adresse email"
+          type="email"
+          placeholder="vous@exemple.com"
+          error={errors.email?.message}
+          {...register("email")}
+          icon={
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
+              />
+            </svg>
+          }
+        />
+
         <div className="relative">
           <Input
             label="Mot de passe"
@@ -309,7 +313,6 @@ export default function RegisterArtisanStep1() {
           <PasswordStrengthIndicator password={watch("password") || ""} />
         </div>
 
-        {/* Confirmation mot de passe */}
         <Input
           label="Confirmer le mot de passe"
           type="password"
@@ -333,7 +336,6 @@ export default function RegisterArtisanStep1() {
           }
         />
 
-        {/* CGU */}
         <Checkbox
           label={
             <>
@@ -372,6 +374,13 @@ export default function RegisterArtisanStep1() {
           </Link>
         </p>
       </div>
+
+      <DuplicateAccountModal
+        isOpen={modal.open}
+        type={modal.type}
+        value={modal.value}
+        onClose={() => setModal({ open: false, type: null })}
+      />
     </AuthLayout>
   );
 }
