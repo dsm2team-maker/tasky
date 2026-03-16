@@ -641,10 +641,10 @@ export default function ResetPassword() {
         {/* Bouton submit */}
         <Button
           type="submit"
+          variant="premium"
           fullWidth
           size="lg"
           isLoading={resetPasswordMutation.isPending}
-          className={`${colors.secondary.gradient} ${colors.secondary.gradientHover}`}
         >
           🔒 Réinitialiser mon mot de passe
         </Button>

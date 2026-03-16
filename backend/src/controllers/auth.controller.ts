@@ -9,6 +9,7 @@ import {
 } from "../lib/jwt";
 import { z } from "zod";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { authService } from "../modules/auth/auth.service";
 
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || "12");
 
@@ -115,6 +116,12 @@ export const registerClient = async (req: Request, res: Response) => {
         expiresAt: getRefreshTokenExpiry(),
       },
     });
+    await authService.sendVerificationEmail(
+      user.id,
+      user.email,
+      user.firstName,
+      "client",
+    );
 
     return res.status(201).json({
       success: true,
@@ -236,7 +243,12 @@ export const registerPrestataire = async (req: Request, res: Response) => {
         expiresAt: getRefreshTokenExpiry(),
       },
     });
-
+    await authService.sendVerificationEmail(
+      user.id,
+      user.email,
+      user.firstName,
+      "prestataire",
+    );
     return res.status(201).json({
       success: true,
       message: "Compte prestataire créé avec succès",
@@ -283,23 +295,27 @@ export const login = async (req: Request, res: Response) => {
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Email ou mot de passe incorrect" });
+      return res.status(404).json({
+        success: false,
+        message: "Aucun compte trouve avec cet email.",
+        code: "USER_NOT_FOUND",
+      });
     }
 
     if (!user.isActive) {
       return res.status(403).json({
         success: false,
-        message: "Votre compte a été désactivé. Contactez le support.",
+        message: "Votre compte a ete desactive. Contactez le support.",
       });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Email ou mot de passe incorrect" });
+      return res.status(401).json({
+        success: false,
+        message: "Mot de passe incorrect.",
+        code: "WRONG_PASSWORD",
+      });
     }
 
     const payload = {
@@ -519,5 +535,102 @@ export const checkPhone = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Erreur checkPhone:", error);
     return res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+};
+
+// =============================================
+// VERIFICATION EMAIL
+// =============================================
+
+export const verifyEmail = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.query as { token: string };
+    if (!token)
+      return res
+        .status(400)
+        .json({ success: false, message: "Token manquant" });
+    await authService.verifyEmailToken(token);
+    return res
+      .status(200)
+      .json({ success: true, message: "Email verifie avec succes !" });
+  } catch (error: any) {
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Token invalide ou expire",
+    });
+  }
+};
+
+// =============================================
+// RENVOYER EMAIL DE VERIFICATION
+// =============================================
+
+export const resendVerificationEmail = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user)
+      return res.status(200).json({
+        success: true,
+        message: "Si ce compte existe, un email a ete envoye.",
+      });
+    if (user.emailVerified)
+      return res
+        .status(400)
+        .json({ success: false, message: "Cet email est deja verifie." });
+    await authService.sendVerificationEmail(
+      user.id,
+      user.email,
+      user.firstName,
+      user.role === "PRESTATAIRE" ? "prestataire" : "client",
+    );
+    return res
+      .status(200)
+      .json({ success: true, message: "Email de verification renvoye." });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+};
+
+// =============================================
+// MOT DE PASSE OUBLIE
+// =============================================
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email)
+      return res.status(400).json({ success: false, message: "Email requis" });
+    await authService.sendResetPasswordEmail(email);
+    return res.status(200).json({
+      success: true,
+      message: "Si ce compte existe, un email a ete envoye.",
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+};
+
+// =============================================
+// RESET MOT DE PASSE
+// =============================================
+
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password)
+      return res
+        .status(400)
+        .json({ success: false, message: "Donnees invalides" });
+    await authService.resetPassword(token, password);
+    return res.status(200).json({
+      success: true,
+      message: "Mot de passe reinitialise avec succes.",
+    });
+  } catch (error: any) {
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Token invalide ou expire",
+    });
   }
 };

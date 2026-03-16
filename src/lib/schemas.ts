@@ -15,6 +15,16 @@ export const passwordSchema = z
   .regex(/[0-9]/, "Au moins un chiffre requis")
   .regex(/[^A-Za-z0-9]/, "Au moins un caractère spécial requis");
 
+// Validation téléphone mobile français (06 ou 07, 10 chiffres)
+export const phoneSchema = z
+  .string()
+  .min(1, "Le numéro de téléphone est requis")
+  .transform((val) => val.replace(/\s/g, "")) // Supprimer les espaces
+  .refine(
+    (val) => /^0[67]\d{8}$/.test(val),
+    "Numéro invalide. Format attendu : 06 XX XX XX XX ou 07 XX XX XX XX",
+  );
+
 // Inscription Client
 export const registerClientSchema = z
   .object({
@@ -23,7 +33,7 @@ export const registerClientSchema = z
       .min(2, "Le prénom doit contenir au moins 2 caractères"),
     lastName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
     city: z.string().min(2, "La ville est requise"),
-    phone: z.string().min(10, "Téléphone invalide"),
+    phone: phoneSchema,
     email: emailSchema,
     password: passwordSchema,
     confirmPassword: z.string().min(1, "Confirmez votre mot de passe"),
@@ -46,7 +56,7 @@ export const registerPrestataireStep1Schema = z
       .min(2, "Le prénom doit contenir au moins 2 caractères"),
     lastName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
     city: z.string().min(2, "La ville est requise"),
-    phone: z.string().min(10, "Téléphone invalide"),
+    phone: phoneSchema,
     email: emailSchema,
     password: passwordSchema,
     confirmPassword: z.string().min(1, "Confirmez votre mot de passe"),
@@ -63,7 +73,6 @@ export type RegisterPrestataireStep1Input = z.infer<
   typeof registerPrestataireStep1Schema
 >;
 
-// Alias pour rétrocompatibilité
 export const registerArtisanStep1Schema = registerPrestataireStep1Schema;
 export type RegisterArtisanStep1Input = RegisterPrestataireStep1Input;
 

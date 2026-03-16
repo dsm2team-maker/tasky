@@ -1,20 +1,19 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
 import { ProgressSteps } from "@/components/ProgressSteps";
 import AuthLayout from "@/components/AuthLayout";
+import { ProfilePhotoUpload } from "@/components/shared/ProfilePhotoUpload";
 import { colors } from "@/config/colors";
 import { routes } from "@/config/routes";
 
 const BIO_MAX = 500;
-const BIO_MIN = 50;
+const BIO_MIN = 100;
 
 export default function RegisterPrestataireStep3() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [photo, setPhoto] = useState<string | null>(null);
   const [bio, setBio] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +23,6 @@ export default function RegisterPrestataireStep3() {
       router.push(routes.auth.register.prestataire.step1);
       return;
     }
-    // Restaurer les données si on revient en arrière
     const saved = sessionStorage.getItem("prestataire_step3");
     if (saved) {
       try {
@@ -40,21 +38,6 @@ export default function RegisterPrestataireStep3() {
     if (step === 2) router.push(routes.auth.register.prestataire.step2);
   };
 
-  // ── Gestion photo ──────────────────────────────────────────────────────────
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setError("La photo ne doit pas dépasser 5 Mo");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onloadend = () => setPhoto(reader.result as string);
-    reader.readAsDataURL(file);
-    setError(null);
-  };
-
-  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = () => {
     if (!photo) {
       setError("Veuillez ajouter une photo de profil");
@@ -84,7 +67,6 @@ export default function RegisterPrestataireStep3() {
         onStepClick={handleStepClick}
       />
 
-      {/* ── Titre ── */}
       <div className="text-center mb-6">
         <div className="text-4xl mb-2">👤</div>
         <h1 className={`text-2xl font-bold ${colors.premium.text} mb-1`}>
@@ -95,7 +77,6 @@ export default function RegisterPrestataireStep3() {
         </p>
       </div>
 
-      {/* ── Erreur globale ── */}
       {error && (
         <div
           className={`mb-4 p-3 ${colors.error.bg} border ${colors.error.borderLight} rounded-xl`}
@@ -107,87 +88,14 @@ export default function RegisterPrestataireStep3() {
       )}
 
       <div className="space-y-6">
-        {/* ══════════════════════════════════════════
-            SECTION 1 — PHOTO DE PROFIL
-        ══════════════════════════════════════════ */}
-        <div
-          className={`p-4 rounded-2xl border-2 ${photo ? colors.secondary.borderLight : colors.border.light} ${colors.background.white}`}
-        >
-          <p className={`text-sm font-semibold ${colors.text.primary} mb-3`}>
-            📸 Ajoutez une photo de profil
-          </p>
+        {/* Photo — composant réutilisable */}
+        <ProfilePhotoUpload
+          photo={photo}
+          onPhotoChange={setPhoto}
+          onError={setError}
+        />
 
-          <div className="flex items-center gap-4">
-            {/* Avatar preview */}
-            <div
-              className={`relative w-20 h-20 rounded-full flex-shrink-0 overflow-hidden border-2 ${photo ? colors.secondary.border : "border-dashed border-gray-300"} bg-gray-50`}
-            >
-              {photo ? (
-                <img
-                  src={photo}
-                  alt="Photo de profil"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-3xl text-gray-300">👤</span>
-                </div>
-              )}
-              {/* Overlay bouton retirer */}
-              {photo && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPhoto(null);
-                    if (fileInputRef.current) fileInputRef.current.value = "";
-                  }}
-                  className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition flex items-center justify-center text-white text-xs font-medium"
-                >
-                  ✕ Retirer
-                </button>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="flex-1 space-y-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleFileChange}
-                className="hidden"
-                id="photo-upload"
-              />
-              <label
-                htmlFor="photo-upload"
-                className={`flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl border-2 cursor-pointer transition-all text-sm font-medium ${
-                  photo
-                    ? `${colors.border.light} ${colors.text.secondary} hover:${colors.secondary.borderLight} hover:${colors.secondary.text}`
-                    : `${colors.secondary.border} ${colors.secondary.text} ${colors.secondary.bg} hover:opacity-80`
-                }`}
-              >
-                <span>🖼️</span>
-                {photo ? "Changer la photo" : "Choisir une photo"}
-              </label>
-              <p className={`text-xs ${colors.text.tertiary} text-center`}>
-                Utilisez une photo claire de votre visage · Max 5 Mo
-              </p>
-            </div>
-          </div>
-
-          {/* Indicateur de succès */}
-          {photo && (
-            <div
-              className={`mt-3 flex items-center gap-2 text-xs ${colors.secondary.text} ${colors.secondary.bg} px-3 py-1.5 rounded-lg`}
-            >
-              <span>✓</span> Photo ajoutée avec succès
-            </div>
-          )}
-        </div>
-
-        {/* ══════════════════════════════════════════
-            SECTION 2 — DESCRIPTION / BIO
-        ══════════════════════════════════════════ */}
+        {/* Bio */}
         <div
           className={`p-4 rounded-2xl border-2 ${bioOk ? colors.secondary.borderLight : colors.border.light} ${colors.background.white}`}
         >
@@ -196,13 +104,7 @@ export default function RegisterPrestataireStep3() {
               ✍️ Parlez-nous de vous
             </p>
             <span
-              className={`text-xs font-medium ${
-                bioLength > BIO_MAX
-                  ? colors.error.text
-                  : bioOk
-                    ? colors.secondary.text
-                    : colors.text.tertiary
-              }`}
+              className={`text-xs font-medium ${bioLength > BIO_MAX ? colors.error.text : bioOk ? colors.secondary.text : colors.text.tertiary}`}
             >
               {bioLength}/{BIO_MAX}
             </span>
@@ -224,28 +126,20 @@ export default function RegisterPrestataireStep3() {
             } text-gray-800 placeholder-gray-400`}
           />
 
-          {/* Barre de progression */}
           <div className="mt-2 h-1 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-300 ${
-                bioLength > BIO_MAX
-                  ? "bg-red-400"
-                  : bioOk
-                    ? "bg-emerald-400"
-                    : "bg-gray-300"
-              }`}
+              className={`h-full rounded-full transition-all duration-300 ${bioLength > BIO_MAX ? "bg-red-400" : bioOk ? "bg-emerald-400" : "bg-gray-300"}`}
               style={{
                 width: `${Math.min((bioLength / BIO_MAX) * 100, 100)}%`,
               }}
             />
           </div>
-          {!bioOk && bioLength > 0 && (
-            <p className={`text-xs ${colors.text.tertiary} mt-1`}>
+          {!bioOk && (
+            <p className={`text-xs font-bold ${colors.premium.text} mt-1`}>
               Encore {BIO_MIN - bioLength} caractères minimum
             </p>
           )}
 
-          {/* Guide */}
           <div
             className={`mt-3 p-3 ${colors.background.light} rounded-xl border ${colors.border.light}`}
           >
@@ -271,7 +165,6 @@ export default function RegisterPrestataireStep3() {
           </div>
         </div>
 
-        {/* ── Navigation ── */}
         <div className="flex gap-3">
           <Button
             type="button"

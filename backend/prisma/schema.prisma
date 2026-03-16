@@ -7,8 +7,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ===========================================
@@ -30,12 +31,11 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  // Relations
   client        Client?
   prestataire   Prestataire?
-
-  // Token de refresh JWT
-  refreshTokens RefreshToken[]
+  refreshTokens      RefreshToken[]
+  verificationTokens VerificationToken[]
+  emailLogs          EmailLog[]
 
   @@map("users")
 }
@@ -57,25 +57,15 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
-// ===========================================
-// PROFIL CLIENT
-// ===========================================
-
 model Client {
   id     String @id @default(cuid())
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Relations
   demandes Demande[]
   reviews  Review[]
 
   @@map("clients")
 }
-
-// ===========================================
-// PROFIL PRESTATAIRE
-// ===========================================
 
 model Prestataire {
   id          String  @id @default(cuid())
@@ -86,16 +76,10 @@ model Prestataire {
   verified    Boolean @default(false)
   rating      Float   @default(0)
   reviewCount Int     @default(0)
-
-  // Vérification identité (step-3)
-  identityDocumentType String? // "CNI" | "PASSEPORT"
+  identityDocumentType String?
   identityDocumentUrl  String?
   identityVerified     Boolean @default(false)
-
-  // CGU acceptées (step-4)
   cguAcceptedAt DateTime?
-
-  // Relations
   competences  Competence[]
   devis        Devis[]
   prestations  Prestation[]
@@ -105,18 +89,12 @@ model Prestataire {
   @@map("prestataires")
 }
 
-// ===========================================
-// CATÉGORIES
-// ===========================================
-
 model Category {
   id          String  @id @default(cuid())
   nom         String
   slug        String  @unique
   icon        String
   description String?
-
-  // Relations
   subCategories SubCategory[]
   competences   Competence[]
   demandes      Demande[]
@@ -130,8 +108,6 @@ model SubCategory {
   category   Category @relation(fields: [categoryId], references: [id])
   nom        String
   slug       String
-
-  // Relations
   prestations Prestation[]
   demandes    Demande[]
 
@@ -149,10 +125,6 @@ model Competence {
   @@map("competences")
 }
 
-// ===========================================
-// DEMANDES (Client publie une demande)
-// ===========================================
-
 model Demande {
   id            String        @id @default(cuid())
   clientId      String
@@ -169,8 +141,6 @@ model Demande {
   status        StatusDemande @default(PUBLIEE)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-
-  // Relations
   devis      Devis[]
   prestation Prestation?
 
@@ -185,10 +155,6 @@ enum StatusDemande {
   TERMINEE
   ANNULEE
 }
-
-// ===========================================
-// DEVIS (Prestataire répond à une demande)
-// ===========================================
 
 model Devis {
   id            String      @id @default(cuid())
@@ -212,10 +178,6 @@ enum StatusDevis {
   REFUSE
 }
 
-// ===========================================
-// PRESTATIONS
-// ===========================================
-
 model Prestation {
   id            String           @id @default(cuid())
   demandeId     String           @unique
@@ -228,8 +190,6 @@ model Prestation {
   status        StatusPrestation @default(EN_COURS)
   createdAt     DateTime         @default(now())
   completedAt   DateTime?
-
-  // Relations
   review Review?
 
   @@map("prestations")
@@ -241,10 +201,6 @@ enum StatusPrestation {
   ANNULEE
 }
 
-// ===========================================
-// MESSAGERIE
-// ===========================================
-
 model Message {
   id         String   @id @default(cuid())
   senderId   String
@@ -255,10 +211,6 @@ model Message {
 
   @@map("messages")
 }
-
-// ===========================================
-// AVIS
-// ===========================================
 
 model Review {
   id            String      @id @default(cuid())
@@ -275,10 +227,6 @@ model Review {
   @@map("reviews")
 }
 
-// ===========================================
-// PORTFOLIO PRESTATAIRE
-// ===========================================
-
 model PortfolioImage {
   id            String      @id @default(cuid())
   prestataireId String
@@ -288,4 +236,32 @@ model PortfolioImage {
   createdAt     DateTime    @default(now())
 
   @@map("portfolio_images")
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  type      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("verification_tokens")
+}
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  to        String
+  type      String
+  status    String
+  resendId  String?
+  userId    String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("email_logs")
 }

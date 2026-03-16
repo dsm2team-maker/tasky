@@ -131,7 +131,7 @@ export default function ForgotPassword() {
       {/* Header avec icône */}
       <div className="text-center mb-8">
         <div
-          className={`w-16 h-16 ${colors.secondary.gradient} rounded-full flex items-center justify-center mx-auto mb-4`}
+          className={`w-16 h-16 ${colors.premium.gradient} rounded-full flex items-center justify-center mx-auto mb-4`}
         >
           <svg
             className="w-8 h-8 text-white"
@@ -150,7 +150,7 @@ export default function ForgotPassword() {
         <h1 className={`${typography.h2.base} ${colors.text.primary} mb-2`}>
           Mot de passe oublié ?
         </h1>
-        <p className={`${colors.secondary.text} font-medium`}>
+        <p className={`${colors.premium.text} font-medium`}>
           Entrez votre email pour recevoir un lien de réinitialisation
         </p>
       </div>
@@ -222,7 +222,7 @@ export default function ForgotPassword() {
         </div>
         <div className="relative flex justify-center text-sm">
           <span
-            className={`px-3 py-1 ${colors.secondary.bg} ${colors.secondary.text} font-medium rounded-full`}
+            className={`px-3 py-1 ${colors.premium.bg} ${colors.premium.text} font-medium rounded-full`}
           >
             Vous vous souvenez ?
           </span>
@@ -235,7 +235,7 @@ export default function ForgotPassword() {
           <Button
             variant="outline"
             fullWidth
-            className={`${colors.secondary.borderLight} ${colors.secondary.text} ${colors.secondary.bgHover} hover:border-emerald-300`}
+            className={`${colors.premium.borderLight} ${colors.premium.text} ${colors.premium.bgHover} hover:border-emerald-300`}
           >
             ← Retour à la connexion
           </Button>

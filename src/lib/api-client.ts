@@ -3,6 +3,19 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
+// Routes d'auth qui ne doivent PAS déclencher la déconnexion sur 401
+const AUTH_ROUTES = [
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/refresh",
+  "/api/auth/verify-email",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+];
+
+const isAuthRoute = (url?: string) =>
+  AUTH_ROUTES.some((route) => url?.includes(route));
+
 // Instance Axios principale
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -25,14 +38,20 @@ apiClient.interceptors.request.use(
 );
 
 // Intercepteur pour gérer les erreurs 401 (token expiré)
+// ⚠️ Exclure les routes d'auth pour ne pas fermer les modals
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const url = error.config?.url;
+    const status = error.response?.status;
+
+    // Ne déconnecter que si c'est un 401 sur une route protégée
+    if (status === 401 && !isAuthRoute(url)) {
       localStorage.removeItem("auth_token");
       localStorage.removeItem("user_data");
       window.location.href = "/auth/login";
     }
+
     return Promise.reject(error);
   },
 );

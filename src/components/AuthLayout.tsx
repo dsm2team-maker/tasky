@@ -21,7 +21,7 @@ export default function AuthLayout({
           {/* Logo Tasky en haut à gauche DANS la carte */}
           <div className="mb-8">
             <Link href="/" className="inline-block hover:opacity-80 transition">
-              <Logo />
+              <Logo linkable={false} />
             </Link>
           </div>
 

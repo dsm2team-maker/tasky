@@ -7,12 +7,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { loginSchema, LoginInput } from "@/lib/schemas";
-import { apiClient, handleApiError } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
+import { Modal } from "@/components/ui/Modal";
 import AuthLayout from "@/components/AuthLayout";
-import Logo from "@/components/Logo";
 import { colors } from "@/config/colors";
 import { typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
@@ -21,23 +21,54 @@ export default function LoginPage() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
   const [showPassword, setShowPassword] = useState(false);
+
+  const [errorType, setErrorType] = useState<
+    | "USER_NOT_FOUND"
+    | "WRONG_PASSWORD"
+    | "EMAIL_NOT_VERIFIED"
+    | "GENERIC"
+    | null
+  >(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorEmail, setErrorEmail] = useState<string | null>(null);
+
+  const setError = (
+    type: typeof errorType,
+    message: string | null,
+    email?: string,
+  ) => {
+    setErrorType(type);
+    setErrorMessage(message);
+    setErrorEmail(email || null);
+  };
+
+  const clearError = () => {
+    setErrorType(null);
+    setErrorMessage(null);
+    setErrorEmail(null);
+  };
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     mode: "onBlur",
   });
 
+  const emailValue = watch("email");
+
   const loginMutation = useMutation({
+    gcTime: 0,
+    retry: false,
     mutationFn: async (data: LoginInput) => {
       const response = await apiClient.post("/api/auth/login", data);
       return response.data;
     },
     onSuccess: (data) => {
+      clearError();
       setAuth(data.data.user, data.data.tokens.accessToken);
       localStorage.setItem("refresh_token", data.data.tokens.refreshToken);
       if (data.data.user.role === "CLIENT") {
@@ -47,12 +78,17 @@ export default function LoginPage() {
       }
     },
     onError: (error: any) => {
-      setErrorMessage(handleApiError(error).message);
+      const code = error.response?.data?.code;
+      const message = error.response?.data?.message;
+      setError(
+        code || "GENERIC",
+        message || "Une erreur est survenue",
+        emailValue,
+      );
     },
   });
 
   const onSubmit = (data: LoginInput) => {
-    setErrorMessage(null);
     loginMutation.mutate(data);
   };
 
@@ -62,24 +98,15 @@ export default function LoginPage() {
         <h1 className={`${typography.h2.base} ${colors.premium.text} mb-2`}>
           Connexion
         </h1>
-        <p className={colors.premium.text}>Accédez à votre espace Tasky</p>
+        <p className={colors.premium.text}>Accedez a votre espace Tasky</p>
       </div>
-
-      {errorMessage && (
-        <div
-          className={`mb-4 p-3 ${colors.error.bg} border ${colors.error.border} rounded-lg`}
-        >
-          <p className={`${colors.error.text} text-sm text-center`}>
-            {errorMessage}
-          </p>
-        </div>
-      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <Input
           label="Adresse email"
           type="email"
           placeholder="vous@exemple.com"
+          autoComplete="email"
           error={errors.email?.message}
           {...register("email")}
           icon={
@@ -104,6 +131,7 @@ export default function LoginPage() {
             label="Mot de passe"
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
+            autoComplete="current-password"
             error={errors.password?.message}
             {...register("password")}
             icon={
@@ -170,7 +198,7 @@ export default function LoginPage() {
             href={routes.auth.forgotPassword}
             className={`text-sm ${colors.premium.text} hover:underline`}
           >
-            Mot de passe oublié ?
+            Mot de passe oublie ?
           </Link>
         </div>
 
@@ -186,7 +214,6 @@ export default function LoginPage() {
         </Button>
       </form>
 
-      {/* Inscription */}
       <div className="mt-8">
         <p className={`text-center text-sm ${colors.text.secondary} mb-5`}>
           Pas encore de compte ?
@@ -207,7 +234,6 @@ export default function LoginPage() {
               </div>
             </div>
           </Link>
-
           <Link href={routes.auth.register.prestataire.step1}>
             <div
               className={`p-4 rounded-xl border-2 ${colors.secondary.borderLight} ${colors.secondary.bg} hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer`}
@@ -219,7 +245,7 @@ export default function LoginPage() {
                     S'inscrire en tant que prestataire
                   </div>
                   <div className={`text-xs ${colors.text.secondary}`}>
-                    Proposez vos services et développez votre activité
+                    Proposez vos services et developpez votre activite
                   </div>
                 </div>
               </div>
@@ -227,6 +253,144 @@ export default function LoginPage() {
           </Link>
         </div>
       </div>
+
+      {/* Pop-up compte inexistant */}
+      <Modal
+        isOpen={errorType === "USER_NOT_FOUND"}
+        onClose={clearError}
+        title="Compte introuvable"
+        icon="❓"
+        headerVariant="error"
+      >
+        <div className="text-center">
+          <p className={`text-sm ${colors.text.secondary} mb-5`}>
+            Aucun compte Tasky n'est associe a cette adresse email.
+            <br />
+            Souhaitez-vous creer un compte ?
+          </p>
+          <div className="flex flex-col gap-3">
+            <Link href={routes.auth.register.client}>
+              <button
+                type="button"
+                onClick={clearError}
+                className="w-full py-3 px-4 rounded-xl font-semibold text-sm border-2 border-pink-300 text-pink-600 bg-pink-50 hover:bg-pink-100 transition"
+              >
+                Creer un compte client
+              </button>
+            </Link>
+            <Link href={routes.auth.register.prestataire.step1}>
+              <button
+                type="button"
+                onClick={clearError}
+                className="w-full py-3 px-4 rounded-xl font-semibold text-sm border-2 border-emerald-300 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition"
+              >
+                Creer un compte prestataire
+              </button>
+            </Link>
+            <button
+              type="button"
+              onClick={clearError}
+              className={`w-full py-2 text-sm ${colors.text.tertiary} transition`}
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Pop-up mot de passe incorrect */}
+      <Modal
+        isOpen={errorType === "WRONG_PASSWORD"}
+        onClose={clearError}
+        title="Mot de passe incorrect"
+        icon="🔑"
+        headerVariant="error"
+      >
+        <div className="text-center">
+          <p className={`text-sm ${colors.text.secondary} mb-5`}>
+            Le mot de passe saisi ne correspond pas a ce compte.
+            <br />
+            Voulez-vous le reinitialiser ?
+          </p>
+          <div className="flex flex-col gap-3">
+            <Link
+              href={`${routes.auth.forgotPassword}?email=${encodeURIComponent(errorEmail || "")}`}
+            >
+              <button
+                type="button"
+                onClick={clearError}
+                className={`w-full py-3 px-4 rounded-xl font-semibold text-white text-sm ${colors.premium.gradient} hover:opacity-90 transition`}
+              >
+                Reinitialiser mon mot de passe
+              </button>
+            </Link>
+            <button
+              type="button"
+              onClick={clearError}
+              className={`w-full py-2 text-sm ${colors.text.tertiary} transition`}
+            >
+              Ressayer
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Pop-up email non verifie */}
+      <Modal
+        isOpen={errorType === "EMAIL_NOT_VERIFIED"}
+        onClose={clearError}
+        title="Email non verifie"
+        icon="📧"
+        headerVariant="premium"
+      >
+        <div className="text-center">
+          <p className={`text-sm ${colors.text.secondary} mb-5`}>
+            Verifiez votre email avant de vous connecter.
+            <br />
+            Consultez votre boite de reception.
+          </p>
+          <div className="flex flex-col gap-3">
+            <Link href={routes.auth.verifyEmail}>
+              <button
+                type="button"
+                onClick={clearError}
+                className={`w-full py-3 px-4 rounded-xl font-semibold text-white text-sm ${colors.premium.gradient} hover:opacity-90 transition`}
+              >
+                Renvoyer l'email de verification
+              </button>
+            </Link>
+            <button
+              type="button"
+              onClick={clearError}
+              className={`w-full py-2 text-sm ${colors.text.tertiary} transition`}
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Pop-up erreur generique */}
+      <Modal
+        isOpen={errorType === "GENERIC"}
+        onClose={clearError}
+        title="Une erreur est survenue"
+        icon="⚠️"
+        headerVariant="error"
+      >
+        <div className="text-center">
+          <p className={`text-sm ${colors.text.secondary} mb-5`}>
+            {errorMessage}
+          </p>
+          <button
+            type="button"
+            onClick={clearError}
+            className={`w-full py-3 px-4 rounded-xl font-semibold text-white text-sm ${colors.premium.gradient} hover:opacity-90 transition`}
+          >
+            Fermer
+          </button>
+        </div>
+      </Modal>
     </AuthLayout>
   );
 }

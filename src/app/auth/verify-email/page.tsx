@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { apiClient, handleApiError } from "@/lib/api-client";
 import { Button } from "@/components/Button";
+import { Modal } from "@/components/ui/Modal";
 import AuthLayout from "@/components/AuthLayout";
 import { colors } from "@/config/colors";
 import { gradients } from "@/config/design-tokens";
@@ -15,83 +16,67 @@ export default function VerifyEmail() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams?.get("token");
-  const type = searchParams?.get("type"); // "client" ou "artisan"
+  const type = searchParams?.get("type");
 
   const [verificationStatus, setVerificationStatus] = useState<
     "loading" | "pending" | "success" | "invalid" | "expired"
   >("loading");
   const [userEmail, setUserEmail] = useState("votre@email.com");
+  const [successModal, setSuccessModal] = useState(false);
+  const [errorModal, setErrorModal] = useState<string | null>(null);
+  const hasVerified = useRef(false);
 
-  // Vérifier le token au chargement
   useEffect(() => {
     if (!token) {
-      // Pas de token = Page d'attente après inscription
       setVerificationStatus("pending");
-      // Récupérer l'email depuis le localStorage (mode démo)
       const storedEmail = localStorage.getItem("pending_verification_email");
-      if (storedEmail) {
-        setUserEmail(storedEmail);
-      }
+      if (storedEmail) setUserEmail(storedEmail);
       return;
     }
+    if (hasVerified.current) return;
+    hasVerified.current = true;
 
-    // MODE DÉMO - Vérification du token
     const verifyToken = async () => {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      if (token === "expired") {
-        setVerificationStatus("expired");
-      } else if (token.length < 10) {
-        setVerificationStatus("invalid");
-      } else {
+      try {
+        await apiClient.get(`/api/auth/verify-email?token=${token}`);
         setVerificationStatus("success");
+      } catch (error: any) {
+        const msg = error.response?.data?.message || "";
+        if (msg.includes("expiré")) {
+          setVerificationStatus("expired");
+        } else {
+          setVerificationStatus("invalid");
+        }
       }
     };
-
     verifyToken();
   }, [token]);
 
-  // ✅ CORRECTION : Auto-redirection déplacée ICI (avant les conditions)
   useEffect(() => {
     if (verificationStatus === "success") {
-      const timer = setTimeout(() => {
-        handleGoToDashboard();
-      }, 3000);
+      const timer = setTimeout(() => handleGoToLogin(), 3000);
       return () => clearTimeout(timer);
     }
   }, [verificationStatus]);
 
-  // Mutation pour renvoyer l'email
   const resendEmailMutation = useMutation({
     mutationFn: async () => {
-      // MODE DÉMO - Simulation
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      return { success: true };
+      const email = localStorage.getItem("pending_verification_email");
+      await apiClient.post("/api/auth/resend-verification", { email });
     },
-    onSuccess: () => {
-      alert("✅ Email de vérification renvoyé avec succès !");
-    },
+    onSuccess: () => setSuccessModal(true),
     onError: (error: any) => {
       const apiError = handleApiError(error);
-      alert(apiError.message);
+      setErrorModal(apiError.message);
     },
   });
 
-  const handleResendEmail = () => {
-    resendEmailMutation.mutate();
+  const handleGoToLogin = () => {
+    localStorage.removeItem("pending_verification_email");
+    router.push(routes.auth.login);
   };
 
-  const handleGoToDashboard = () => {
-    if (type === "client") {
-      router.push(routes.client.dashboard);
-    } else if (type === "prestataire") {
-      router.push(routes.prestataire.dashboard);
-    } else {
-      router.push(routes.public.home);
-    }
-  };
-
-  // Loading - Vérification du token en cours
+  // ── Loading ──
   if (verificationStatus === "loading") {
     return (
       <AuthLayout variant="neutral">
@@ -108,12 +93,11 @@ export default function VerifyEmail() {
     );
   }
 
-  // Pending - En attente de vérification (après inscription)
+  // ── Pending ──
   if (verificationStatus === "pending") {
     return (
       <AuthLayout variant="neutral">
         <div className="text-center">
-          {/* Icône email */}
           <div
             className={`w-20 h-20 ${gradients.neutral} rounded-full flex items-center justify-center mx-auto mb-6`}
           >
@@ -142,7 +126,6 @@ export default function VerifyEmail() {
             {userEmail}
           </p>
 
-          {/* Instructions */}
           <div
             className={`${gradients.neutral} border ${colors.info.border} rounded-lg p-5 mb-6 text-left`}
           >
@@ -196,7 +179,6 @@ export default function VerifyEmail() {
             </ol>
           </div>
 
-          {/* Info spam */}
           <div
             className={`${colors.warning.bg} border ${colors.warning.border} rounded-lg p-4 mb-6`}
           >
@@ -214,30 +196,26 @@ export default function VerifyEmail() {
               </svg>
               <p className={`text-sm ${colors.warning.textDark}`}>
                 <strong>Email introuvable ?</strong> Vérifiez vos{" "}
-                <strong>spams/courrier indésirable</strong> ! Parfois, nos
-                emails atterrissent là par erreur.
+                <strong>spams/courrier indésirable</strong> !
               </p>
             </div>
           </div>
 
-          {/* Boutons d'action */}
           <div className="space-y-3">
             <Button
               variant="premium"
-              onClick={handleResendEmail}
+              onClick={() => resendEmailMutation.mutate()}
               fullWidth
               size="lg"
               isLoading={resendEmailMutation.isPending}
             >
               📨 Renvoyer l'email de vérification
             </Button>
-
             <p className="text-xs text-gray-500">
-              Le lien de vérification expire dans <strong>24 heures</strong>
+              Le lien expire dans <strong>24 heures</strong>
             </p>
           </div>
 
-          {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-300" />
@@ -249,13 +227,12 @@ export default function VerifyEmail() {
             </div>
           </div>
 
-          {/* Liens utiles */}
           <div className="space-y-2 text-sm">
             <p className="text-gray-600">
               Mauvaise adresse email ?{" "}
               <Link
                 href={routes.auth.register.client}
-                className={`font-medium ${colors.premium.text} hover:${colors.premium.textDark} hover:underline`}
+                className={`font-medium ${colors.premium.text} hover:underline`}
               >
                 Créer un nouveau compte
               </Link>
@@ -270,16 +247,59 @@ export default function VerifyEmail() {
             </p>
           </div>
         </div>
+
+        {/* Modal succès renvoi email */}
+        <Modal
+          isOpen={successModal}
+          onClose={() => setSuccessModal(false)}
+          title="Email envoyé !"
+          icon="📧"
+          headerVariant="success"
+        >
+          <div className="text-center">
+            <p className={`text-sm ${colors.text.secondary} mb-4`}>
+              Un nouvel email de vérification a été envoyé à{" "}
+              <strong>{userEmail}</strong>.
+            </p>
+            <p className={`text-xs ${colors.text.tertiary} mb-5`}>
+              Pensez à vérifier vos spams si vous ne le trouvez pas.
+            </p>
+            <Button
+              variant="premium"
+              fullWidth
+              onClick={() => setSuccessModal(false)}
+            >
+              OK
+            </Button>
+          </div>
+        </Modal>
+
+        {/* Modal erreur */}
+        <Modal
+          isOpen={!!errorModal}
+          onClose={() => setErrorModal(null)}
+          title="Une erreur est survenue"
+          icon="⚠️"
+          headerVariant="error"
+        >
+          <div className="text-center">
+            <p className={`text-sm ${colors.text.secondary} mb-5`}>
+              {errorModal}
+            </p>
+            <Button fullWidth onClick={() => setErrorModal(null)}>
+              Fermer
+            </Button>
+          </div>
+        </Modal>
       </AuthLayout>
     );
   }
 
-  // Success - Email vérifié avec succès
+  // ── Success ──
   if (verificationStatus === "success") {
     return (
       <AuthLayout variant="neutral">
         <div className="text-center">
-          {/* Icône succès avec animation */}
           <div
             className={`w-20 h-20 ${colors.success.bg} rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce`}
           >
@@ -297,15 +317,12 @@ export default function VerifyEmail() {
               />
             </svg>
           </div>
-
           <h1 className="text-3xl font-bold text-gray-900 mb-3">
             🎉 Email vérifié !
           </h1>
           <p className="text-gray-600 mb-2">
             Votre compte a été activé avec succès.
           </p>
-
-          {/* Message de bienvenue */}
           <div
             className={`${gradients.lightSecondary} border-2 ${colors.secondary.border} rounded-lg p-6 mb-6`}
           >
@@ -320,28 +337,23 @@ export default function VerifyEmail() {
                 : "Vous pouvez maintenant proposer vos services et recevoir des demandes de clients."}
             </p>
           </div>
-
           <p className="text-sm text-gray-500 mb-6">
-            Redirection automatique vers votre tableau de bord dans 3
-            secondes...
+            Redirection vers la connexion dans 3 secondes...
           </p>
-
-          {/* Bouton manuel */}
           <Button
-            onClick={handleGoToDashboard}
+            onClick={handleGoToLogin}
             fullWidth
             size="lg"
-            className={`${colors.secondary.gradient} ${colors.secondary.gradientHover}`}
+            className={`${colors.premium.gradient} ${colors.premium.gradientHover}`}
           >
-            Accéder à mon tableau de bord →
+            Se connecter →
           </Button>
         </div>
       </AuthLayout>
     );
   }
 
-  // Invalid - Token invalide
-
+  // ── Invalid ──
   if (verificationStatus === "invalid") {
     return (
       <AuthLayout variant="neutral">
@@ -363,14 +375,12 @@ export default function VerifyEmail() {
               />
             </svg>
           </div>
-
           <h1 className="text-2xl font-bold text-gray-900 mb-3">
             ❌ Lien de vérification invalide
           </h1>
           <p className="text-gray-600 mb-2">
-            Ce lien n'est pas valide ou a été mal copié.
+            Ce lien n'est pas valide ou a déjà été utilisé.
           </p>
-
           <div
             className={`${colors.warning.bg} border ${colors.warning.border} rounded-lg p-4 mb-6 text-left`}
           >
@@ -383,35 +393,31 @@ export default function VerifyEmail() {
               <li>• Vous avez déjà vérifié votre email</li>
             </ul>
           </div>
-
-          <div>
+          <Button
+            onClick={() => resendEmailMutation.mutate()}
+            fullWidth
+            size="lg"
+            isLoading={resendEmailMutation.isPending}
+            className={`${colors.secondary.gradient} ${colors.secondary.gradientHover}`}
+          >
+            Renvoyer un nouveau lien
+          </Button>
+          <Link href={routes.auth.login} className="block mt-4">
             <Button
-              onClick={handleResendEmail}
+              variant="outline"
               fullWidth
               size="lg"
-              isLoading={resendEmailMutation.isPending}
-              className={`${colors.secondary.gradient} ${colors.secondary.gradientHover}`}
+              className={`${colors.primary.border} ${colors.primary.text} ${colors.primary.bgHover}`}
             >
-              Renvoyer un nouveau lien
+              Essayer de se connecter
             </Button>
-
-            <Link href={routes.auth.login} className="block mt-4">
-              <Button
-                variant="outline"
-                fullWidth
-                size="lg"
-                className={`${colors.primary.border} ${colors.primary.text} ${colors.primary.bgHover} hover:${colors.primary.border}`}
-              >
-                Essayer de se connecter
-              </Button>
-            </Link>
-          </div>
+          </Link>
         </div>
       </AuthLayout>
     );
   }
 
-  // Expired - Token expiré
+  // ── Expired ──
   if (verificationStatus === "expired") {
     return (
       <AuthLayout variant="neutral">
@@ -433,7 +439,6 @@ export default function VerifyEmail() {
               />
             </svg>
           </div>
-
           <h1 className="text-2xl font-bold text-gray-900 mb-3">
             ⏰ Lien de vérification expiré
           </h1>
@@ -441,21 +446,18 @@ export default function VerifyEmail() {
             Ce lien de vérification a expiré.
           </p>
           <p className="text-sm text-gray-500 mb-6">
-            Pour votre sécurité, les liens de vérification sont valables{" "}
-            <strong>24 heures</strong>.
+            Les liens sont valables <strong>24 heures</strong>.
           </p>
-
           <div
             className={`${colors.info.bg} border ${colors.info.border} rounded-lg p-4 mb-6`}
           >
             <p className={`text-sm ${colors.info.textDark}`}>
-              <strong>Pas d'inquiétude !</strong> Cliquez sur le bouton
-              ci-dessous pour recevoir un nouveau lien.
+              <strong>Pas d'inquiétude !</strong> Cliquez ci-dessous pour
+              recevoir un nouveau lien.
             </p>
           </div>
-
           <Button
-            onClick={handleResendEmail}
+            onClick={() => resendEmailMutation.mutate()}
             fullWidth
             size="lg"
             isLoading={resendEmailMutation.isPending}

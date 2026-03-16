@@ -70,7 +70,7 @@ export default function RegisterPrestataireStep4() {
       sessionStorage.removeItem("prestataire_step2");
       sessionStorage.removeItem("prestataire_step3");
 
-      // Meme logique que le client
+      localStorage.setItem("pending_verification_email", data.data.user.email);
       router.push(routes.auth.verifyEmail + "?type=prestataire");
     },
     onError: (error: any) => {

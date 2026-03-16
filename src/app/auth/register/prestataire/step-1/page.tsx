@@ -21,6 +21,8 @@ import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicato
 import { colors } from "@/config/colors";
 import { typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
+import { Controller } from "react-hook-form";
 
 export default function RegisterPrestataireStep1() {
   const router = useRouter();
@@ -39,6 +41,7 @@ export default function RegisterPrestataireStep1() {
     handleSubmit,
     watch,
     setValue,
+    control,
     formState: { errors },
   } = useForm<RegisterPrestataireStep1Input>({
     resolver: zodResolver(registerPrestataireStep1Schema),
@@ -195,33 +198,46 @@ export default function RegisterPrestataireStep1() {
           }
         />
 
-        <div>
-          <Input
-            label="Téléphone"
-            type="tel"
-            placeholder="06 12 34 56 78"
-            error={errors.phone?.message}
-            {...register("phone")}
-            icon={
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+        <Controller
+          name="phone"
+          control={control}
+          render={({ field }) => {
+            const { displayValue, handleChange } = usePhoneInput(
+              field.onChange,
+            );
+            return (
+              <div>
+                <Input
+                  label="Téléphone"
+                  type="tel"
+                  placeholder="06 12 34 56 78"
+                  value={displayValue}
+                  onChange={handleChange}
+                  error={errors.phone?.message}
+                  icon={
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                      />
+                    </svg>
+                  }
                 />
-              </svg>
-            }
-          />
-          <p className={`mt-1.5 text-xs ${colors.text.tertiary}`}>
-            🔒 Utilisé uniquement pour les notifications SMS — jamais partagé
-          </p>
-        </div>
+                <p className={`mt-1.5 text-xs ${colors.text.tertiary}`}>
+                  🔒 Utilisé uniquement pour les notifications SMS — jamais
+                  partagé
+                </p>
+              </div>
+            );
+          }}
+        />
 
         <Input
           label="Adresse email"

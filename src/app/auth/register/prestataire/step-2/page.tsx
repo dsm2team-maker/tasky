@@ -378,7 +378,7 @@ export default function RegisterPrestataireStep2() {
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      strokeWidth={2}
+                      strokeWidth={3}
                       d="M19 9l-7 7-7-7"
                     />
                   </svg>

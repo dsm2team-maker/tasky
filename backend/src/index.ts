@@ -5,8 +5,11 @@ import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 
-// Charger les variables d'environnement
+// Charger les variables d'environnement EN PREMIER
 dotenv.config();
+
+// Import des workers (se lancent automatiquement)
+import "./workers/email.worker";
 
 // Import des routes
 import authRoutes from "./routes/auth.routes";
@@ -18,27 +21,21 @@ const PORT = process.env.PORT || 3001;
 // MIDDLEWARES GLOBAUX
 // =============================================
 
-// Sécurité headers HTTP
 app.use(helmet());
-
-// Logs des requêtes
 app.use(morgan("dev"));
 
-// CORS - autoriser le frontend
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:3000",
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-  })
+  }),
 );
 
-// Parser JSON
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// Rate limiting global (100 requêtes / 15 minutes)
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -49,21 +46,10 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
-// Rate limiting strict pour l'auth (5 tentatives / 15 minutes)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  message: {
-    success: false,
-    message: "Trop de tentatives de connexion, réessayez dans 15 minutes",
-  },
-});
-
 // =============================================
 // ROUTES
 // =============================================
 
-// Health check
 app.get("/health", (req, res) => {
   res.json({
     success: true,
@@ -73,10 +59,9 @@ app.get("/health", (req, res) => {
   });
 });
 
-// Routes auth (avec rate limiting strict sur login)
 app.use("/api/auth", authRoutes);
 
-// Route 404
+// 404
 app.use("*", (req, res) => {
   res.status(404).json({
     success: false,
@@ -84,13 +69,13 @@ app.use("*", (req, res) => {
   });
 });
 
-// Gestionnaire d'erreurs global
+// Erreurs globales
 app.use(
   (
     err: Error,
     req: express.Request,
     res: express.Response,
-    next: express.NextFunction
+    next: express.NextFunction,
   ) => {
     console.error("Erreur non gérée:", err);
     res.status(500).json({
@@ -100,11 +85,11 @@ app.use(
           ? err.message
           : "Erreur serveur interne",
     });
-  }
+  },
 );
 
 // =============================================
-// DÉMARRAGE DU SERVEUR
+// DÉMARRAGE
 // =============================================
 
 app.listen(PORT, () => {
@@ -114,12 +99,13 @@ app.listen(PORT, () => {
   console.log(`🔗 Frontend autorisé: ${process.env.FRONTEND_URL}`);
   console.log("\n📋 Routes disponibles:");
   console.log(`   POST /api/auth/register/client`);
-  console.log(`   POST /api/auth/register/artisan`);
+  console.log(`   POST /api/auth/register/prestataire`);
   console.log(`   POST /api/auth/login`);
   console.log(`   GET  /api/auth/me`);
   console.log(`   POST /api/auth/logout`);
   console.log(`   POST /api/auth/refresh`);
-  console.log(`   GET  /health\n`);
+  console.log(`   GET  /api/auth/check-email`);
+  console.log(`   GET  /api/auth/check-phone`);
+  console.log("\n✅ Worker email démarré");
+  console.log("✅ Redis connecté");
 });
-
-export default app;
