@@ -5,21 +5,15 @@ import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 
-// Charger les variables d'environnement EN PREMIER
 dotenv.config();
 
-// Import des workers (se lancent automatiquement)
 import "./workers/email.worker";
 
-// Import des routes
 import authRoutes from "./routes/auth.routes";
+import userRoutes from "./routes/user.routes";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-
-// =============================================
-// MIDDLEWARES GLOBAUX
-// =============================================
 
 app.use(helmet());
 app.use(morgan("dev"));
@@ -41,7 +35,7 @@ const globalLimiter = rateLimit({
   max: 100,
   message: {
     success: false,
-    message: "Trop de requêtes, réessayez dans 15 minutes",
+    message: "Trop de requetes, reessayez dans 15 minutes",
   },
 });
 app.use(globalLimiter);
@@ -53,15 +47,15 @@ app.use(globalLimiter);
 app.get("/health", (req, res) => {
   res.json({
     success: true,
-    message: "Tasky API is running 🚀",
+    message: "Tasky API is running",
     version: "1.0.0",
     timestamp: new Date().toISOString(),
   });
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 
-// 404
 app.use("*", (req, res) => {
   res.status(404).json({
     success: false,
@@ -69,7 +63,6 @@ app.use("*", (req, res) => {
   });
 });
 
-// Erreurs globales
 app.use(
   (
     err: Error,
@@ -77,7 +70,7 @@ app.use(
     res: express.Response,
     next: express.NextFunction,
   ) => {
-    console.error("Erreur non gérée:", err);
+    console.error("Erreur non geree:", err);
     res.status(500).json({
       success: false,
       message:
@@ -89,15 +82,15 @@ app.use(
 );
 
 // =============================================
-// DÉMARRAGE
+// DEMARRAGE
 // =============================================
 
 app.listen(PORT, () => {
-  console.log("\n🚀 Tasky Backend démarré !");
-  console.log(`📡 URL: http://localhost:${PORT}`);
-  console.log(`🌍 Environnement: ${process.env.NODE_ENV}`);
-  console.log(`🔗 Frontend autorisé: ${process.env.FRONTEND_URL}`);
-  console.log("\n📋 Routes disponibles:");
+  console.log("\n Tasky Backend demarre !");
+  console.log(`URL: http://localhost:${PORT}`);
+  console.log(`Environnement: ${process.env.NODE_ENV}`);
+  console.log(`Frontend autorise: ${process.env.FRONTEND_URL}`);
+  console.log("\nRoutes disponibles:");
   console.log(`   POST /api/auth/register/client`);
   console.log(`   POST /api/auth/register/prestataire`);
   console.log(`   POST /api/auth/login`);
@@ -106,6 +99,7 @@ app.listen(PORT, () => {
   console.log(`   POST /api/auth/refresh`);
   console.log(`   GET  /api/auth/check-email`);
   console.log(`   GET  /api/auth/check-phone`);
-  console.log("\n✅ Worker email démarré");
-  console.log("✅ Redis connecté");
+  console.log(`   POST /api/users/avatar`);
+  console.log("\nWorker email demarre");
+  console.log("Redis connecte");
 });

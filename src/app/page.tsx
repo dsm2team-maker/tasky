@@ -24,17 +24,14 @@ export default function HomePage() {
   useEffect(() => {
     if (isHydrated && isAuthenticated) {
       if (user?.role === "CLIENT") router.push(routes.client.dashboard);
-      else if (user?.role === "PRESTATAIRE") router.push(routes.prestataire.dashboard);
+      else if (user?.role === "PRESTATAIRE")
+        router.push(routes.prestataire.dashboard);
     }
   }, [isHydrated, isAuthenticated, user, router]);
 
   // Loader pendant hydration
   if (!isHydrated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -56,7 +53,7 @@ export default function HomePage() {
                 <br />
                 pour la bonne tâche,
                 <br />
-                <span className={colors.secondary.gradientText}>
+                <span className={colors.secondary.text}>
                   près de chez vous.
                 </span>
               </h1>
@@ -152,7 +149,8 @@ export default function HomePage() {
             </h3>
             <div className="max-w-4xl mx-auto space-y-3 text-center mb-6">
               <p className={`text-xl font-semibold ${colors.primary.text}`}>
-                🔍 Trouvez le bon prestataire en quelques clics, en toute confiance.
+                🔍 Trouvez le bon prestataire en quelques clics, en toute
+                confiance.
               </p>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -185,9 +185,11 @@ export const routes = {
     },
     users: {
       profile: "/api/users/profile",
-      update: "/api/users/update",
       avatar: "/api/users/avatar",
-      delete: "/api/users/delete",
+      requestPhoneChange: "/api/users/profile/request-phone-change",
+      verifyPhoneOtp: "/api/users/profile/verify-phone-otp",
+      requestEmailChange: "/api/users/profile/request-email-change",
+      verifyEmailOtp: "/api/users/profile/verify-email-otp",
     },
     demandes: {
       list: "/api/demandes",
@@ -246,7 +248,11 @@ export const navigation = {
   prestataireNav: [
     { label: "Dashboard", href: routes.prestataire.dashboard, icon: "🏠" },
     { label: "Demandes", href: routes.prestataire.requests.list, icon: "📋" },
-    { label: "Mes prestations", href: routes.prestataire.services.list, icon: "🛠️" },
+    {
+      label: "Mes prestations",
+      href: routes.prestataire.services.list,
+      icon: "🛠️",
+    },
     { label: "Messages", href: routes.prestataire.messages.list, icon: "💬" },
   ],
   footerNav: [

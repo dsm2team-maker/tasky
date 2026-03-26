@@ -64,22 +64,20 @@ export default function HeaderClient() {
           {/* User actions */}
           <div className="flex items-center gap-3">
             <span
-              className={`hidden md:block text-sm font-medium ${colors.text.secondary}`}
+              className={`hidden md:block text-sm font-medium ${colors.premium.text}`}
             >
               👤 {user?.firstName || user?.email?.split("@")[0]}
             </span>
-            <Link href={routes.client.profile.view}>
-              <Button
-                variant="outline"
-                className={`${colors.primary.border} ${colors.primary.text} ${colors.primary.bgHover}`}
-              >
-                Mon profil
-              </Button>
+            <Link
+              href={routes.client.profile.view}
+              className={`${colors.premium.text} hover:text-purple-600 transition-colors`}
+            >
+              Mon profil
             </Link>
             <Button
               onClick={handleLogout}
               variant="ghost"
-              className={colors.text.secondary}
+              className={colors.premium.text}
             >
               Déconnexion
             </Button>

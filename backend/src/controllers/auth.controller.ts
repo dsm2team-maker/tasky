@@ -10,6 +10,10 @@ import {
 import { z } from "zod";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { authService } from "../modules/auth/auth.service";
+import {
+  recoverEmailSendOtp,
+  recoverEmailVerifyOtp,
+} from "../modules/users/user.service";
 
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || "12");
 
@@ -318,6 +322,14 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
+    if (!user.emailVerified) {
+      return res.status(403).json({
+        success: false,
+        message: "Veuillez vérifier votre email avant de vous connecter.",
+        code: "EMAIL_NOT_VERIFIED",
+      });
+    }
+
     const payload = {
       userId: user.id,
       email: user.email,
@@ -606,7 +618,13 @@ export const forgotPassword = async (req: Request, res: Response) => {
       success: true,
       message: "Si ce compte existe, un email a ete envoye.",
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === "USER_NOT_FOUND") {
+      return res.status(404).json({
+        success: false,
+        message: "Aucun compte trouvé avec cette adresse email.",
+      });
+    }
     return res.status(500).json({ success: false, message: "Erreur serveur" });
   }
 };
@@ -632,5 +650,111 @@ export const resetPassword = async (req: Request, res: Response) => {
       success: false,
       message: error.message || "Token invalide ou expire",
     });
+  }
+};
+
+// =============================================
+// RECOVER EMAIL — ÉTAPE 1
+// POST /api/auth/recover-email/send-otp
+// =============================================
+export const recoverEmailSendOtpHandler = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.includes("@")) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Email invalide" });
+    }
+    const result = await recoverEmailSendOtp(email.toLowerCase().trim());
+    return res.json({ success: true, message: "Code envoyé.", data: result });
+  } catch (error: any) {
+    if (error.message === "USER_NOT_FOUND") {
+      return res.status(404).json({
+        success: false,
+        message: "Aucun compte trouvé avec cette adresse email.",
+      });
+    }
+    if (error.message === "NO_PHONE") {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Aucun numéro de téléphone associé à ce compte. Contactez le support.",
+      });
+    }
+    if (error.message?.startsWith("COOLDOWN:")) {
+      const seconds = error.message.split(":")[1];
+      return res.status(429).json({
+        success: false,
+        message: `Veuillez attendre ${seconds} secondes`,
+      });
+    }
+    console.error("Erreur recoverEmailSendOtp:", error);
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+};
+
+// =============================================
+// RECOVER EMAIL — ÉTAPE 2
+// POST /api/auth/recover-email/verify-otp
+// =============================================
+export const recoverEmailVerifyOtpHandler = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const { email, otp, newEmail } = req.body;
+    if (!email || !otp || !newEmail) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Données manquantes" });
+    }
+    const result = await recoverEmailVerifyOtp(
+      email.toLowerCase().trim(),
+      otp,
+      newEmail.toLowerCase().trim(),
+    );
+    return res.json({
+      success: true,
+      message:
+        "Email mis à jour. Un lien de connexion a été envoyé sur votre nouvelle adresse.",
+      data: result,
+    });
+  } catch (error: any) {
+    if (error.message === "SAME_EMAIL") {
+      return res.status(400).json({
+        success: false,
+        message: "C'est déjà votre adresse email actuelle",
+      });
+    }
+    if (error.message === "EMAIL_ALREADY_USED") {
+      return res.status(409).json({
+        success: false,
+        message: "Cette adresse est déjà associée à un compte",
+      });
+    }
+    if (error.message === "OTP_EXPIRED_OR_NOT_FOUND") {
+      return res.status(400).json({
+        success: false,
+        message: "Code expiré ou introuvable — recommencez",
+      });
+    }
+    if (error.message === "OTP_MAX_ATTEMPTS") {
+      return res.status(429).json({
+        success: false,
+        message: "Trop de tentatives — réessayez dans 30 minutes",
+      });
+    }
+    if (error.message?.startsWith("OTP_INVALID:")) {
+      const remaining = error.message.split(":")[1];
+      return res.status(400).json({
+        success: false,
+        message: `Code incorrect — ${remaining} tentative(s) restante(s)`,
+      });
+    }
+    console.error("Erreur recoverEmailVerifyOtp:", error);
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
   }
 };

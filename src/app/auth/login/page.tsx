@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
+import React, { useState, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { loginSchema, LoginInput } from "@/lib/schemas";
+import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
 import { Input } from "@/components/Input";
@@ -17,11 +18,57 @@ import { colors } from "@/config/colors";
 import { typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 
+// ─── Schemas recover ────────────────────────────────────────────────────────
+const recoverOtpSchema = z.object({
+  otp: z
+    .string()
+    .length(6, "6 chiffres requis")
+    .regex(/^\d{6}$/, "Chiffres uniquement"),
+});
+const recoverEmailSchema = z.object({
+  newEmail: z.string().email("Format d'email invalide").toLowerCase(),
+});
+
+type RecoverOtpData = z.infer<typeof recoverOtpSchema>;
+type RecoverEmailData = z.infer<typeof recoverEmailSchema>;
+
+// ─── Timer ───────────────────────────────────────────────────────────────────
+const OtpTimer: React.FC<{ seconds: number; onExpire: () => void }> = ({
+  seconds,
+  onExpire,
+}) => {
+  const [remaining, setRemaining] = useState(seconds);
+  useEffect(() => {
+    setRemaining(seconds);
+    const interval = setInterval(() => {
+      setRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          onExpire();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [seconds]);
+  const mins = Math.floor(remaining / 60);
+  const secs = remaining % 60;
+  return (
+    <span
+      className={`font-mono font-semibold ${remaining < 60 ? colors.error.text : colors.text.secondary}`}
+    >
+      {mins}:{secs.toString().padStart(2, "0")}
+    </span>
+  );
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
   const [showPassword, setShowPassword] = useState(false);
 
+  // États login
   const [errorType, setErrorType] = useState<
     | "USER_NOT_FOUND"
     | "WRONG_PASSWORD"
@@ -31,6 +78,24 @@ export default function LoginPage() {
   >(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorEmail, setErrorEmail] = useState<string | null>(null);
+
+  // États récupération email
+  const [recoverStep, setRecoverStep] = useState<
+    null | "email" | "otp" | "new-email" | "success"
+  >(null);
+  const [recoverError, setRecoverError] = useState<string | null>(null);
+  const [recoverEmail, setRecoverEmail] = useState("");
+  const [recoverPhoneMasked, setRecoverPhoneMasked] = useState("");
+  const [recoverNewEmail, setRecoverNewEmail] = useState("");
+  const [otpExpired, setOtpExpired] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  // Cooldown
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
 
   const setError = (
     type: typeof errorType,
@@ -90,6 +155,102 @@ export default function LoginPage() {
 
   const onSubmit = (data: LoginInput) => {
     loginMutation.mutate(data);
+  };
+
+  // ── Formulaires récupération email ────────────────────────────────────────
+  const recoverEmailFormInput = useForm<{ email: string }>({
+    resolver: zodResolver(
+      z.object({ email: z.string().email("Format d'email invalide") }),
+    ),
+  });
+  const recoverOtpForm = useForm<RecoverOtpData>({
+    resolver: zodResolver(recoverOtpSchema),
+  });
+  const recoverNewEmailForm = useForm<RecoverEmailData>({
+    resolver: zodResolver(recoverEmailSchema),
+  });
+
+  // Étape 1 — Envoyer OTP SMS à partir de l'email
+  const sendOtpMutation = useMutation({
+    mutationFn: (email: string) =>
+      apiClient
+        .post("/api/auth/recover-email/send-otp", { email })
+        .then((r) => r.data),
+    onSuccess: (data) => {
+      setRecoverPhoneMasked(data.data?.phoneMasked || "");
+      setRecoverStep("otp");
+      setOtpExpired(false);
+      setCooldown(120);
+      recoverEmailFormInput.reset();
+    },
+    onError: (err: any) =>
+      setRecoverError(err.response?.data?.message || "Erreur"),
+  });
+
+  // Étape 2 — Valider OTP + mettre à jour email
+  const verifyAndUpdateMutation = useMutation({
+    mutationFn: ({
+      email,
+      otp,
+      newEmail,
+    }: {
+      email: string;
+      otp: string;
+      newEmail: string;
+    }) =>
+      apiClient
+        .post("/api/auth/recover-email/verify-otp", { email, otp, newEmail })
+        .then((r) => r.data),
+    onSuccess: (data) => {
+      setRecoverStep("success");
+      recoverOtpForm.reset();
+      recoverNewEmailForm.reset();
+    },
+    onError: (err: any) =>
+      setRecoverError(err.response?.data?.message || "Erreur"),
+  });
+
+  const onRecoverEmailSubmit = (data: { email: string }) => {
+    setRecoverError(null);
+    setRecoverEmail(data.email);
+    sendOtpMutation.mutate(data.email);
+  };
+
+  const onRecoverOtp = (data: RecoverOtpData) => {
+    setRecoverError(null);
+    setRecoverStep("new-email");
+    recoverOtpForm.reset();
+    sessionStorage.setItem("recover_otp", data.otp);
+  };
+
+  const onRecoverNewEmail = (data: RecoverEmailData) => {
+    setRecoverError(null);
+    const otp = sessionStorage.getItem("recover_otp") || "";
+    setRecoverNewEmail(data.newEmail);
+    verifyAndUpdateMutation.mutate({
+      email: recoverEmail,
+      otp,
+      newEmail: data.newEmail,
+    });
+  };
+
+  const onResendOtp = () => {
+    if (cooldown > 0) return;
+    sendOtpMutation.mutate(recoverEmail, {
+      onSuccess: () => {
+        setOtpExpired(false);
+        setCooldown(120);
+      },
+    });
+  };
+
+  const closeRecover = () => {
+    setRecoverStep(null);
+    setRecoverError(null);
+    recoverEmailFormInput.reset();
+    recoverOtpForm.reset();
+    recoverNewEmailForm.reset();
+    sessionStorage.removeItem("recover_otp");
   };
 
   return (
@@ -193,7 +354,17 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-between items-center">
+          <button
+            type="button"
+            onClick={() => {
+              setRecoverError(null);
+              setRecoverStep("email");
+            }}
+            className={`text-sm ${colors.text.tertiary} hover:underline`}
+          >
+            Je n'ai plus accès à mon email
+          </button>
           <Link
             href={routes.auth.forgotPassword}
             className={`text-sm ${colors.premium.text} hover:underline`}
@@ -390,6 +561,204 @@ export default function LoginPage() {
             Fermer
           </button>
         </div>
+      </Modal>
+      {/* ════ MODAL RÉCUPÉRATION EMAIL ════ */}
+      <Modal
+        isOpen={recoverStep !== null}
+        onClose={recoverStep === "success" ? closeRecover : () => {}}
+        title={
+          recoverStep === "email"
+            ? "Récupérer mon accès"
+            : recoverStep === "otp"
+              ? "Code de vérification SMS"
+              : recoverStep === "new-email"
+                ? "Nouvelle adresse email"
+                : "✅ Email mis à jour"
+        }
+        icon={recoverStep === "success" ? "✅" : "🔐"}
+        headerVariant="premium"
+      >
+        {/* État 1 — Saisie ancienne adresse email */}
+        {recoverStep === "email" && (
+          <form
+            onSubmit={recoverEmailFormInput.handleSubmit(onRecoverEmailSubmit)}
+            className="space-y-4"
+          >
+            <p className={`text-sm ${colors.text.secondary}`}>
+              Saisissez l'adresse email de votre compte. Un code de vérification
+              sera envoyé par <strong>SMS</strong> sur le numéro associé.
+            </p>
+            <Input
+              label="Votre adresse email actuelle"
+              type="email"
+              placeholder="vous@exemple.com"
+              error={recoverEmailFormInput.formState.errors.email?.message}
+              {...recoverEmailFormInput.register("email")}
+            />
+            {recoverError && (
+              <p className={`text-sm ${colors.error.text}`}>{recoverError}</p>
+            )}
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                fullWidth
+                onClick={closeRecover}
+              >
+                Annuler
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                fullWidth
+                isLoading={sendOtpMutation.isPending}
+              >
+                Envoyer le code
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {/* État 2 — Saisie OTP SMS */}
+        {recoverStep === "otp" && (
+          <form
+            onSubmit={recoverOtpForm.handleSubmit(onRecoverOtp)}
+            className="space-y-4"
+          >
+            <div
+              className={`flex items-center gap-2 p-3 rounded-lg ${colors.success.bg}`}
+            >
+              <span>✅</span>
+              <p className={`text-sm ${colors.success.textDark}`}>
+                Code envoyé au{" "}
+                <strong>{recoverPhoneMasked || "votre numéro"}</strong>
+              </p>
+            </div>
+            <Input
+              label="Code SMS (6 chiffres)"
+              type="text"
+              placeholder="_ _ _ _ _ _"
+              maxLength={6}
+              error={recoverOtpForm.formState.errors.otp?.message}
+              {...recoverOtpForm.register("otp")}
+            />
+            <div className="flex items-center justify-between text-sm">
+              <span className={colors.text.secondary}>
+                ⏱️ Valable :{" "}
+                {!otpExpired ? (
+                  <OtpTimer
+                    seconds={600}
+                    onExpire={() => setOtpExpired(true)}
+                  />
+                ) : (
+                  <span className={colors.error.text}>Expiré</span>
+                )}
+              </span>
+              <button
+                type="button"
+                onClick={onResendOtp}
+                disabled={cooldown > 0}
+                className={`font-medium ${cooldown > 0 ? colors.text.muted : colors.premium.text} disabled:cursor-not-allowed`}
+              >
+                🔄 {cooldown > 0 ? `Renvoyer (${cooldown}s)` : "Renvoyer"}
+              </button>
+            </div>
+            {recoverError && (
+              <p className={`text-sm ${colors.error.text}`}>{recoverError}</p>
+            )}
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                fullWidth
+                onClick={() => {
+                  setRecoverStep("email");
+                  recoverOtpForm.reset();
+                }}
+              >
+                Retour
+              </Button>
+              <Button type="submit" variant="primary" fullWidth>
+                Continuer
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {/* État 3 — Saisie nouvel email */}
+        {recoverStep === "new-email" && (
+          <form
+            onSubmit={recoverNewEmailForm.handleSubmit(onRecoverNewEmail)}
+            className="space-y-4"
+          >
+            <p className={`text-sm ${colors.text.secondary}`}>
+              Saisissez votre nouvelle adresse email. Un lien de
+              réinitialisation de mot de passe vous sera envoyé.
+            </p>
+            <Input
+              label="Nouvelle adresse email"
+              type="email"
+              placeholder="nouveau@email.com"
+              error={recoverNewEmailForm.formState.errors.newEmail?.message}
+              {...recoverNewEmailForm.register("newEmail")}
+            />
+            {recoverError && (
+              <p className={`text-sm ${colors.error.text}`}>{recoverError}</p>
+            )}
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                fullWidth
+                onClick={() => {
+                  setRecoverStep("otp");
+                  recoverNewEmailForm.reset();
+                }}
+              >
+                Retour
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                fullWidth
+                isLoading={verifyAndUpdateMutation.isPending}
+              >
+                Mettre à jour
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {/* État 4 — Succès */}
+        {recoverStep === "success" && (
+          <div className="space-y-4">
+            <p
+              className={`text-sm ${colors.text.secondary} text-center leading-relaxed`}
+            >
+              Votre nouvelle adresse email est maintenant enregistrée.
+            </p>
+            <div
+              className={`p-4 rounded-xl ${colors.info.bg} border ${colors.info.borderLight} text-center`}
+            >
+              <p className={`text-xs ${colors.text.tertiary} mb-1`}>
+                Un email de réinitialisation de mot de passe a été envoyé à :
+              </p>
+              <p className={`text-sm font-bold ${colors.text.primary}`}>
+                {recoverNewEmail}
+              </p>
+              <p className={`text-xs ${colors.text.tertiary} mt-2`}>
+                Veuillez consulter votre boîte mail pour définir un nouveau mot
+                de passe.
+              </p>
+            </div>
+            <p className={`text-xs ${colors.text.tertiary} text-center`}>
+              📩 Vérifiez vos spams si besoin.
+            </p>
+            <Button variant="primary" fullWidth onClick={closeRecover}>
+              Fermer
+            </Button>
+          </div>
+        )}
       </Modal>
     </AuthLayout>
   );

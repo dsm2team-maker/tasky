@@ -5,6 +5,8 @@ import { EmailJobData } from "../queues/email.queue";
 import { verifyEmailTemplate } from "../emails/verify-email.template";
 import { resetPasswordTemplate } from "../emails/reset-password.template";
 import { newMessageTemplate } from "../emails/new-message.template";
+import { phoneChangeOtpTemplate } from "../emails/phone-change-otp.template";
+import { emailChangeAlertTemplate } from "../emails/email-change-alert.template";
 import { prisma } from "../lib/prisma";
 
 const processEmailJob = async (job: Job<EmailJobData>) => {
@@ -33,15 +35,36 @@ const processEmailJob = async (job: Job<EmailJobData>) => {
       break;
 
     case "new-message":
-      subject = payload.messageCount > 1
-        ? `${payload.messageCount} nouveaux messages sur Tasky`
-        : `Nouveau message de ${payload.senderName} — Tasky`;
+      subject =
+        payload.messageCount > 1
+          ? `${payload.messageCount} nouveaux messages sur Tasky`
+          : `Nouveau message de ${payload.senderName} — Tasky`;
       html = newMessageTemplate({
         firstName: payload.firstName,
         senderName: payload.senderName,
         messageCount: payload.messageCount,
         conversationUrl: payload.conversationUrl,
         variant: payload.variant,
+      });
+      break;
+
+    case "phone-change-otp":
+      subject = payload.isAlert
+        ? "Alerte sécurité — Téléphone modifié — Tasky"
+        : "Votre code de vérification — Tasky";
+      html = phoneChangeOtpTemplate({
+        firstName: payload.firstName,
+        otp: payload.otp,
+        newPhone: payload.newPhone,
+        isAlert: payload.isAlert,
+      });
+      break;
+
+    case "email-change-alert":
+      subject = "Alerte sécurité — Email modifié — Tasky";
+      html = emailChangeAlertTemplate({
+        firstName: payload.firstName,
+        newEmail: payload.newEmail,
       });
       break;
 
@@ -64,15 +87,17 @@ const processEmailJob = async (job: Job<EmailJobData>) => {
   }
 
   // Log en base
-  await prisma.emailLog.create({
-    data: {
-      to,
-      type,
-      status: "sent",
-      resendId: data?.id,
-      userId: job.data.userId,
-    },
-  }).catch(() => {}); // Ne pas bloquer si le log échoue
+  await prisma.emailLog
+    .create({
+      data: {
+        to,
+        type,
+        status: "sent",
+        resendId: data?.id,
+        userId: job.data.userId,
+      },
+    })
+    .catch(() => {}); // Ne pas bloquer si le log échoue
 
   console.log(`✅ Email envoyé: ${type} → ${to} (id: ${data?.id})`);
 };
@@ -84,7 +109,7 @@ export const emailWorker = new Worker<EmailJobData>(
   {
     connection: redisConnection,
     concurrency: 5, // 5 emails en parallèle max
-  }
+  },
 );
 
 emailWorker.on("completed", (job) => {

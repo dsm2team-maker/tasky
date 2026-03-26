@@ -62,15 +62,34 @@ export default function RegisterPrestataireStep4() {
 
       return response.data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       setAuth(data.data.user, data.data.tokens.accessToken);
       localStorage.setItem("refresh_token", data.data.tokens.refreshToken);
+
+      // Upload avatar si photo présente à l'étape 3
+      const step3 = JSON.parse(
+        sessionStorage.getItem("prestataire_step3") || "{}",
+      );
+      if (step3.photoData && data.data.tokens.accessToken) {
+        try {
+          await apiClient.post(
+            "/api/users/avatar",
+            { imageData: step3.photoData },
+            {
+              headers: {
+                Authorization: `Bearer ${data.data.tokens.accessToken}`,
+              },
+            },
+          );
+        } catch (err) {
+          console.warn("Avatar non uploadé — compte créé quand même");
+        }
+      }
 
       sessionStorage.removeItem("prestataire_step1");
       sessionStorage.removeItem("prestataire_step2");
       sessionStorage.removeItem("prestataire_step3");
 
-      localStorage.setItem("pending_verification_email", data.data.user.email);
       router.push(routes.auth.verifyEmail + "?type=prestataire");
     },
     onError: (error: any) => {

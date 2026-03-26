@@ -1,17 +1,25 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../../lib/prisma";
-import { generateAccessToken, generateRefreshToken, getRefreshTokenExpiry } from "../../lib/jwt";
-import { generateVerificationToken, generateResetToken } from "../../utils/token.utils";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  getRefreshTokenExpiry,
+} from "../../lib/jwt";
+import {
+  generateVerificationToken,
+  generateResetToken,
+} from "../../utils/token.utils";
 import { addEmailJob, EMAIL_PRIORITY } from "../../queues/email.queue";
 import { env } from "../../config/env.config";
 
 const BCRYPT_ROUNDS = 12;
 
 export const authService = {
-
   // Vérifier si email disponible
   async isEmailAvailable(email: string): Promise<boolean> {
-    const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    const existing = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
     return !existing;
   },
 
@@ -22,7 +30,12 @@ export const authService = {
   },
 
   // Envoyer email de vérification
-  async sendVerificationEmail(userId: string, email: string, firstName: string, variant: "client" | "prestataire") {
+  async sendVerificationEmail(
+    userId: string,
+    email: string,
+    firstName: string,
+    variant: "client" | "prestataire",
+  ) {
     const { token, expiresAt } = generateVerificationToken();
 
     // Sauvegarder le token en base
@@ -40,7 +53,7 @@ export const authService = {
         userId,
         payload: { firstName, verificationUrl, variant },
       },
-      EMAIL_PRIORITY.CRITICAL
+      EMAIL_PRIORITY.CRITICAL,
     );
   },
 
@@ -73,7 +86,7 @@ export const authService = {
   // Envoyer email reset password
   async sendResetPasswordEmail(email: string) {
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return; // Ne pas révéler si l'email existe
+    if (!user) throw new Error("USER_NOT_FOUND");
 
     const { token, expiresAt } = generateResetToken();
 
@@ -90,7 +103,7 @@ export const authService = {
         userId: user.id,
         payload: { firstName: user.firstName, resetUrl },
       },
-      EMAIL_PRIORITY.CRITICAL
+      EMAIL_PRIORITY.CRITICAL,
     );
   },
 
@@ -100,7 +113,8 @@ export const authService = {
       where: { token },
     });
 
-    if (!record || record.type !== "PASSWORD_RESET") throw new Error("Token invalide");
+    if (!record || record.type !== "PASSWORD_RESET")
+      throw new Error("Token invalide");
     if (record.expiresAt < new Date()) throw new Error("Token expiré");
     if (record.used) throw new Error("Token déjà utilisé");
 
@@ -119,7 +133,11 @@ export const authService = {
   },
 
   // Générer les tokens JWT
-  generateTokens(userId: string, email: string, role: "CLIENT" | "PRESTATAIRE") {
+  generateTokens(
+    userId: string,
+    email: string,
+    role: "CLIENT" | "PRESTATAIRE",
+  ) {
     const payload = { userId, email, role };
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);

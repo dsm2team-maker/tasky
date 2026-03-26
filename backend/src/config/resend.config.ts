@@ -10,17 +10,15 @@ const isProd = process.env.NODE_ENV === "production";
 
 export const emailConfig = {
   from: {
-    // En dev : domaine Resend par défaut (déjà vérifié)
-    // En prod : domaine Tasky (à configurer sur resend.com/domains)
     noreply: isProd
       ? "Tasky <no-reply@mail.tasky.fr>"
-      : "Tasky <onboarding@resend.dev>",
+      : "Tasky <noreply@dsmteam.fr>",
     notifications: isProd
       ? "Tasky <notifications@mail.tasky.fr>"
-      : "Tasky <onboarding@resend.dev>",
+      : "Tasky <noreply@dsmteam.fr>",
     support: isProd
       ? "Tasky Support <support@mail.tasky.fr>"
-      : "Tasky <onboarding@resend.dev>",
+      : "Tasky <noreply@dsmteam.fr>",
   },
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:3000",
 };

@@ -18,6 +18,7 @@ import { routes } from "@/config/routes";
 export default function ForgotPassword() {
   const router = useRouter();
   const [emailSent, setEmailSent] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -33,16 +34,19 @@ export default function ForgotPassword() {
 
   const forgotPasswordMutation = useMutation({
     mutationFn: async (data: ForgotPasswordInput) => {
-      // MODE DÉMO - Simulation
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      return { success: true };
+      const response = await apiClient.post(
+        routes.api.auth.forgotPassword,
+        data,
+      );
+      return response.data;
     },
     onSuccess: () => {
+      setErrorMessage(null);
       setEmailSent(true);
     },
     onError: (error: any) => {
-      const apiError = handleApiError(error);
-      alert(apiError.message);
+      const message = error.response?.data?.message || "Erreur serveur";
+      setErrorMessage(message);
     },
   });
 
@@ -57,10 +61,10 @@ export default function ForgotPassword() {
         <div className="text-center">
           {/* Icône succès */}
           <div
-            className={`w-20 h-20 ${colors.success.bg} rounded-full flex items-center justify-center mx-auto mb-6`}
+            className={`w-16 h-16 ${colors.premium.gradient} rounded-full flex items-center justify-center mx-auto mb-4`}
           >
             <svg
-              className={`w-10 h-10 ${colors.success.text}`}
+              className="w-8 h-8 text-white"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -74,15 +78,15 @@ export default function ForgotPassword() {
             </svg>
           </div>
 
-          <h1 className={`${typography.h3.base} ${colors.text.primary} mb-3`}>
-            📧 Email envoyé !
+          <h1 className={`${typography.h2.base} ${colors.text.primary} mb-2`}>
+            Email envoyé !
           </h1>
 
           <p className="text-gray-600 mb-6">
             Si un compte existe avec l'adresse{" "}
-            <strong className={colors.secondary.text}>{emailValue}</strong>,
-            vous recevrez un email avec les instructions pour réinitialiser
-            votre mot de passe.
+            <strong className={colors.premium.text}>{emailValue}</strong>, vous
+            recevrez un email avec les instructions pour réinitialiser votre mot
+            de passe.
           </p>
 
           {/* Instructions */}
@@ -106,17 +110,17 @@ export default function ForgotPassword() {
           {/* Boutons */}
           <div className="space-y-3">
             <Button
+              variant="premium"
               onClick={() => router.push(routes.auth.login)}
               fullWidth
               size="lg"
-              className={`${colors.secondary.gradient} ${colors.secondary.gradientHover}`}
             >
               Retour à la connexion
             </Button>
 
             <button
               onClick={() => setEmailSent(false)}
-              className={`w-full text-sm ${colors.secondary.text} hover:${colors.secondary.textDark} hover:underline font-medium`}
+              className={`w-full py-2 px-4 rounded-xl border-2 ${colors.premium.border} ${colors.premium.text} text-sm font-medium hover:bg-purple-50 transition`}
             >
               Renvoyer l'email
             </button>
@@ -213,6 +217,12 @@ export default function ForgotPassword() {
         >
           Envoyer le lien de réinitialisation
         </Button>
+
+        {errorMessage && (
+          <p className="text-sm text-red-600 text-center mt-2">
+            {errorMessage}
+          </p>
+        )}
       </form>
 
       {/* Divider */}
@@ -235,7 +245,7 @@ export default function ForgotPassword() {
           <Button
             variant="outline"
             fullWidth
-            className={`${colors.premium.borderLight} ${colors.premium.text} ${colors.premium.bgHover} hover:border-emerald-300`}
+            className={`w-full py-2 px-4 rounded-xl border-2 ${colors.premium.border} ${colors.premium.text} text-sm font-medium hover:bg-purple-50 transition`}
           >
             ← Retour à la connexion
           </Button>

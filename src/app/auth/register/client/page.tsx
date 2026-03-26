@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -10,7 +10,9 @@ import { registerClientSchema, RegisterClientInput } from "@/lib/schemas";
 import { apiClient, handleApiError } from "@/lib/api-client";
 import { useEmailValidation } from "@/hooks/useEmailValidation";
 import { usePhoneValidation } from "@/hooks/usePhoneValidation";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { DuplicateAccountModal } from "@/components/DuplicateAccountModal";
+import { ProfilePhotoUpload } from "@/components/shared/ProfilePhotoUpload";
 import { Input } from "@/components/Input";
 import { Checkbox } from "@/components/Checkbox";
 import { Button } from "@/components/Button";
@@ -19,9 +21,6 @@ import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicato
 import { colors } from "@/config/colors";
 import { typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
-import { usePhoneInput } from "@/hooks/usePhoneInput";
-import { Controller } from "react-hook-form";
-import { ProfilePhotoUpload } from "@/components/shared/ProfilePhotoUpload";
 
 export default function RegisterClient() {
   const router = useRouter();
@@ -55,6 +54,7 @@ export default function RegisterClient() {
 
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterClientInput) => {
+      // 1. Créer le compte
       const response = await apiClient.post("/api/auth/register/client", {
         email: data.email,
         password: data.password,
@@ -63,10 +63,25 @@ export default function RegisterClient() {
         city: data.city,
         phone: data.phone,
       });
+
+      const { tokens } = response.data.data;
+
+      // 2. Upload avatar si photo choisie
+      if (photo && tokens?.accessToken) {
+        try {
+          await apiClient.post(
+            "/api/users/avatar",
+            { imageData: photo },
+            { headers: { Authorization: `Bearer ${tokens.accessToken}` } },
+          );
+        } catch (err) {
+          console.warn("Avatar non uploadé — compte créé quand même");
+        }
+      }
+
       return response.data;
     },
     onSuccess: (data) => {
-      // Sauvegarder l'email pour la page de vérification
       localStorage.setItem("pending_verification_email", data.data.user.email);
       router.push(routes.auth.verifyEmail + "?type=client");
     },
@@ -197,51 +212,54 @@ export default function RegisterClient() {
           }
         />
 
-        <Controller
-          name="phone"
-          control={control}
-          render={({ field }) => {
-            const { displayValue, handleChange } = usePhoneInput(
-              field.onChange,
-            );
-            return (
-              <div>
-                <Input
-                  label="Téléphone"
-                  type="tel"
-                  placeholder="06 12 34 56 78"
-                  value={displayValue}
-                  onChange={handleChange}
-                  error={errors.phone?.message}
-                  icon={
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                      />
-                    </svg>
-                  }
-                />
-                <p className={`mt-1.5 text-xs ${colors.text.tertiary}`}>
-                  🔒 Utilisé uniquement pour les notifications SMS — jamais
-                  partagé
-                </p>
-              </div>
-            );
-          }}
-        />
+        <div>
+          <Controller
+            name="phone"
+            control={control}
+            render={({ field }) => {
+              const { displayValue, handleChange } = usePhoneInput(
+                field.onChange,
+              );
+              return (
+                <div>
+                  <Input
+                    label="Téléphone"
+                    type="tel"
+                    placeholder="06 12 34 56 78"
+                    value={displayValue}
+                    onChange={handleChange}
+                    error={errors.phone?.message}
+                    icon={
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                        />
+                      </svg>
+                    }
+                  />
+                  <p className={`mt-1.5 text-xs ${colors.text.tertiary}`}>
+                    🔒 Utilisé uniquement pour les notifications SMS — jamais
+                    partagé
+                  </p>
+                </div>
+              );
+            }}
+          />
+        </div>
 
         <Input
           label="Adresse email"
           type="email"
           placeholder="vous@exemple.com"
+          autoComplete="email"
           error={errors.email?.message}
           {...register("email")}
           icon={
@@ -266,6 +284,7 @@ export default function RegisterClient() {
             label="Mot de passe"
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
+            autoComplete="new-password"
             error={errors.password?.message}
             {...register("password")}
             icon={
@@ -351,6 +370,7 @@ export default function RegisterClient() {
           }
         />
 
+        {/* Photo de profil */}
         <ProfilePhotoUpload
           photo={photo}
           onPhotoChange={setPhoto}

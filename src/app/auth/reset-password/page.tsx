@@ -83,26 +83,17 @@ export default function ResetPassword() {
       setTokenStatus("invalid");
       return;
     }
-
-    const verifyToken = async () => {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      if (token === "expired") {
-        setTokenStatus("expired");
-      } else if (token.length < 10) {
-        setTokenStatus("invalid");
-      } else {
-        setTokenStatus("valid");
-      }
-    };
-
-    verifyToken();
+    // Le token sera validé par le backend lors de la soumission
+    setTokenStatus("valid");
   }, [token]);
 
   const resetPasswordMutation = useMutation({
     mutationFn: async (data: ResetPasswordInput) => {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      return { success: true };
+      const response = await apiClient.post(routes.api.auth.resetPassword, {
+        token,
+        password: data.password,
+      });
+      return response.data;
     },
     onSuccess: () => {
       setResetSuccess(true);

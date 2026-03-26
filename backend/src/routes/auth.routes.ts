@@ -12,6 +12,8 @@ import {
   resetPassword,
   checkEmail,
   checkPhone,
+  recoverEmailSendOtpHandler,
+  recoverEmailVerifyOtpHandler,
 } from "../controllers/auth.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 
@@ -36,6 +38,10 @@ router.post("/reset-password", resetPassword);
 // Checks disponibilite
 router.get("/check-email", checkEmail);
 router.get("/check-phone", checkPhone);
+
+// Récupération email perdu (sans auth)
+router.post("/recover-email/send-otp", recoverEmailSendOtpHandler);
+router.post("/recover-email/verify-otp", recoverEmailVerifyOtpHandler);
 
 // Routes protegees
 router.get("/me", authMiddleware, getMe);
