@@ -39,7 +39,7 @@ const registerPrestataireSchema = z.object({
   phone: z.string().min(10, "Téléphone invalide"),
   competences: z
     .array(z.string())
-    .min(1, "Au moins une compétence requise")
+
     .max(3, "Maximum 3 compétences"),
   cguAccepted: z.boolean().refine((val) => val === true, {
     message: "Vous devez accepter les CGU",
@@ -190,14 +190,17 @@ export const registerPrestataire = async (req: Request, res: Response) => {
       }
     }
 
-    const categories = await prisma.category.findMany({
-      where: { id: { in: competences } },
-    });
-    if (categories.length !== competences.length) {
-      return res.status(400).json({
-        success: false,
-        message: "Une ou plusieurs catégories sont invalides",
+    // Valider les catégories seulement si des compétences sont fournies
+    if (competences.length > 0) {
+      const categories = await prisma.category.findMany({
+        where: { id: { in: competences } },
       });
+      if (categories.length !== competences.length) {
+        return res.status(400).json({
+          success: false,
+          message: "Une ou plusieurs catégories sont invalides",
+        });
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
@@ -218,7 +221,6 @@ export const registerPrestataire = async (req: Request, res: Response) => {
       const prestataire = await tx.prestataire.create({
         data: {
           userId: newUser.id,
-          cguAcceptedAt: new Date(),
         },
       });
 

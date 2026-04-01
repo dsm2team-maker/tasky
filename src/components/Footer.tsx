@@ -65,7 +65,7 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
-                  href={routes.auth.register.prestataire.step1}
+                  href={routes.auth.register.prestataire}
                   className="hover:text-white transition"
                 >
                   Devenir prestataire

@@ -9,7 +9,6 @@ export const PasswordStrengthIndicator: React.FC<
 > = ({ password }) => {
   const [strength, setStrength] = useState(0);
 
-  // Calculer la force du mot de passe
   useEffect(() => {
     if (!password) {
       setStrength(0);
@@ -17,7 +16,7 @@ export const PasswordStrengthIndicator: React.FC<
     }
 
     let score = 0;
-    if (password.length >= 8) score++;
+    if (password.length >= 8 && password.length <= 12) score++;
     if (/[A-Z]/.test(password)) score++;
     if (/[a-z]/.test(password)) score++;
     if (/[0-9]/.test(password)) score++;
@@ -35,11 +34,14 @@ export const PasswordStrengthIndicator: React.FC<
   ];
   const strengthLabels = ["Très faible", "Faible", "Moyen", "Bon", "Excellent"];
 
+  const lengthOk = password.length >= 8 && password.length <= 12;
+  const lengthTooLong = password.length > 12;
+
   return (
     <div className="mt-3">
       {/* Règles du mot de passe */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-3">
-        <h3 className="font-semibold mb-3 flex items-center gap-2 text-sm block text-sm text-gray-700 mb-1.5">
+        <h3 className="font-semibold mb-3 flex items-center gap-2 text-sm text-gray-700">
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
@@ -50,22 +52,28 @@ export const PasswordStrengthIndicator: React.FC<
           Votre mot de passe doit contenir :
         </h3>
         <ul className="text-sm space-y-2">
+          {/* Longueur */}
           <li className="flex items-center gap-2">
             <span
-              className={`font-bold ${password.length >= 8 ? "text-emerald-500" : "text-pink-600"}`}
+              className={`font-bold ${lengthOk ? "text-emerald-500" : "text-pink-600"}`}
             >
-              {password.length >= 8 ? "✓" : "○"}
+              {lengthOk ? "✓" : "○"}
             </span>
             <span
               className={
-                password.length >= 8
-                  ? "text-emerald-700 font-medium"
-                  : "text-pink-800"
+                lengthOk ? "text-emerald-700 font-medium" : "text-pink-800"
               }
             >
-              Au moins <strong>8 caractères</strong>
+              Entre <strong>8 et 12 caractères</strong>
+              {lengthTooLong && (
+                <span className="text-red-600 ml-1">
+                  (trop long : {password.length}/12)
+                </span>
+              )}
             </span>
           </li>
+
+          {/* Majuscule */}
           <li className="flex items-center gap-2">
             <span
               className={`font-bold ${/[A-Z]/.test(password) ? "text-emerald-500" : "text-pink-600"}`}
@@ -82,6 +90,8 @@ export const PasswordStrengthIndicator: React.FC<
               Une <strong>majuscule</strong> (A-Z)
             </span>
           </li>
+
+          {/* Minuscule */}
           <li className="flex items-center gap-2">
             <span
               className={`font-bold ${/[a-z]/.test(password) ? "text-emerald-500" : "text-pink-600"}`}
@@ -98,6 +108,8 @@ export const PasswordStrengthIndicator: React.FC<
               Une <strong>minuscule</strong> (a-z)
             </span>
           </li>
+
+          {/* Chiffre */}
           <li className="flex items-center gap-2">
             <span
               className={`font-bold ${/[0-9]/.test(password) ? "text-emerald-500" : "text-pink-600"}`}
@@ -114,6 +126,8 @@ export const PasswordStrengthIndicator: React.FC<
               Un <strong>chiffre</strong> (0-9)
             </span>
           </li>
+
+          {/* Caractère spécial */}
           <li className="flex items-center gap-2">
             <span
               className={`font-bold ${/[^A-Za-z0-9]/.test(password) ? "text-emerald-500" : "text-pink-600"}`}

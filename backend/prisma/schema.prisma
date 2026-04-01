@@ -1,5 +1,5 @@
 // ===========================================
-// TASKY - Schéma Prisma complet
+// TASKY - Schéma Prisma complet v2
 // ===========================================
 
 generator client {
@@ -68,18 +68,29 @@ model Client {
 }
 
 model Prestataire {
-  id          String  @id @default(cuid())
-  userId      String  @unique
-  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String        @id @default(cuid())
+  userId      String        @unique
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   bio         String?
-  siret       String?
-  verified    Boolean @default(false)
-  rating      Float   @default(0)
-  reviewCount Int     @default(0)
-  identityDocumentType String?
-  identityDocumentUrl  String?
-  identityVerified     Boolean @default(false)
-  cguAcceptedAt DateTime?
+  rating      Float         @default(0)
+  reviewCount Int           @default(0)
+
+  // ── Disponibilité ─────────────────────────────
+  disponibilite Disponibilite @default(ACTIF)
+
+  // ── Point de dépôt structuré ──────────────────
+  pointDepotAdresse      String?
+  pointDepotVille        String?
+  pointDepotCodePostal   String?
+  pointDepotLat          Float?
+  pointDepotLng          Float?
+  pointDepotInstructions String?
+
+  // ── Stats calculées ───────────────────────────
+  tauxReussite  Float @default(0)  // % prestations terminées
+  delaiMoyen    Int   @default(0)  // délai moyen en jours
+  tempsReponse  Int   @default(0)  // temps moyen de réponse en heures
+
   competences  Competence[]
   devis        Devis[]
   prestations  Prestation[]
@@ -87,6 +98,12 @@ model Prestataire {
   portfolio    PortfolioImage[]
 
   @@map("prestataires")
+}
+
+enum Disponibilite {
+  ACTIF
+  OCCUPE
+  ABSENT
 }
 
 model Category {
@@ -111,6 +128,8 @@ model SubCategory {
   interventions Intervention[]
   prestations   Prestation[]
   demandes      Demande[]
+  competences Competence[]
+
 
   @@map("sub_categories")
 }
@@ -120,49 +139,47 @@ model Intervention {
   nom           String
   subCategoryId String
   subCategory   SubCategory @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
-
+competences Competence[]
   @@map("interventions")
 }
 
-model Competence {
-  id            String      @id @default(cuid())
-  prestataireId String
-  prestataire   Prestataire @relation(fields: [prestataireId], references: [id], onDelete: Cascade)
-  categoryId    String
-  category      Category    @relation(fields: [categoryId], references: [id])
-
-  @@unique([prestataireId, categoryId])
-  @@map("competences")
-}
 
 model Demande {
-  id            String        @id @default(cuid())
-  clientId      String
-  client        Client        @relation(fields: [clientId], references: [id])
-  titre         String
-  description   String
-  categoryId    String
-  category      Category      @relation(fields: [categoryId], references: [id])
-  subCategoryId String?
-  subCategory   SubCategory?  @relation(fields: [subCategoryId], references: [id])
-  budget        Float?
-  ville         String?
-  photos        String[]
-  status        StatusDemande @default(PUBLIEE)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  devis      Devis[]
-  prestation Prestation?
+  id             String         @id @default(cuid())
+  clientId       String
+  client         Client         @relation(fields: [clientId], references: [id])
+  titre          String
+  description    String
+  typePrestation TypePrestation
+  categoryId     String
+  category       Category       @relation(fields: [categoryId], references: [id])
+  subCategoryId  String?
+  subCategory    SubCategory?   @relation(fields: [subCategoryId], references: [id])
+  budget         Float?
+  ville          String?
+  photos         String[]
+  status         StatusDemande  @default(PUBLIEE)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  devis          Devis[]
+  prestation     Prestation?
 
   @@map("demandes")
+}
+
+enum TypePrestation {
+  MODIFICATION
+  CREATION
+  FORMATION
 }
 
 enum StatusDemande {
   PUBLIEE
   EN_ATTENTE
-  ACCEPTEE
   EN_COURS
+  A_VALIDER
   TERMINEE
+  SUPPRIMEE
   ANNULEE
 }
 
@@ -176,6 +193,7 @@ model Devis {
   delai         Int
   description   String
   status        StatusDevis @default(ENVOYE)
+  expiresAt     DateTime
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -186,6 +204,7 @@ enum StatusDevis {
   ENVOYE
   ACCEPTE
   REFUSE
+  EXPIRE
 }
 
 model Prestation {
@@ -200,13 +219,14 @@ model Prestation {
   status        StatusPrestation @default(EN_COURS)
   createdAt     DateTime         @default(now())
   completedAt   DateTime?
-  review Review?
+  review        Review?
 
   @@map("prestations")
 }
 
 enum StatusPrestation {
   EN_COURS
+  A_VALIDER
   TERMINEE
   ANNULEE
 }
@@ -255,7 +275,7 @@ model VerificationToken {
   type      String
   expiresAt DateTime
   used      Boolean  @default(false)
-  metadata  Json?    // Données additionnelles selon le type (ex: { newEmail } pour EMAIL_CHANGE)
+  metadata  Json?
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -275,4 +295,17 @@ model EmailLog {
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("email_logs")
+}
+model Competence {
+  id             String        @id @default(cuid())
+  prestataireId  String
+  prestataire    Prestataire   @relation(fields: [prestataireId], references: [id], onDelete: Cascade)
+  categoryId     String
+  category       Category      @relation(fields: [categoryId], references: [id])
+  subCategoryId  String?
+  subCategory    SubCategory?  @relation(fields: [subCategoryId], references: [id])
+  interventionId String?
+  intervention   Intervention? @relation(fields: [interventionId], references: [id])
+
+  @@map("competences")
 }

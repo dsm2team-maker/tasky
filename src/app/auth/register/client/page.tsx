@@ -285,6 +285,7 @@ export default function RegisterClient() {
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
             autoComplete="new-password"
+            maxLength={12}
             error={errors.password?.message}
             {...register("password")}
             icon={
@@ -351,6 +352,7 @@ export default function RegisterClient() {
           label="Confirmer le mot de passe"
           type="password"
           placeholder="••••••••"
+          maxLength={12}
           error={errors.confirmPassword?.message}
           {...register("confirmPassword")}
           icon={
@@ -430,7 +432,7 @@ export default function RegisterClient() {
         <p className="text-center text-sm text-gray-600">
           Vous êtes prestataire ?{" "}
           <Link
-            href={routes.auth.register.prestataire.step1}
+            href={routes.auth.register.prestataire}
             className={`font-medium ${colors.premium.text} hover:underline`}
           >
             Inscrivez-vous ici

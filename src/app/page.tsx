@@ -75,7 +75,7 @@ export default function HomePage() {
                   </div>
                 </Link>
                 <Link
-                  href={routes.auth.register.prestataire.step1}
+                  href={routes.auth.register.prestataire}
                   className={`group px-8 py-4 ${colors.secondary.gradient} text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 text-center`}
                 >
                   <div className="font-bold text-lg mt-1 opacity-90">
@@ -613,7 +613,7 @@ export default function HomePage() {
                   </li>
                 </ul>
                 <Link
-                  href={routes.auth.register.prestataire.step1}
+                  href={routes.auth.register.prestataire}
                   className={`inline-block px-8 py-4 ${colors.secondary.gradient} text-white font-bold rounded-xl hover:shadow-2xl hover:scale-105 transition-all text-center`}
                 >
                   <span className="text-lg">
@@ -709,7 +709,7 @@ export default function HomePage() {
                 Publier une demande
               </Button>
             </Link>
-            <Link href={routes.auth.register.prestataire.step1}>
+            <Link href={routes.auth.register.prestataire}>
               <Button variant="secondary" size="lg" className="shadow-xl">
                 Proposer mes services
               </Button>

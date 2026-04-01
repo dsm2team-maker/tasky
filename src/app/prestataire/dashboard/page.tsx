@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/stores/auth-store";
+import { useProfile, usePrestataireCompetences } from "@/hooks/useProfile";
 import { Button } from "@/components/Button";
 import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
 import { colors } from "@/config/colors";
@@ -15,9 +16,18 @@ export default function PrestataireDashboard() {
   const { user, isAuthenticated } = useAuthStore();
   const [isHydrated, setIsHydrated] = useState(false);
 
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
+  const { data: profile } = useProfile();
+  const { data: competences } = usePrestataireCompetences();
+
+  // Profil incomplet si bio, compétences ou point de dépôt manquants
+  const isBioMissing =
+    !profile?.prestataire?.bio || profile.prestataire.bio.length < 100;
+  const isCompetencesMissing = !competences || competences.length === 0;
+  const isPointDepotMissing = !profile?.prestataire?.pointDepotAdresse;
+  const isProfileIncomplete =
+    isBioMissing || isCompetencesMissing || isPointDepotMissing;
+
+  useEffect(() => setIsHydrated(true), []);
   useEffect(() => {
     if (isHydrated && !isAuthenticated) router.push(routes.auth.login);
   }, [isHydrated, isAuthenticated, router]);
@@ -27,7 +37,7 @@ export default function PrestataireDashboard() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div
           className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500`}
-        ></div>
+        />
       </div>
     );
   }
@@ -38,7 +48,31 @@ export default function PrestataireDashboard() {
       <HeaderPrestataire />
 
       <main className={`${spacing.container} py-8`}>
-        {/* Welcome Banner */}
+        {/* ── Bandeau onboarding — disparaît quand bio + compétences sont renseignées ── */}
+        {isProfileIncomplete && (
+          <div className="mb-6 p-5 rounded-2xl border-2 border-amber-300 bg-amber-50 flex flex-col sm:flex-row items-center gap-4">
+            <div className="text-3xl flex-shrink-0">⚠️</div>
+            <div className="flex-1">
+              <h3 className="font-bold text-amber-800 mb-1">
+                Complétez votre profil pour recevoir des demandes
+              </h3>
+              <p className="text-sm text-amber-700">
+                Votre profil est incomplet. Les clients ne peuvent pas encore
+                vous contacter.
+              </p>
+            </div>
+            <Link
+              href={routes.prestataire.profile.view}
+              className="flex-shrink-0"
+            >
+              <Button variant="secondary" size="sm">
+                Compléter mon profil →
+              </Button>
+            </Link>
+          </div>
+        )}
+
+        {/* ── Welcome Banner ── */}
         <div
           className={`${colors.secondary.gradient} rounded-2xl p-8 mb-8 text-white`}
         >
@@ -60,7 +94,7 @@ export default function PrestataireDashboard() {
           </Link>
         </div>
 
-        {/* Stats Cards */}
+        {/* ── Stats Cards ── */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {[
             { label: "Nouvelles demandes", icon: "🔔", color: colors.neutral },
@@ -94,7 +128,7 @@ export default function PrestataireDashboard() {
           ))}
         </div>
 
-        {/* Quick Actions */}
+        {/* ── Quick Actions ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <Link href={routes.prestataire.requests.list}>
             <div
@@ -170,7 +204,7 @@ export default function PrestataireDashboard() {
           </Link>
         </div>
 
-        {/* Empty State */}
+        {/* ── Empty State ── */}
         <div
           className={`${colors.background.white} rounded-xl p-12 text-center shadow-sm border ${colors.border.light}`}
         >

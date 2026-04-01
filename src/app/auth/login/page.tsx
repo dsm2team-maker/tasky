@@ -405,7 +405,7 @@ export default function LoginPage() {
               </div>
             </div>
           </Link>
-          <Link href={routes.auth.register.prestataire.step1}>
+          <Link href={routes.auth.register.prestataire}>
             <div
               className={`p-4 rounded-xl border-2 ${colors.secondary.borderLight} ${colors.secondary.bg} hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer`}
             >
@@ -449,7 +449,7 @@ export default function LoginPage() {
                 Creer un compte client
               </button>
             </Link>
-            <Link href={routes.auth.register.prestataire.step1}>
+            <Link href={routes.auth.register.prestataire}>
               <button
                 type="button"
                 onClick={clearError}

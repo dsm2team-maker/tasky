@@ -20,9 +20,9 @@ export default function Logo({ size = "base", linkable = true }: LogoProps) {
     <Image
       src="/images/logo-tasky.png"
       alt="Tasky"
-      width={width}
-      height={height}
-      className={className}
+      width={100}
+      height={80}
+      quality={100}
       priority
     />
   );

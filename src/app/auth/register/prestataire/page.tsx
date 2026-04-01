@@ -1,74 +1,95 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import React, { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  registerPrestataireStep1Schema,
-  RegisterPrestataireStep1Input,
-} from "@/lib/schemas";
+import { useMutation } from "@tanstack/react-query";
+import { registerClientSchema, RegisterClientInput } from "@/lib/schemas";
+import { apiClient, handleApiError } from "@/lib/api-client";
+import { useAuthStore } from "@/stores/auth-store";
 import { useEmailValidation } from "@/hooks/useEmailValidation";
 import { usePhoneValidation } from "@/hooks/usePhoneValidation";
+import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { DuplicateAccountModal } from "@/components/DuplicateAccountModal";
+import { ProfilePhotoUpload } from "@/components/shared/ProfilePhotoUpload";
 import { Input } from "@/components/Input";
 import { Checkbox } from "@/components/Checkbox";
 import { Button } from "@/components/Button";
-import { ProgressSteps } from "@/components/ProgressSteps";
 import AuthLayout from "@/components/AuthLayout";
 import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
 import { colors } from "@/config/colors";
 import { typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
-import { usePhoneInput } from "@/hooks/usePhoneInput";
-import { Controller } from "react-hook-form";
 
-export default function RegisterPrestataireStep1() {
+export default function RegisterPrestataire() {
   const router = useRouter();
+  const setAuth = useAuthStore((state) => state.setAuth);
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<string | null>(null);
   const [modal, setModal] = useState<{
     open: boolean;
     type: "email" | "phone" | null;
     value?: string;
-  }>({
-    open: false,
-    type: null,
-  });
+  }>({ open: false, type: null });
 
   const {
     register,
     handleSubmit,
     watch,
-    setValue,
     control,
     formState: { errors },
-  } = useForm<RegisterPrestataireStep1Input>({
-    resolver: zodResolver(registerPrestataireStep1Schema),
+  } = useForm<RegisterClientInput>({
+    resolver: zodResolver(registerClientSchema),
     mode: "onBlur",
   });
-
-  // ── Restaurer les données si retour arrière ──
-  useEffect(() => {
-    const saved = sessionStorage.getItem("prestataire_step1");
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
-        if (data.firstName) setValue("firstName", data.firstName);
-        if (data.lastName) setValue("lastName", data.lastName);
-        if (data.city) setValue("city", data.city);
-        if (data.phone) setValue("phone", data.phone);
-        if (data.email) setValue("email", data.email);
-      } catch {}
-    }
-  }, [setValue]);
 
   const emailValue = watch("email");
   const phoneValue = watch("phone");
   const { isAvailable: emailAvailable } = useEmailValidation(emailValue);
   const { isAvailable: phoneAvailable } = usePhoneValidation(phoneValue);
 
-  const onSubmit = (data: RegisterPrestataireStep1Input) => {
+  const registerMutation = useMutation({
+    mutationFn: async (data: RegisterClientInput) => {
+      const response = await apiClient.post("/api/auth/register/prestataire", {
+        email: data.email,
+        password: data.password,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        city: data.city,
+        phone: data.phone,
+        competences: [],
+        cguAccepted: true,
+      });
+
+      const { tokens } = response.data.data;
+
+      if (photo && tokens?.accessToken) {
+        try {
+          await apiClient.post(
+            "/api/users/avatar",
+            { imageData: photo },
+            { headers: { Authorization: `Bearer ${tokens.accessToken}` } },
+          );
+        } catch (err) {
+          console.warn("Avatar non uploadé — compte créé quand même");
+        }
+      }
+
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setAuth(data.data.user, data.data.tokens.accessToken);
+      localStorage.setItem("refresh_token", data.data.tokens.refreshToken);
+      localStorage.setItem("pending_verification_email", data.data.user.email);
+      router.push(routes.auth.verifyEmail + "?type=prestataire");
+    },
+    onError: (error: any) => setErrorMessage(handleApiError(error).message),
+  });
+
+  const onSubmit = (data: RegisterClientInput) => {
     if (emailAvailable === false) {
       setModal({ open: true, type: "email", value: data.email });
       return;
@@ -77,24 +98,12 @@ export default function RegisterPrestataireStep1() {
       setModal({ open: true, type: "phone", value: data.phone });
       return;
     }
-    sessionStorage.setItem(
-      "prestataire_step1",
-      JSON.stringify({
-        email: data.email,
-        password: data.password,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        city: data.city,
-        phone: data.phone,
-      }),
-    );
-    router.push(routes.auth.register.prestataire.step2);
+    setErrorMessage(null);
+    registerMutation.mutate(data);
   };
 
   return (
     <AuthLayout variant="prestataire">
-      <ProgressSteps currentStep={1} totalSteps={4} completedSteps={[]} />
-
       <div className="text-center mb-8">
         <div
           className={`w-16 h-16 ${colors.secondary.gradient} rounded-full flex items-center justify-center mx-auto mb-4`}
@@ -109,24 +118,35 @@ export default function RegisterPrestataireStep1() {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
             />
           </svg>
         </div>
-        <h1 className={`${typography.h2.base} ${colors.premium.text} mb-2`}>
+        <h1 className={`${typography.h2.base} ${colors.secondary.text} mb-2`}>
           Devenir prestataire
         </h1>
         <p className={`${colors.premium.text} font-medium`}>
-          Étape 1 : Créez votre compte
+          Rejoignez Tasky et proposez vos services localement
         </p>
       </div>
 
+      {errorMessage && (
+        <div
+          className={`mb-4 p-3 ${colors.error.bg} border ${colors.error.borderLight} rounded-lg`}
+        >
+          <p className={`${colors.error.text} text-sm text-center`}>
+            {errorMessage}
+          </p>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {/* Prénom + Nom */}
         <div className="grid grid-cols-2 gap-3">
           <Input
             label="Prénom"
             type="text"
-            placeholder="Jean"
+            placeholder="Marie"
             error={errors.firstName?.message}
             {...register("firstName")}
             icon={
@@ -148,7 +168,7 @@ export default function RegisterPrestataireStep1() {
           <Input
             label="Nom"
             type="text"
-            placeholder="Dupont"
+            placeholder="Martin"
             error={errors.lastName?.message}
             {...register("lastName")}
             icon={
@@ -169,10 +189,11 @@ export default function RegisterPrestataireStep1() {
           />
         </div>
 
+        {/* Ville */}
         <Input
           label="Ville"
           type="text"
-          placeholder="Paris"
+          placeholder="Lyon"
           error={errors.city?.message}
           {...register("city")}
           icon={
@@ -198,51 +219,56 @@ export default function RegisterPrestataireStep1() {
           }
         />
 
-        <Controller
-          name="phone"
-          control={control}
-          render={({ field }) => {
-            const { displayValue, handleChange } = usePhoneInput(
-              field.onChange,
-            );
-            return (
-              <div>
-                <Input
-                  label="Téléphone"
-                  type="tel"
-                  placeholder="06 12 34 56 78"
-                  value={displayValue}
-                  onChange={handleChange}
-                  error={errors.phone?.message}
-                  icon={
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                      />
-                    </svg>
-                  }
-                />
-                <p className={`mt-1.5 text-xs ${colors.text.tertiary}`}>
-                  🔒 Utilisé uniquement pour les notifications SMS — jamais
-                  partagé
-                </p>
-              </div>
-            );
-          }}
-        />
+        {/* Téléphone */}
+        <div>
+          <Controller
+            name="phone"
+            control={control}
+            render={({ field }) => {
+              const { displayValue, handleChange } = usePhoneInput(
+                field.onChange,
+              );
+              return (
+                <div>
+                  <Input
+                    label="Téléphone"
+                    type="tel"
+                    placeholder="06 12 34 56 78"
+                    value={displayValue}
+                    onChange={handleChange}
+                    error={errors.phone?.message}
+                    icon={
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                        />
+                      </svg>
+                    }
+                  />
+                  <p className={`mt-1.5 text-xs ${colors.text.tertiary}`}>
+                    🔒 Utilisé uniquement pour les notifications SMS — jamais
+                    partagé
+                  </p>
+                </div>
+              );
+            }}
+          />
+        </div>
 
+        {/* Email */}
         <Input
           label="Adresse email"
           type="email"
           placeholder="vous@exemple.com"
+          autoComplete="email"
           error={errors.email?.message}
           {...register("email")}
           icon={
@@ -262,11 +288,14 @@ export default function RegisterPrestataireStep1() {
           }
         />
 
+        {/* Mot de passe */}
         <div className="relative">
           <Input
             label="Mot de passe"
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
+            autoComplete="new-password"
+            maxLength={12}
             error={errors.password?.message}
             {...register("password")}
             icon={
@@ -329,10 +358,12 @@ export default function RegisterPrestataireStep1() {
           <PasswordStrengthIndicator password={watch("password") || ""} />
         </div>
 
+        {/* Confirmer mot de passe */}
         <Input
           label="Confirmer le mot de passe"
           type="password"
           placeholder="••••••••"
+          maxLength={12}
           error={errors.confirmPassword?.message}
           {...register("confirmPassword")}
           icon={
@@ -352,43 +383,79 @@ export default function RegisterPrestataireStep1() {
           }
         />
 
-        <Checkbox
-          label={
-            <>
-              J'accepte les{" "}
-              <Link
-                href="/legal/cgu"
-                className="text-emerald-600 hover:underline"
-              >
-                conditions générales d'utilisation
-              </Link>
-            </>
-          }
-          error={errors.acceptTerms?.message}
-          {...register("acceptTerms")}
+        {/* Photo de profil */}
+        <ProfilePhotoUpload
+          photo={photo}
+          onPhotoChange={setPhoto}
+          onError={setErrorMessage}
         />
 
+        {/* CGU Prestataire */}
+        <div
+          className={`p-4 rounded-xl ${colors.secondary.bg} border ${colors.secondary.borderLight}`}
+        >
+          <p
+            className={`text-xs font-semibold ${colors.secondary.textDark} mb-2`}
+          >
+            📋 En tant que prestataire, vous vous engagez à :
+          </p>
+          <ul className={`text-xs ${colors.text.secondary} space-y-1 mb-3`}>
+            <li>✦ Fournir des services de qualité et respecter les délais</li>
+            <li>✦ Accepter la commission de 15% sur chaque prestation</li>
+            <li>✦ Être responsable des objets confiés par les clients</li>
+          </ul>
+          <Checkbox
+            label={
+              <>
+                J'accepte les{" "}
+                <Link
+                  href="/legal/cgu-prestataire"
+                  className={`${colors.secondary.text} hover:underline font-bold`}
+                  target="_blank"
+                >
+                  conditions générales prestataire
+                </Link>
+              </>
+            }
+            error={errors.acceptTerms?.message}
+            {...register("acceptTerms")}
+          />
+        </div>
+
         <Button
-          variant="secondary"
           type="submit"
           fullWidth
           size="lg"
-          className={`${colors.secondary.gradient} ${colors.secondary.gradientHover}`}
+          variant="secondary"
+          isLoading={registerMutation.isPending}
         >
-          Continuer →
+          Créer mon compte prestataire
         </Button>
       </form>
 
-      <div className="mt-6 text-center">
-        <p className={`text-sm ${colors.text.secondary}`}>
-          Vous êtes client ?{" "}
-          <Link
-            href={routes.auth.register.client}
-            className={`font-medium ${colors.premium.text} hover:underline`}
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300" />
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span
+            className={`px-3 py-1 ${colors.secondary.bg} ${colors.premium.text} font-semibold rounded-full`}
           >
-            Inscrivez-vous ici
-          </Link>
-        </p>
+            Déjà inscrit ?
+          </span>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <Link href={routes.auth.login}>
+          <Button
+            variant="outline"
+            fullWidth
+            className={`${colors.secondary.borderLight} ${colors.secondary.text} ${colors.secondary.bgHover}`}
+          >
+            Se connecter
+          </Button>
+        </Link>
       </div>
 
       <DuplicateAccountModal

@@ -1,6 +1,5 @@
 /**
  * 🛣️ TASKY - Configuration des routes
- * ✅ "artisan" → "prestataire" partout
  */
 export const routes = {
   public: {
@@ -19,12 +18,7 @@ export const routes = {
     login: "/auth/login",
     register: {
       client: "/auth/register/client",
-      prestataire: {
-        step1: "/auth/register/prestataire/step-1",
-        step2: "/auth/register/prestataire/step-2",
-        step3: "/auth/register/prestataire/step-3",
-        step4: "/auth/register/prestataire/step-4",
-      },
+      prestataire: "/auth/register/prestataire",
     },
     forgotPassword: "/auth/forgot-password",
     resetPassword: "/auth/reset-password",
@@ -88,9 +82,6 @@ export const routes = {
     },
   },
 
-  /**
-   * 🛠️ PRESTATAIRE
-   */
   prestataire: {
     dashboard: "/prestataire/dashboard",
     profile: {
@@ -148,7 +139,6 @@ export const routes = {
       paiement: "/prestataire/settings/paiement",
       notifications: "/prestataire/settings/notifications",
       privacy: "/prestataire/settings/privacy",
-      identity: "/prestataire/settings/identity",
       delete: "/prestataire/settings/delete-account",
     },
   },

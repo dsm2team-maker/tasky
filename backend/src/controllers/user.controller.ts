@@ -9,6 +9,10 @@ import {
   verifyPhoneOtp,
   requestEmailChange,
   verifyEmailOtp,
+  updatePrestataireProfile,
+  getPrestataireCompetences,
+  updatePrestataireCompetences,
+  getPrestataireStats,
 } from "../modules/users/user.service";
 
 // =============================================
@@ -25,7 +29,6 @@ export const uploadAvatar = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ success: false, message: "Image requise" });
     }
 
-    // Extraire le type MIME et les données base64
     const matches = imageData.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
     if (!matches) {
       return res
@@ -37,14 +40,12 @@ export const uploadAvatar = async (req: AuthRequest, res: Response) => {
     const base64Data = matches[2];
     const buffer = Buffer.from(base64Data, "base64");
 
-    // Vérifier la taille (max 5Mo)
     if (buffer.length > 5 * 1024 * 1024) {
       return res
         .status(400)
         .json({ success: false, message: "L'image ne doit pas dépasser 5 Mo" });
     }
 
-    // Vérifier le type
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(mimeType)) {
       return res
@@ -52,11 +53,9 @@ export const uploadAvatar = async (req: AuthRequest, res: Response) => {
         .json({ success: false, message: "Format accepté : JPG, PNG ou WEBP" });
     }
 
-    // Extension du fichier
     const ext = mimeType.split("/")[1].replace("jpeg", "jpg");
     const fileName = `${userId}-${Date.now()}.${ext}`;
 
-    // Supprimer l'ancien avatar si existant
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
     });
@@ -67,13 +66,9 @@ export const uploadAvatar = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Upload sur Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from(AVATAR_BUCKET)
-      .upload(fileName, buffer, {
-        contentType: mimeType,
-        upsert: true,
-      });
+      .upload(fileName, buffer, { contentType: mimeType, upsert: true });
 
     if (uploadError) {
       console.error("Erreur upload Supabase:", uploadError);
@@ -82,12 +77,10 @@ export const uploadAvatar = async (req: AuthRequest, res: Response) => {
         .json({ success: false, message: "Erreur lors de l'upload" });
     }
 
-    // Récupérer l'URL publique
     const {
       data: { publicUrl },
     } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(fileName);
 
-    // Mettre à jour en base
     await prisma.user.update({
       where: { id: userId },
       data: { avatar: publicUrl },
@@ -106,7 +99,6 @@ export const uploadAvatar = async (req: AuthRequest, res: Response) => {
 
 // =============================================
 // GET /api/users/profile
-// Profil complet de l'utilisateur connecté
 // =============================================
 export const getMyProfile = async (req: AuthRequest, res: Response) => {
   try {
@@ -143,7 +135,6 @@ export const updateMyProfile = async (req: AuthRequest, res: Response) => {
 
     const { firstName, lastName, city } = req.body;
 
-    // Validation basique
     if (
       firstName !== undefined &&
       (typeof firstName !== "string" || firstName.trim().length < 2)
@@ -192,7 +183,6 @@ export const updateMyProfile = async (req: AuthRequest, res: Response) => {
 
 // =============================================
 // POST /api/users/profile/request-phone-change
-// Demande de changement de téléphone → OTP par email
 // =============================================
 export const requestPhoneChangeHandler = async (
   req: AuthRequest,
@@ -220,17 +210,15 @@ export const requestPhoneChangeHandler = async (
       message: "Un code de vérification a été envoyé par email.",
     });
   } catch (error: any) {
-    if (error.message === "SAME_PHONE") {
+    if (error.message === "SAME_PHONE")
       return res
         .status(400)
         .json({ success: false, message: "C'est déjà votre numéro actuel" });
-    }
-    if (error.message === "PHONE_ALREADY_USED") {
+    if (error.message === "PHONE_ALREADY_USED")
       return res.status(409).json({
         success: false,
         message: "Ce numéro est déjà associé à un compte",
       });
-    }
     if (error.message?.startsWith("COOLDOWN:")) {
       const seconds = error.message.split(":")[1];
       return res.status(429).json({
@@ -245,7 +233,6 @@ export const requestPhoneChangeHandler = async (
 
 // =============================================
 // POST /api/users/profile/verify-phone-otp
-// Validation de l'OTP → téléphone mis à jour + déconnexion
 // =============================================
 export const verifyPhoneOtpHandler = async (
   req: AuthRequest,
@@ -273,18 +260,16 @@ export const verifyPhoneOtpHandler = async (
       message: "Téléphone mis à jour. Veuillez vous reconnecter.",
     });
   } catch (error: any) {
-    if (error.message === "OTP_EXPIRED_OR_NOT_FOUND") {
+    if (error.message === "OTP_EXPIRED_OR_NOT_FOUND")
       return res.status(400).json({
         success: false,
         message: "Code expiré ou introuvable — recommencez",
       });
-    }
-    if (error.message === "OTP_MAX_ATTEMPTS") {
+    if (error.message === "OTP_MAX_ATTEMPTS")
       return res.status(429).json({
         success: false,
         message: "Trop de tentatives — réessayez dans 30 minutes",
       });
-    }
     if (error.message?.startsWith("OTP_INVALID:")) {
       const remaining = error.message.split(":")[1];
       return res.status(400).json({
@@ -292,12 +277,11 @@ export const verifyPhoneOtpHandler = async (
         message: `Code incorrect — ${remaining} tentative(s) restante(s)`,
       });
     }
-    if (error.message === "PHONE_ALREADY_USED") {
+    if (error.message === "PHONE_ALREADY_USED")
       return res.status(409).json({
         success: false,
         message: "Ce numéro vient d'être pris par un autre compte",
       });
-    }
     console.error("Erreur verifyPhoneOtp:", error);
     return res.status(500).json({ success: false, message: "Erreur serveur" });
   }
@@ -305,7 +289,6 @@ export const verifyPhoneOtpHandler = async (
 
 // =============================================
 // POST /api/users/profile/request-email-change
-// Demande de changement d'email → OTP envoyé sur le NOUVEL email
 // =============================================
 export const requestEmailChangeHandler = async (
   req: AuthRequest,
@@ -333,18 +316,16 @@ export const requestEmailChangeHandler = async (
         "Un code de vérification a été envoyé sur votre nouvelle adresse email.",
     });
   } catch (error: any) {
-    if (error.message === "SAME_EMAIL") {
+    if (error.message === "SAME_EMAIL")
       return res.status(400).json({
         success: false,
         message: "C'est déjà votre adresse email actuelle",
       });
-    }
-    if (error.message === "EMAIL_ALREADY_USED") {
+    if (error.message === "EMAIL_ALREADY_USED")
       return res.status(409).json({
         success: false,
         message: "Cette adresse est déjà associée à un compte",
       });
-    }
     if (error.message?.startsWith("COOLDOWN:")) {
       const seconds = error.message.split(":")[1];
       return res.status(429).json({
@@ -359,7 +340,6 @@ export const requestEmailChangeHandler = async (
 
 // =============================================
 // POST /api/users/profile/verify-email-otp
-// Validation de l'OTP → email mis à jour directement + déconnexion
 // =============================================
 export const verifyEmailOtpHandler = async (
   req: AuthRequest,
@@ -387,18 +367,16 @@ export const verifyEmailOtpHandler = async (
       message: "Email mis à jour. Veuillez vous reconnecter.",
     });
   } catch (error: any) {
-    if (error.message === "OTP_EXPIRED_OR_NOT_FOUND") {
+    if (error.message === "OTP_EXPIRED_OR_NOT_FOUND")
       return res.status(400).json({
         success: false,
         message: "Code expiré ou introuvable — recommencez",
       });
-    }
-    if (error.message === "OTP_MAX_ATTEMPTS") {
+    if (error.message === "OTP_MAX_ATTEMPTS")
       return res.status(429).json({
         success: false,
         message: "Trop de tentatives — réessayez dans 30 minutes",
       });
-    }
     if (error.message?.startsWith("OTP_INVALID:")) {
       const remaining = error.message.split(":")[1];
       return res.status(400).json({
@@ -406,13 +384,209 @@ export const verifyEmailOtpHandler = async (
         message: `Code incorrect — ${remaining} tentative(s) restante(s)`,
       });
     }
-    if (error.message === "EMAIL_ALREADY_USED") {
+    if (error.message === "EMAIL_ALREADY_USED")
       return res.status(409).json({
         success: false,
         message: "Cette adresse vient d'être prise par un autre compte",
       });
-    }
     console.error("Erreur verifyEmailOtp:", error);
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+};
+
+// =============================================
+// PATCH /api/users/prestataire
+// Modifier bio, disponibilite, pointDepot
+// =============================================
+export const updatePrestataireProfileHandler = async (
+  req: AuthRequest,
+  res: Response,
+) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId)
+      return res
+        .status(401)
+        .json({ success: false, message: "Non authentifié" });
+
+    const {
+      bio,
+      disponibilite,
+      pointDepotAdresse,
+      pointDepotVille,
+      pointDepotCodePostal,
+      pointDepotLat,
+      pointDepotLng,
+      pointDepotInstructions,
+    } = req.body;
+
+    // Validation bio
+    if (bio !== undefined) {
+      if (typeof bio !== "string" || bio.trim().length < 100) {
+        return res.status(400).json({
+          success: false,
+          message: "La bio doit faire au moins 100 caractères",
+        });
+      }
+      if (bio.trim().length > 500) {
+        return res.status(400).json({
+          success: false,
+          message: "La bio ne peut pas dépasser 500 caractères",
+        });
+      }
+    }
+
+    // Validation disponibilite
+    if (
+      disponibilite !== undefined &&
+      !["ACTIF", "OCCUPE", "ABSENT"].includes(disponibilite)
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Disponibilité invalide" });
+    }
+
+    // Validation instructions
+    if (
+      pointDepotInstructions !== undefined &&
+      pointDepotInstructions.length > 300
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Les instructions ne peuvent pas dépasser 300 caractères",
+      });
+    }
+
+    const updated = await updatePrestataireProfile(userId, {
+      bio: bio?.trim(),
+      disponibilite,
+      pointDepotAdresse,
+      pointDepotVille,
+      pointDepotCodePostal,
+      pointDepotLat,
+      pointDepotLng,
+      pointDepotInstructions,
+    });
+
+    return res.json({
+      success: true,
+      message: "Profil mis à jour",
+      data: updated,
+    });
+  } catch (error: any) {
+    if (error.message === "PRESTATAIRE_NOT_FOUND") {
+      return res
+        .status(404)
+        .json({ success: false, message: "Prestataire introuvable" });
+    }
+    console.error("Erreur updatePrestataireProfile:", error);
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+};
+
+// =============================================
+// GET /api/users/prestataire/competences
+// =============================================
+export const getPrestataireCompetencesHandler = async (
+  req: AuthRequest,
+  res: Response,
+) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId)
+      return res
+        .status(401)
+        .json({ success: false, message: "Non authentifié" });
+
+    const competences = await getPrestataireCompetences(userId);
+    return res.json({ success: true, data: competences });
+  } catch (error: any) {
+    if (error.message === "PRESTATAIRE_NOT_FOUND") {
+      return res
+        .status(404)
+        .json({ success: false, message: "Prestataire introuvable" });
+    }
+    console.error("Erreur getPrestataireCompetences:", error);
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+};
+
+// =============================================
+// PUT /api/users/prestataire/competences
+// =============================================
+export const updatePrestataireCompetencesHandler = async (
+  req: AuthRequest,
+  res: Response,
+) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId)
+      return res
+        .status(401)
+        .json({ success: false, message: "Non authentifié" });
+
+    const { competences: competencesInput } = req.body;
+
+    if (!Array.isArray(competencesInput) || competencesInput.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Sélectionnez au moins une compétence",
+      });
+    }
+
+    const competences = await updatePrestataireCompetences(
+      userId,
+      competencesInput,
+    );
+    return res.json({
+      success: true,
+      message: "Compétences mises à jour",
+      data: competences,
+    });
+  } catch (error: any) {
+    if (error.message === "PRESTATAIRE_NOT_FOUND")
+      return res
+        .status(404)
+        .json({ success: false, message: "Prestataire introuvable" });
+    if (error.message?.startsWith("MAX_CATEGORIES:")) {
+      const max = error.message.split(":")[1];
+      return res.status(400).json({
+        success: false,
+        message: `Maximum ${max} catégories autorisées`,
+      });
+    }
+    if (error.message === "INVALID_CATEGORY")
+      return res
+        .status(400)
+        .json({ success: false, message: "Catégorie invalide" });
+    console.error("Erreur updatePrestataireCompetences:", error);
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+};
+
+// =============================================
+// GET /api/users/prestataire/stats
+// =============================================
+export const getPrestataireStatsHandler = async (
+  req: AuthRequest,
+  res: Response,
+) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId)
+      return res
+        .status(401)
+        .json({ success: false, message: "Non authentifié" });
+
+    const stats = await getPrestataireStats(userId);
+    return res.json({ success: true, data: stats });
+  } catch (error: any) {
+    if (error.message === "PRESTATAIRE_NOT_FOUND") {
+      return res
+        .status(404)
+        .json({ success: false, message: "Prestataire introuvable" });
+    }
+    console.error("Erreur getPrestataireStats:", error);
     return res.status(500).json({ success: false, message: "Erreur serveur" });
   }
 };

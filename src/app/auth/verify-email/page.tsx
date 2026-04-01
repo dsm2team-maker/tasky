@@ -221,30 +221,17 @@ export default function VerifyEmail() {
               <div className="w-full border-t border-gray-300" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-3 py-1 bg-white text-gray-500 rounded-full">
-                Besoin d'aide ?
-              </span>
+              <span className="px-3 py-1 bg-white text-gray-500 rounded-full"></span>
             </div>
           </div>
 
-          <div className="space-y-2 text-sm">
-            <p className="text-gray-600">
-              Mauvaise adresse email ?{" "}
-              <Link
-                href={routes.auth.register.client}
-                className={`font-medium ${colors.premium.text} hover:underline`}
-              >
-                Créer un nouveau compte
-              </Link>
-            </p>
-            <p className="text-gray-600">
-              <Link
-                href={routes.public.home}
-                className="font-medium text-gray-700 hover:text-gray-900 hover:underline"
-              >
-                ← Retour à l'accueil
-              </Link>
-            </p>
+          <div className="text-sm">
+            <Link
+              href={routes.auth.login}
+              className={`w-5 h-5 ${colors.premium.text} flex-shrink-0 mt-0.5`}
+            >
+              ← Se connecter
+            </Link>
           </div>
         </div>
 
@@ -346,7 +333,7 @@ export default function VerifyEmail() {
             size="lg"
             className={`${colors.premium.gradient} ${colors.premium.gradientHover}`}
           >
-            Se connecter →
+            Se connedddter →
           </Button>
         </div>
       </AuthLayout>

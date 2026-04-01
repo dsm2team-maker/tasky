@@ -4,9 +4,10 @@ import { generateOtp, generateResetToken } from "../../utils/token.utils";
 import { env } from "../../config/env.config";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
-const OTP_COOLDOWN_MS = 2 * 60 * 1000; // 2 min entre chaque demande OTP
-const MAX_OTP_ATTEMPTS = 5; // 5 essais avant blocage
-const OTP_BLOCK_DURATION_MS = 30 * 60 * 1000; // Blocage 30 min
+const OTP_COOLDOWN_MS = 2 * 60 * 1000;
+const MAX_OTP_ATTEMPTS = 5;
+const OTP_BLOCK_DURATION_MS = 30 * 60 * 1000;
+const BIO_MIN = 100;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface UpdateProfileData {
@@ -40,7 +41,16 @@ export const getProfile = async (userId: string) => {
           bio: true,
           rating: true,
           reviewCount: true,
-          verified: true,
+          disponibilite: true,
+          pointDepotAdresse: true,
+          pointDepotVille: true,
+          pointDepotCodePostal: true,
+          pointDepotLat: true,
+          pointDepotLng: true,
+          pointDepotInstructions: true,
+          tauxReussite: true,
+          delaiMoyen: true,
+          tempsReponse: true,
         },
       },
     },
@@ -48,19 +58,17 @@ export const getProfile = async (userId: string) => {
 
   if (!user) throw new Error("USER_NOT_FOUND");
 
-  // Masquer partiellement le téléphone : "06•• •• •• 78"
   const phoneMasked = user.phone ? maskPhone(user.phone) : null;
 
   return {
     ...user,
-    phone: undefined, // Ne jamais renvoyer le téléphone brut
+    phone: undefined,
     phoneMasked,
   };
 };
 
 // =============================================================================
 // UPDATE PROFILE
-// Champs modifiables librement : firstName, lastName, city
 // =============================================================================
 export const updateProfile = async (
   userId: string,
@@ -92,8 +100,6 @@ export const updateProfile = async (
 
 // =============================================================================
 // REQUEST PHONE CHANGE
-// Envoie un OTP sur le NOUVEAU numéro pour vérifier que l'utilisateur y a accès
-// DEV → log console / PROD → Twilio SMS
 // =============================================================================
 export const requestPhoneChange = async (userId: string, newPhone: string) => {
   const user = await prisma.user.findUnique({
@@ -102,15 +108,11 @@ export const requestPhoneChange = async (userId: string, newPhone: string) => {
   });
 
   if (!user) throw new Error("USER_NOT_FOUND");
-
-  // Vérifier que le nouveau numéro n'est pas déjà le numéro actuel
   if (user.phone === newPhone) throw new Error("SAME_PHONE");
 
-  // Vérifier que le nouveau numéro n'est pas déjà pris
   const existing = await prisma.user.findFirst({ where: { phone: newPhone } });
   if (existing) throw new Error("PHONE_ALREADY_USED");
 
-  // Vérifier le cooldown — pas de nouvel OTP avant 2 min
   const lastOtp = await prisma.verificationToken.findFirst({
     where: { userId, type: "PHONE_CHANGE_OTP", used: false },
     orderBy: { createdAt: "desc" },
@@ -128,7 +130,6 @@ export const requestPhoneChange = async (userId: string, newPhone: string) => {
     });
   }
 
-  // Générer le nouvel OTP
   const { otp, expiresAt } = generateOtp();
 
   await prisma.verificationToken.create({
@@ -141,21 +142,17 @@ export const requestPhoneChange = async (userId: string, newPhone: string) => {
     },
   });
 
-  // DEV → log console / PROD → Twilio SMS sur le NOUVEAU numéro
   if (env.isDev) {
     console.log(
       `🔐 [DEV] OTP changement téléphone → envoyé sur ${newPhone} : ${otp}`,
     );
   } else {
-    // TODO: brancher Twilio
-    // await sendSms(newPhone, `Votre code Tasky : ${otp} (valable 10 min)`);
     console.warn("⚠️ [PROD] Twilio non configuré — OTP non envoyé par SMS");
   }
 };
 
 // =============================================================================
 // VERIFY PHONE OTP
-// Valide l'OTP → met à jour le téléphone → invalide toutes les sessions
 // =============================================================================
 export const verifyPhoneOtp = async (userId: string, otp: string) => {
   const record = await prisma.verificationToken.findFirst({
@@ -172,12 +169,9 @@ export const verifyPhoneOtp = async (userId: string, otp: string) => {
 
   const metadata = record.metadata as { newPhone: string; attempts: number };
 
-  // Vérifier le nombre de tentatives
-  if (metadata.attempts >= MAX_OTP_ATTEMPTS) {
+  if (metadata.attempts >= MAX_OTP_ATTEMPTS)
     throw new Error("OTP_MAX_ATTEMPTS");
-  }
 
-  // Mauvais OTP → incrémenter les tentatives
   if (record.token !== otp) {
     await prisma.verificationToken.update({
       where: { id: record.id },
@@ -187,13 +181,11 @@ export const verifyPhoneOtp = async (userId: string, otp: string) => {
     throw new Error(`OTP_INVALID:${remaining}`);
   }
 
-  // ✅ OTP correct — vérifier une dernière fois que le numéro est libre
   const conflict = await prisma.user.findFirst({
     where: { phone: metadata.newPhone },
   });
   if (conflict) throw new Error("PHONE_ALREADY_USED");
 
-  // Appliquer le changement + invalider l'OTP + invalider toutes les sessions
   await prisma.$transaction([
     prisma.user.update({
       where: { id: userId },
@@ -203,12 +195,9 @@ export const verifyPhoneOtp = async (userId: string, otp: string) => {
       where: { id: record.id },
       data: { used: true },
     }),
-    prisma.refreshToken.deleteMany({
-      where: { userId },
-    }),
+    prisma.refreshToken.deleteMany({ where: { userId } }),
   ]);
 
-  // Envoyer un email d'alerte sur l'adresse email du compte
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { email: true, firstName: true },
@@ -217,12 +206,12 @@ export const verifyPhoneOtp = async (userId: string, otp: string) => {
   if (user && !env.isDev) {
     await addEmailJob(
       {
-        type: "phone-change-otp", // réutilise le canal, payload différent
+        type: "phone-change-otp",
         to: user.email,
         userId,
         payload: {
           firstName: user.firstName,
-          isAlert: true, // flag pour le template → mode alerte
+          isAlert: true,
           newPhone: maskPhone(metadata.newPhone),
         },
       },
@@ -233,7 +222,6 @@ export const verifyPhoneOtp = async (userId: string, otp: string) => {
 
 // =============================================================================
 // REQUEST EMAIL CHANGE
-// Envoie un OTP sur le NOUVEL email pour vérifier que l'utilisateur y a accès
 // =============================================================================
 export const requestEmailChange = async (userId: string, newEmail: string) => {
   const user = await prisma.user.findUnique({
@@ -242,19 +230,14 @@ export const requestEmailChange = async (userId: string, newEmail: string) => {
   });
 
   if (!user) throw new Error("USER_NOT_FOUND");
-
-  // Vérifier que le nouvel email n'est pas déjà l'email actuel
-  if (user.email.toLowerCase() === newEmail.toLowerCase()) {
+  if (user.email.toLowerCase() === newEmail.toLowerCase())
     throw new Error("SAME_EMAIL");
-  }
 
-  // Vérifier que le nouvel email n'est pas déjà pris
   const existing = await prisma.user.findUnique({
     where: { email: newEmail.toLowerCase() },
   });
   if (existing) throw new Error("EMAIL_ALREADY_USED");
 
-  // Vérifier le cooldown
   const lastOtp = await prisma.verificationToken.findFirst({
     where: { userId, type: "EMAIL_CHANGE_OTP", used: false },
     orderBy: { createdAt: "desc" },
@@ -272,7 +255,6 @@ export const requestEmailChange = async (userId: string, newEmail: string) => {
     });
   }
 
-  // Générer l'OTP
   const { otp, expiresAt } = generateOtp();
 
   await prisma.verificationToken.create({
@@ -285,7 +267,6 @@ export const requestEmailChange = async (userId: string, newEmail: string) => {
     },
   });
 
-  // Envoyer l'OTP sur le NOUVEL email (prouve que l'utilisateur y a accès)
   if (env.isDev) {
     console.log(
       `🔐 [DEV] OTP changement email → envoyé sur ${newEmail} : ${otp}`,
@@ -293,13 +274,13 @@ export const requestEmailChange = async (userId: string, newEmail: string) => {
   } else {
     await addEmailJob(
       {
-        type: "phone-change-otp", // réutilise le template OTP existant
+        type: "phone-change-otp",
         to: newEmail.toLowerCase(),
         userId,
         payload: {
           firstName: user.firstName,
           otp,
-          newPhone: newEmail.toLowerCase(), // champ réutilisé pour afficher la destination
+          newPhone: newEmail.toLowerCase(),
         },
       },
       EMAIL_PRIORITY.CRITICAL,
@@ -309,7 +290,6 @@ export const requestEmailChange = async (userId: string, newEmail: string) => {
 
 // =============================================================================
 // VERIFY EMAIL OTP
-// Valide l'OTP → met à jour l'email directement → invalide toutes les sessions
 // =============================================================================
 export const verifyEmailOtp = async (userId: string, otp: string) => {
   const record = await prisma.verificationToken.findFirst({
@@ -326,12 +306,9 @@ export const verifyEmailOtp = async (userId: string, otp: string) => {
 
   const metadata = record.metadata as { newEmail: string; attempts: number };
 
-  // Vérifier le nombre de tentatives
-  if (metadata.attempts >= MAX_OTP_ATTEMPTS) {
+  if (metadata.attempts >= MAX_OTP_ATTEMPTS)
     throw new Error("OTP_MAX_ATTEMPTS");
-  }
 
-  // Mauvais OTP
   if (record.token !== otp) {
     await prisma.verificationToken.update({
       where: { id: record.id },
@@ -341,19 +318,16 @@ export const verifyEmailOtp = async (userId: string, otp: string) => {
     throw new Error(`OTP_INVALID:${remaining}`);
   }
 
-  // ✅ OTP correct — vérifier une dernière fois que l'email est libre (race condition)
   const conflict = await prisma.user.findUnique({
     where: { email: metadata.newEmail },
   });
   if (conflict) throw new Error("EMAIL_ALREADY_USED");
 
-  // Récupérer l'ancien email pour l'alerte de sécurité
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { email: true, firstName: true },
   });
 
-  // Appliquer le changement + invalider OTP + invalider toutes les sessions
   await prisma.$transaction([
     prisma.user.update({
       where: { id: userId },
@@ -363,22 +337,16 @@ export const verifyEmailOtp = async (userId: string, otp: string) => {
       where: { id: record.id },
       data: { used: true },
     }),
-    prisma.refreshToken.deleteMany({
-      where: { userId },
-    }),
+    prisma.refreshToken.deleteMany({ where: { userId } }),
   ]);
 
-  // Envoyer une alerte de sécurité sur l'ANCIENNE adresse
   if (user && !env.isDev) {
     await addEmailJob(
       {
         type: "email-change-alert",
         to: user.email,
         userId,
-        payload: {
-          firstName: user.firstName,
-          newEmail: metadata.newEmail,
-        },
+        payload: { firstName: user.firstName, newEmail: metadata.newEmail },
       },
       EMAIL_PRIORITY.CRITICAL,
     );
@@ -391,7 +359,6 @@ export const verifyEmailOtp = async (userId: string, otp: string) => {
 
 // =============================================================================
 // UTILITAIRE — Masquer le téléphone
-// "0612345678" → "06•• •• •• 78"
 // =============================================================================
 const maskPhone = (phone: string): string => {
   const cleaned = phone.replace(/\D/g, "");
@@ -400,11 +367,38 @@ const maskPhone = (phone: string): string => {
 };
 
 // =============================================================================
-// RECOVER EMAIL — ÉTAPE 1
+// UTILITAIRE — Vérifier si le profil prestataire est complet (4/4)
+// =============================================================================
+const isPrestataireProfileComplete = async (
+  prestataireId: string,
+  userId: string,
+): Promise<boolean> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { emailVerified: true },
+  });
+
+  const prestataire = await prisma.prestataire.findUnique({
+    where: { id: prestataireId },
+    select: {
+      bio: true,
+      pointDepotAdresse: true,
+      competences: { select: { id: true }, take: 1 },
+    },
+  });
+
+  if (!user || !prestataire) return false;
+
+  const emailVerified = !!user.emailVerified;
+  const hasBio = (prestataire.bio?.length ?? 0) >= BIO_MIN;
+  const hasCompetences = prestataire.competences.length > 0;
+  const hasPointDepot = !!prestataire.pointDepotAdresse;
+
+  return emailVerified && hasBio && hasCompetences && hasPointDepot;
+};
+
 // =============================================================================
 // RECOVER EMAIL — ÉTAPE 1
-// Prend l'ancienne adresse email → trouve le compte → envoie OTP SMS
-// DEV → log console / PROD → Twilio
 // =============================================================================
 export const recoverEmailSendOtp = async (email: string) => {
   const user = await prisma.user.findUnique({
@@ -415,7 +409,6 @@ export const recoverEmailSendOtp = async (email: string) => {
   if (!user) throw new Error("USER_NOT_FOUND");
   if (!user.phone) throw new Error("NO_PHONE");
 
-  // Cooldown 2 min
   const lastOtp = await prisma.verificationToken.findFirst({
     where: { userId: user.id, type: "RECOVER_EMAIL_OTP", used: false },
     orderBy: { createdAt: "desc" },
@@ -445,14 +438,11 @@ export const recoverEmailSendOtp = async (email: string) => {
     },
   });
 
-  // DEV → log console / PROD → Twilio SMS
   if (env.isDev) {
     console.log(
       `🔐 [DEV] OTP récupération email → envoyé sur ${user.phone} : ${otp}`,
     );
   } else {
-    // TODO: brancher Twilio
-    // await sendSms(user.phone, `Votre code Tasky : ${otp} (valable 10 min)`);
     console.warn("⚠️ [PROD] Twilio non configuré — OTP non envoyé par SMS");
   }
 
@@ -461,8 +451,6 @@ export const recoverEmailSendOtp = async (email: string) => {
 
 // =============================================================================
 // RECOVER EMAIL — ÉTAPE 2
-// Valide OTP SMS + saisie nouvel email → met à jour directement
-// + envoie lien reset password sur le nouvel email
 // =============================================================================
 export const recoverEmailVerifyOtp = async (
   email: string,
@@ -475,19 +463,14 @@ export const recoverEmailVerifyOtp = async (
   });
 
   if (!user) throw new Error("USER_NOT_FOUND");
-
-  // Vérifier que le nouvel email n'est pas déjà l'email actuel
-  if (user.email.toLowerCase() === newEmail.toLowerCase()) {
+  if (user.email.toLowerCase() === newEmail.toLowerCase())
     throw new Error("SAME_EMAIL");
-  }
 
-  // Vérifier que le nouvel email n'est pas déjà pris
   const existing = await prisma.user.findUnique({
     where: { email: newEmail.toLowerCase() },
   });
   if (existing) throw new Error("EMAIL_ALREADY_USED");
 
-  // Trouver et valider l'OTP SMS
   const record = await prisma.verificationToken.findFirst({
     where: {
       userId: user.id,
@@ -514,17 +497,14 @@ export const recoverEmailVerifyOtp = async (
     throw new Error(`OTP_INVALID:${remaining}`);
   }
 
-  // Race condition check
   const conflict = await prisma.user.findUnique({
     where: { email: newEmail.toLowerCase() },
   });
   if (conflict) throw new Error("EMAIL_ALREADY_USED");
 
-  // 1. Générer le token reset password AVANT de changer l'email
   const { token: resetToken, expiresAt: resetExpiresAt } = generateResetToken();
   const resetUrl = `${env.frontendUrl}/auth/reset-password?token=${resetToken}`;
 
-  // 2. Tout mettre à jour en transaction atomique
   await prisma.$transaction([
     prisma.user.update({
       where: { id: user.id },
@@ -534,9 +514,7 @@ export const recoverEmailVerifyOtp = async (
       where: { id: record.id },
       data: { used: true },
     }),
-    prisma.refreshToken.deleteMany({
-      where: { userId: user.id },
-    }),
+    prisma.refreshToken.deleteMany({ where: { userId: user.id } }),
     prisma.verificationToken.create({
       data: {
         userId: user.id,
@@ -548,7 +526,6 @@ export const recoverEmailVerifyOtp = async (
     }),
   ]);
 
-  // 3. Envoyer l'email reset password sur le NOUVEL email
   await addEmailJob(
     {
       type: "reset-password",
@@ -565,4 +542,214 @@ export const recoverEmailVerifyOtp = async (
   }
 
   return { newEmail: newEmail.toLowerCase() };
+};
+
+// =============================================================================
+// UPDATE PRESTATAIRE PROFILE
+// Champs modifiables : bio, disponibilite, pointDepot
+// ⚡ Activation automatique si profil complet (4/4)
+// ⚡ Disponibilité bloquée si profil incomplet
+// =============================================================================
+interface UpdatePrestataireData {
+  bio?: string;
+  disponibilite?: "ACTIF" | "OCCUPE" | "ABSENT";
+  pointDepotAdresse?: string;
+  pointDepotVille?: string;
+  pointDepotCodePostal?: string;
+  pointDepotLat?: number;
+  pointDepotLng?: number;
+  pointDepotInstructions?: string;
+}
+
+export const updatePrestataireProfile = async (
+  userId: string,
+  data: UpdatePrestataireData,
+) => {
+  const prestataire = await prisma.prestataire.findUnique({
+    where: { userId },
+    select: {
+      id: true,
+      bio: true,
+      pointDepotAdresse: true,
+      competences: { select: { id: true }, take: 1 },
+    },
+  });
+  if (!prestataire) throw new Error("PRESTATAIRE_NOT_FOUND");
+
+  // ⚡ Bloquer le changement de disponibilité si profil incomplet
+  if (data.disponibilite !== undefined) {
+    const complete = await isPrestataireProfileComplete(prestataire.id, userId);
+    if (!complete) throw new Error("PROFILE_INCOMPLETE");
+  }
+
+  const updated = await prisma.prestataire.update({
+    where: { userId },
+    data: {
+      ...(data.bio !== undefined && { bio: data.bio }),
+      ...(data.disponibilite !== undefined && {
+        disponibilite: data.disponibilite,
+      }),
+      ...(data.pointDepotAdresse !== undefined && {
+        pointDepotAdresse: data.pointDepotAdresse,
+      }),
+      ...(data.pointDepotVille !== undefined && {
+        pointDepotVille: data.pointDepotVille,
+      }),
+      ...(data.pointDepotCodePostal !== undefined && {
+        pointDepotCodePostal: data.pointDepotCodePostal,
+      }),
+      ...(data.pointDepotLat !== undefined && {
+        pointDepotLat: data.pointDepotLat,
+      }),
+      ...(data.pointDepotLng !== undefined && {
+        pointDepotLng: data.pointDepotLng,
+      }),
+      ...(data.pointDepotInstructions !== undefined && {
+        pointDepotInstructions: data.pointDepotInstructions,
+      }),
+    },
+    select: {
+      id: true,
+      bio: true,
+      rating: true,
+      reviewCount: true,
+      disponibilite: true,
+      pointDepotAdresse: true,
+      pointDepotVille: true,
+      pointDepotCodePostal: true,
+      pointDepotLat: true,
+      pointDepotLng: true,
+      pointDepotInstructions: true,
+    },
+  });
+
+  // ⚡ Vérifier si le profil est maintenant complet → activer automatiquement
+  const nowComplete = await isPrestataireProfileComplete(updated.id, userId);
+  if (nowComplete && updated.disponibilite === "ABSENT") {
+    await prisma.prestataire.update({
+      where: { id: updated.id },
+      data: { disponibilite: "ACTIF" },
+    });
+    updated.disponibilite = "ACTIF";
+  }
+
+  return updated;
+};
+
+// =============================================================================
+// GET PRESTATAIRE COMPETENCES
+// =============================================================================
+export const getPrestataireCompetences = async (userId: string) => {
+  const prestataire = await prisma.prestataire.findUnique({
+    where: { userId },
+    select: {
+      id: true,
+      competences: {
+        select: {
+          id: true,
+          categoryId: true,
+          category: { select: { id: true, nom: true, icon: true, slug: true } },
+          subCategoryId: true,
+          subCategory: { select: { id: true, nom: true, slug: true } },
+          interventionId: true,
+          intervention: { select: { id: true, nom: true } },
+        },
+      },
+    },
+  });
+  if (!prestataire) throw new Error("PRESTATAIRE_NOT_FOUND");
+  return prestataire.competences;
+};
+
+// =============================================================================
+// UPDATE PRESTATAIRE COMPETENCES
+// ⚡ Vérifie après sauvegarde si profil complet → activation automatique
+// =============================================================================
+const MAX_CATEGORIES = 3;
+
+interface CompetenceInput {
+  categoryId: string;
+  subCategoryId?: string;
+  interventionId?: string;
+}
+
+export const updatePrestataireCompetences = async (
+  userId: string,
+  competences: CompetenceInput[],
+) => {
+  if (!competences.length) throw new Error("NO_COMPETENCES");
+
+  const uniqueCategoryIds = [...new Set(competences.map((c) => c.categoryId))];
+  if (uniqueCategoryIds.length > MAX_CATEGORIES)
+    throw new Error(`MAX_CATEGORIES:${MAX_CATEGORIES}`);
+
+  const categories = await prisma.category.findMany({
+    where: { id: { in: uniqueCategoryIds } },
+    select: { id: true },
+  });
+  if (categories.length !== uniqueCategoryIds.length)
+    throw new Error("INVALID_CATEGORY");
+
+  const prestataire = await prisma.prestataire.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  if (!prestataire) throw new Error("PRESTATAIRE_NOT_FOUND");
+
+  await prisma.competence.deleteMany({
+    where: { prestataireId: prestataire.id },
+  });
+  await prisma.competence.createMany({
+    data: competences.map((c) => ({
+      prestataireId: prestataire.id,
+      categoryId: c.categoryId,
+      subCategoryId: c.subCategoryId || null,
+      interventionId: c.interventionId || null,
+    })),
+  });
+  // ⚡ Vérifier si profil complet → activer automatiquement
+  const nowComplete = await isPrestataireProfileComplete(
+    prestataire.id,
+    userId,
+  );
+  if (nowComplete) {
+    const current = await prisma.prestataire.findUnique({
+      where: { id: prestataire.id },
+      select: { disponibilite: true },
+    });
+    if (current?.disponibilite === "ABSENT") {
+      await prisma.prestataire.update({
+        where: { id: prestataire.id },
+        data: { disponibilite: "ACTIF" },
+      });
+    }
+  }
+
+  return getPrestataireCompetences(userId);
+};
+
+// =============================================================================
+// GET PRESTATAIRE STATS
+// =============================================================================
+export const getPrestataireStats = async (userId: string) => {
+  const prestataire = await prisma.prestataire.findUnique({
+    where: { userId },
+    select: {
+      id: true,
+      rating: true,
+      reviewCount: true,
+      prestations: { select: { status: true } },
+    },
+  });
+  if (!prestataire) throw new Error("PRESTATAIRE_NOT_FOUND");
+
+  const nbPrestations = prestataire.prestations.filter(
+    (p) => p.status === "TERMINEE",
+  ).length;
+
+  return {
+    rating: prestataire.rating,
+    reviewCount: prestataire.reviewCount,
+    nbPrestations,
+  };
 };

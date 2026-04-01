@@ -363,7 +363,7 @@ export default function ResetPassword() {
       {/* Header */}
       <div className="text-center mb-8">
         <div
-          className={`w-16 h-16 ${colors.secondary.gradient} rounded-full flex items-center justify-center mx-auto mb-4`}
+          className={`w-16 h-16 ${colors.premium.gradient} rounded-full flex items-center justify-center mx-auto mb-4`}
         >
           <svg
             className="w-8 h-8 text-white"
@@ -379,10 +379,10 @@ export default function ResetPassword() {
             />
           </svg>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className={`${typography.h2.base} ${colors.text.primary} mb-2`}>
           Réinitialisez votre mot de passe
         </h1>
-        <p className={`${colors.secondary.text} font-medium`}>
+        <p className={`${colors.premium.text} font-medium`}>
           Choisissez un mot de passe sécurisé pour votre compte
         </p>
       </div>
@@ -500,6 +500,7 @@ export default function ResetPassword() {
             label="Nouveau mot de passe"
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
+            maxLength={12}
             error={errors.password?.message}
             {...register("password")}
             icon={
@@ -568,6 +569,7 @@ export default function ResetPassword() {
             label="Confirmer le mot de passe"
             type={showConfirmPassword ? "text" : "password"}
             placeholder="••••••••"
+            maxLength={12}
             error={errors.confirmPassword?.message}
             {...register("confirmPassword")}
             icon={
@@ -641,13 +643,15 @@ export default function ResetPassword() {
         </Button>
       </form>
 
-      {/* Lien retour */}
-      <div className="mt-6 text-center">
-        <Link
-          href="/auth/login"
-          className="text-sm text-gray-600 hover:text-gray-900 hover:underline"
-        >
-          ← Retour à la connexion
+      <div className="space-y-3">
+        <Link href={routes.auth.login}>
+          <Button
+            variant="outline"
+            fullWidth
+            className={`${colors.premium.borderLight} ${colors.premium.text} ${colors.premium.bgHover}`}
+          >
+            Se connecter
+          </Button>
         </Link>
       </div>
     </AuthLayout>
