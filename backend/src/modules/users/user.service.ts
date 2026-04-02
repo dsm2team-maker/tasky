@@ -51,6 +51,9 @@ export const getProfile = async (userId: string) => {
           tauxReussite: true,
           delaiMoyen: true,
           tempsReponse: true,
+          // ✅ IBAN ajouté
+          iban: true,
+          ibanVerified: true,
         },
       },
     },
@@ -367,7 +370,8 @@ const maskPhone = (phone: string): string => {
 };
 
 // =============================================================================
-// UTILITAIRE — Vérifier si le profil prestataire est complet (4/4)
+// UTILITAIRE — Vérifier si le profil prestataire est complet (5/5)
+// ✅ Email vérifié + Bio + Compétences + Point de dépôt + IBAN
 // =============================================================================
 const isPrestataireProfileComplete = async (
   prestataireId: string,
@@ -383,6 +387,7 @@ const isPrestataireProfileComplete = async (
     select: {
       bio: true,
       pointDepotAdresse: true,
+      iban: true,
       competences: { select: { id: true }, take: 1 },
     },
   });
@@ -393,8 +398,9 @@ const isPrestataireProfileComplete = async (
   const hasBio = (prestataire.bio?.length ?? 0) >= BIO_MIN;
   const hasCompetences = prestataire.competences.length > 0;
   const hasPointDepot = !!prestataire.pointDepotAdresse;
+  const hasIban = !!prestataire.iban;
 
-  return emailVerified && hasBio && hasCompetences && hasPointDepot;
+  return emailVerified && hasBio && hasCompetences && hasPointDepot && hasIban;
 };
 
 // =============================================================================
@@ -546,9 +552,6 @@ export const recoverEmailVerifyOtp = async (
 
 // =============================================================================
 // UPDATE PRESTATAIRE PROFILE
-// Champs modifiables : bio, disponibilite, pointDepot
-// ⚡ Activation automatique si profil complet (4/4)
-// ⚡ Disponibilité bloquée si profil incomplet
 // =============================================================================
 interface UpdatePrestataireData {
   bio?: string;
@@ -559,12 +562,14 @@ interface UpdatePrestataireData {
   pointDepotLat?: number;
   pointDepotLng?: number;
   pointDepotInstructions?: string;
+  iban?: string;
 }
 
 export const updatePrestataireProfile = async (
   userId: string,
   data: UpdatePrestataireData,
 ) => {
+  console.log("📝 data reçu:", JSON.stringify(data));
   const prestataire = await prisma.prestataire.findUnique({
     where: { userId },
     select: {
@@ -607,6 +612,7 @@ export const updatePrestataireProfile = async (
       ...(data.pointDepotInstructions !== undefined && {
         pointDepotInstructions: data.pointDepotInstructions,
       }),
+      ...(data.iban !== undefined && { iban: data.iban, ibanVerified: false }),
     },
     select: {
       id: true,
@@ -620,18 +626,10 @@ export const updatePrestataireProfile = async (
       pointDepotLat: true,
       pointDepotLng: true,
       pointDepotInstructions: true,
+      iban: true,
+      ibanVerified: true,
     },
   });
-
-  // ⚡ Vérifier si le profil est maintenant complet → activer automatiquement
-  const nowComplete = await isPrestataireProfileComplete(updated.id, userId);
-  if (nowComplete && updated.disponibilite === "ABSENT") {
-    await prisma.prestataire.update({
-      where: { id: updated.id },
-      data: { disponibilite: "ACTIF" },
-    });
-    updated.disponibilite = "ACTIF";
-  }
 
   return updated;
 };
@@ -663,7 +661,6 @@ export const getPrestataireCompetences = async (userId: string) => {
 
 // =============================================================================
 // UPDATE PRESTATAIRE COMPETENCES
-// ⚡ Vérifie après sauvegarde si profil complet → activation automatique
 // =============================================================================
 const MAX_CATEGORIES = 3;
 
@@ -707,6 +704,7 @@ export const updatePrestataireCompetences = async (
       interventionId: c.interventionId || null,
     })),
   });
+
   // ⚡ Vérifier si profil complet → activer automatiquement
   const nowComplete = await isPrestataireProfileComplete(
     prestataire.id,

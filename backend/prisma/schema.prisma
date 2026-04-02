@@ -97,6 +97,12 @@ model Prestataire {
   reviews      Review[]
   portfolio    PortfolioImage[]
 
+  // ── IBAN / Paiement ───────────────────────────
+  iban          String?
+  bic           String?
+  bankName      String?
+  ibanVerified  Boolean @default(false)
+
   @@map("prestataires")
 }
 

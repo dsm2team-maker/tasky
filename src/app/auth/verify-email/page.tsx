@@ -225,12 +225,15 @@ export default function VerifyEmail() {
             </div>
           </div>
 
-          <div className="text-sm">
-            <Link
-              href={routes.auth.login}
-              className={`w-5 h-5 ${colors.premium.text} flex-shrink-0 mt-0.5`}
-            >
-              ← Se connecter
+          <div className="space-y-3">
+            <Link href={routes.auth.login}>
+              <Button
+                variant="outline"
+                fullWidth
+                className={`${colors.premium.borderLight} ${colors.premium.text} ${colors.premium.bgHover}`}
+              >
+                Se connecter
+              </Button>
             </Link>
           </div>
         </div>
@@ -327,14 +330,18 @@ export default function VerifyEmail() {
           <p className="text-sm text-gray-500 mb-6">
             Redirection vers la connexion dans 3 secondes...
           </p>
-          <Button
-            onClick={handleGoToLogin}
-            fullWidth
-            size="lg"
-            className={`${colors.premium.gradient} ${colors.premium.gradientHover}`}
-          >
-            Se connedddter →
-          </Button>
+
+          <div className="space-y-3">
+            <Link href={routes.auth.login}>
+              <Button
+                variant="outline"
+                fullWidth
+                className={`${colors.secondary.borderLight} ${colors.secondary.text} ${colors.secondary.bgHover}`}
+              >
+                Se connecter
+              </Button>
+            </Link>
+          </div>
         </div>
       </AuthLayout>
     );

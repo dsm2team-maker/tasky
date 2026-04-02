@@ -418,6 +418,7 @@ export const updatePrestataireProfileHandler = async (
       pointDepotLat,
       pointDepotLng,
       pointDepotInstructions,
+      iban,
     } = req.body;
 
     // Validation bio
@@ -466,6 +467,7 @@ export const updatePrestataireProfileHandler = async (
       pointDepotLat,
       pointDepotLng,
       pointDepotInstructions,
+      iban,
     });
 
     return res.json({

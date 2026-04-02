@@ -7,6 +7,7 @@ interface ModalProps {
   onClose: () => void;
   title?: string;
   icon?: React.ReactNode;
+  preventClose?: boolean;
   headerVariant?: "premium" | "primary" | "secondary" | "error" | "success";
   children: React.ReactNode;
   maxWidth?: "sm" | "md" | "lg";
@@ -31,6 +32,7 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   icon,
+  preventClose = false,
   headerVariant = "premium",
   children,
   maxWidth = "sm",
@@ -52,11 +54,8 @@ export const Modal: React.FC<ModalProps> = ({
 
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (justOpened.current) return;
-
-    // ne fermer que si on clique sur l'overlay
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
+    if (preventClose) return;
+    if (e.target === e.currentTarget) onClose();
   };
 
   return (

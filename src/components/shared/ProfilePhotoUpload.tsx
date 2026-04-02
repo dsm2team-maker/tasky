@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { colors } from "@/config/colors";
 
 interface ProfilePhotoUploadProps {
@@ -15,6 +15,7 @@ export const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
   onError,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [justUploaded, setJustUploaded] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -24,20 +25,22 @@ export const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
       return;
     }
     const reader = new FileReader();
-    reader.onloadend = () => onPhotoChange(reader.result as string);
+    reader.onloadend = () => {
+      onPhotoChange(reader.result as string);
+      setJustUploaded(true);
+    };
     reader.readAsDataURL(file);
   };
 
   const handleRemove = () => {
     onPhotoChange(null);
+    setJustUploaded(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
     <div
-      className={`p-4 rounded-2xl border-2 ${
-        photo ? colors.secondary.borderLight : colors.border.light
-      } ${colors.background.white}`}
+      className={`p-4 rounded-2xl border-2 ${photo ? colors.secondary.borderLight : colors.border.light} ${colors.background.white}`}
     >
       <p className={`text-sm font-semibold ${colors.text.primary} mb-3`}>
         📸 Ajoutez une photo de profil
@@ -46,9 +49,7 @@ export const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
       <div className="flex items-center gap-4">
         {/* Avatar preview */}
         <div
-          className={`relative w-20 h-20 rounded-full flex-shrink-0 overflow-hidden border-2 ${
-            photo ? colors.secondary.border : "border-dashed border-gray-300"
-          } bg-gray-50`}
+          className={`relative w-20 h-20 rounded-full flex-shrink-0 overflow-hidden border-2 ${photo ? colors.secondary.border : "border-dashed border-gray-300"} bg-gray-50`}
         >
           {photo ? (
             <img
@@ -99,7 +100,8 @@ export const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
         </div>
       </div>
 
-      {photo && (
+      {/* Message uniquement après un vrai upload */}
+      {justUploaded && (
         <div
           className={`mt-3 flex items-center gap-2 text-xs ${colors.secondary.text} ${colors.secondary.bg} px-3 py-1.5 rounded-lg`}
         >

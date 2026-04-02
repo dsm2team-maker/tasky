@@ -35,7 +35,7 @@ export const useProfile = () => {
         throw error;
       }
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
     refetchInterval: 30 * 1000,
     retry: (failureCount, error) => {
       if (axios.isAxiosError(error) && error.response?.status === 404)

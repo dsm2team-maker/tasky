@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { colors } from "@/config/colors";
 import { spacing } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 import { useAuthStore } from "@/stores/auth-store";
 import Logo from "@/components/Logo";
-import { Button } from "@/components/Button";
 
 /**
  * 🌸 HeaderClient — Header pour les pages client
@@ -15,12 +14,21 @@ import { Button } from "@/components/Button";
  */
 export default function HeaderClient() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout } = useAuthStore();
 
   const handleLogout = () => {
     logout();
-    router.push(routes.public.home);
+    router.push(routes.auth.login);
   };
+
+  const navLinks = [
+    { href: routes.client.dashboard, label: "Tableau de bord" },
+    { href: routes.client.search.base, label: "Trouver un prestataire" },
+    { href: routes.client.requests.list, label: "Mes demandes" },
+    { href: routes.client.messages.list, label: "Messages" },
+    { href: routes.client.profile.view, label: "Mon profil" },
+  ];
 
   return (
     <header
@@ -35,52 +43,37 @@ export default function HeaderClient() {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-6">
-            <Link
-              href={routes.client.dashboard}
-              className={`${colors.premium.text} font-semibold`}
-            >
-              Tableau de bord
-            </Link>
-            <Link
-              href={routes.client.search.base}
-              className={`${colors.premium.text} hover:text-purple-600 transition-colors`}
-            >
-              Trouver un prestataire
-            </Link>
-            <Link
-              href={routes.client.requests.list}
-              className={`${colors.premium.text} hover:text-purple-600 transition-colors`}
-            >
-              Mes demandes
-            </Link>
-            <Link
-              href={routes.client.messages.list}
-              className={`${colors.premium.text} hover:text-purple-600 transition-colors`}
-            >
-              Messages
-            </Link>
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-sm transition-colors ${
+                    isActive
+                      ? `${colors.primary.text} font-bold underline underline-offset-4`
+                      : `${colors.premium.text} hover:${colors.primary.text} font-medium`
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* User actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <span
-              className={`hidden md:block text-sm font-medium ${colors.premium.text}`}
+              className={`hidden md:block text-sm font-medium ${colors.text.secondary}`}
             >
               👤 {user?.firstName || user?.email?.split("@")[0]}
             </span>
-            <Link
-              href={routes.client.profile.view}
-              className={`${colors.premium.text} hover:text-purple-600 transition-colors`}
-            >
-              Mon profil
-            </Link>
-            <Button
+            <button
               onClick={handleLogout}
-              variant="ghost"
-              className={colors.premium.text}
+              className={`text-sm font-medium ${colors.premium.text} hover:${colors.primary.text} transition-colors`}
             >
               Déconnexion
-            </Button>
+            </button>
           </div>
         </div>
       </div>
