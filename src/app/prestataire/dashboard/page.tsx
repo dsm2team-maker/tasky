@@ -92,8 +92,7 @@ export default function PrestataireDashboard() {
           <div className="flex flex-wrap gap-3">
             <Link href={routes.prestataire.profile.view}>
               <Button
-                variant="outline"
-                className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+                className={`bg-white ${colors.secondary.text} ${colors.secondary.bgHover}`}
               >
                 Mon profil
               </Button>
@@ -101,8 +100,7 @@ export default function PrestataireDashboard() {
             {profileComplete && (
               <Link href={routes.prestataire.requests.list}>
                 <Button
-                  variant="outline"
-                  className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+                  className={`bg-white ${colors.secondary.text} ${colors.secondary.bgHover}`}
                 >
                   Voir les demandes
                 </Button>
@@ -199,7 +197,7 @@ export default function PrestataireDashboard() {
               >
                 <div className="flex items-start gap-4">
                   <div
-                    className={`w-14 h-14 ${gradients.neutralDark} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 ${transitions.base}`}
+                    className={`w-14 h-14 ${colors.secondary.gradient} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 ${transitions.base}`}
                   >
                     <svg
                       className="w-7 h-7 text-white"
