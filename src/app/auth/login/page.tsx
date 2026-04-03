@@ -10,10 +10,10 @@ import { loginSchema, LoginInput } from "@/lib/schemas";
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
-import { Input } from "@/components/Input";
-import { Button } from "@/components/Button";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import AuthLayout from "@/components/AuthLayout";
+import AuthLayout from "@/components/layout/AuthLayout";
 import { colors } from "@/config/colors";
 import { typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
@@ -256,10 +256,10 @@ export default function LoginPage() {
   return (
     <AuthLayout variant="neutral">
       <div className="text-center mb-8">
-        <h1 className={`${typography.h2.base} ${colors.premium.text} mb-2`}>
+        <h1 className={`${typography.h2.base} ${colors.text.primary} mb-2`}>
           Connexion
         </h1>
-        <p className={colors.premium.text}>Accedez a votre espace Tasky</p>
+        <p className={colors.premium.text}>Accédez à votre espace Tasky</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -369,7 +369,7 @@ export default function LoginPage() {
             href={routes.auth.forgotPassword}
             className={`text-sm ${colors.premium.text} hover:underline`}
           >
-            Mot de passe oublie ?
+            Mot de passe oublié ?
           </Link>
         </div>
 
@@ -386,9 +386,19 @@ export default function LoginPage() {
       </form>
 
       <div className="mt-8">
-        <p className={`text-center text-sm ${colors.text.secondary} mb-5`}>
-          Pas encore de compte ?
-        </p>
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span
+              className={`px-3 py-1 ${colors.premium.bg} ${colors.premium.text} font-medium rounded-full`}
+            >
+              Pas encore de compte ?
+            </span>
+          </div>
+        </div>
+
         <div className="flex flex-col gap-4">
           <Link href={routes.auth.register.client}>
             <div className="p-4 rounded-xl border-2 border-pink-200 bg-gradient-to-br from-pink-50 to-rose-50 hover:border-pink-400 hover:shadow-md transition-all cursor-pointer">

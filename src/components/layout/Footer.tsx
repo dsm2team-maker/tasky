@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { routes } from "@/config/routes";
-import Logo from "@/components/Logo";
+import Logo from "@/components/ui/Logo";
 
 export default function Footer() {
   return (

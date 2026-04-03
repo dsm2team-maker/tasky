@@ -6,7 +6,7 @@ import { colors } from "@/config/colors";
 import { spacing } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 import { useAuthStore } from "@/stores/auth-store";
-import Logo from "@/components/Logo";
+import Logo from "@/components/ui/Logo";
 
 /**
  * 🌸 HeaderClient — Header pour les pages client

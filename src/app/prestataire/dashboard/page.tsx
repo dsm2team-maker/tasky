@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/stores/auth-store";
 import { useProfile, usePrestataireCompetences } from "@/hooks/useProfile";
-import { Button } from "@/components/Button";
+import { Button } from "@/components/ui/Button";
 import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
 import { colors } from "@/config/colors";
 import { spacing, transitions, gradients } from "@/config/design-tokens";

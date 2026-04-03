@@ -12,13 +12,13 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useEmailValidation } from "@/hooks/useEmailValidation";
 import { usePhoneValidation } from "@/hooks/usePhoneValidation";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
-import { DuplicateAccountModal } from "@/components/DuplicateAccountModal";
+
 import { ProfilePhotoUpload } from "@/components/shared/ProfilePhotoUpload";
-import { Input } from "@/components/Input";
-import { Checkbox } from "@/components/Checkbox";
-import { Button } from "@/components/Button";
-import AuthLayout from "@/components/AuthLayout";
-import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
+import { Input } from "@/components/ui/Input";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Button } from "@/components/ui/Button";
+import AuthLayout from "@/components/layout/AuthLayout";
+import { PasswordStrengthIndicator } from "@/components/ui/PasswordStrengthIndicator";
 import { colors } from "@/config/colors";
 import { typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
@@ -457,13 +457,6 @@ export default function RegisterPrestataire() {
           </Button>
         </Link>
       </div>
-
-      <DuplicateAccountModal
-        isOpen={modal.open}
-        type={modal.type}
-        value={modal.value}
-        onClose={() => setModal({ open: false, type: null })}
-      />
     </AuthLayout>
   );
 }

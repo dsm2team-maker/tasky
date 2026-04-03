@@ -6,10 +6,10 @@ import { colors } from "@/config/colors";
 import { typography, gradients } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 import { useAuthStore } from "@/stores/auth-store";
-import CategoriesSection from "@/components/CategoriesSection";
-import { Button } from "@/components/Button";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import CategoriesSection from "@/components/sections/CategoriesSection";
+import { Button } from "@/components/ui/Button";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
 export default function HomePage() {
   const router = useRouter();
@@ -51,10 +51,10 @@ export default function HomePage() {
                   La bonne personne,
                 </span>
                 <br />
-                pour la bonne tâche,
+                Pour la bonne tâche,
                 <br />
                 <span className={colors.secondary.text}>
-                  près de chez vous.
+                  Près de chez vous.
                 </span>
               </h1>
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
@@ -158,22 +158,22 @@ export default function HomePage() {
                 {
                   icon: "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z",
                   title: "📍 Artisans locaux",
-                  desc: "Trouvez des professionnels près de chez vous, disponibles rapidement",
+                  desc: "Trouvez des professionnels près de chez vous, disponibles rapidement.",
                 },
                 {
                   icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
                   title: "⏱️ Gagnez du temps",
-                  desc: "Une demande, plusieurs propositions. Comparez et choisissez facilement",
+                  desc: "Une demande, plusieurs propositions. Comparez et choisissez facilement.",
                 },
                 {
                   icon: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z",
                   title: "💳 Paiement protégé",
-                  desc: "Argent bloqué jusqu'à validation. Protection acheteur garantie",
+                  desc: "Argent bloqué jusqu'à validation. Protection acheteur garantie.",
                 },
                 {
                   icon: "M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z",
                   title: "⭐ Avis vérifiés",
-                  desc: "Choisissez sur la base de vraies expériences clients",
+                  desc: "Choisissez sur la base de vraies expériences clientes.",
                 },
               ].map((item) => (
                 <div
@@ -221,17 +221,17 @@ export default function HomePage() {
                 {
                   icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
                   title: "💰 Revenus complémentaires",
-                  desc: "Recevez des demandes qualifiées sans prospection ni publicité",
+                  desc: "Recevez des demandes qualifiées sans prospection ni publicité.",
                 },
                 {
                   icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
                   title: "🏠 Travaillez de chez vous",
-                  desc: "Gérez vos demandes et échangez en ligne. Récupérez au point relais",
+                  desc: "Gérez vos demandes et échangez en ligne. Récupérez au point relais.",
                 },
                 {
                   icon: "M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z",
                   title: "🏅 Valorisez vos talents",
-                  desc: "Vos avis positifs attirent plus de clients et renforcent votre crédibilité",
+                  desc: "Vos avis positifs attirent plus de clients et renforcent votre crédibilité.",
                 },
                 {
                   icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z",
@@ -637,7 +637,7 @@ export default function HomePage() {
               Ils nous font confiance
             </h2>
             <p className="text-xl text-gray-600">
-              Plus de 10 000 projets réalisés avec succès
+              Plus de 10 000 projets réalisés avec succès.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
@@ -701,7 +701,7 @@ export default function HomePage() {
           </h2>
           <p className="text-xl text-gray-600 mb-4">
             Rejoignez des milliers d'utilisateurs qui trouvent ou proposent des
-            services en toute sécurité
+            services en toute sécurité.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href={routes.auth.register.client}>

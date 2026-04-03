@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/stores/auth-store";
-import { Button } from "@/components/Button";
+import { Button } from "@/components/ui/Button";
 import HeaderClient from "@/components/headers/HeaderClient";
 import { colors } from "@/config/colors";
 import { spacing, transitions } from "@/config/design-tokens";

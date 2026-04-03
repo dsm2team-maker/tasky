@@ -8,9 +8,9 @@ import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { apiClient, handleApiError } from "@/lib/api-client";
-import { Input } from "@/components/Input";
-import { Button } from "@/components/Button";
-import AuthLayout from "@/components/AuthLayout";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import AuthLayout from "@/components/layout/AuthLayout";
 import { typography, gradients } from "@/config/design-tokens";
 
 import { colors } from "@/config/colors";

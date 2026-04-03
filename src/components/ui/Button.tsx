@@ -27,7 +27,8 @@ export const Button: React.FC<ButtonProps> = ({
     primary: `${colors.primary.gradient} text-white hover:shadow-lg ${colors.primary.focusRing}`,
     secondary: `${colors.secondary.gradient} text-white hover:shadow-lg ${colors.secondary.focusRing}`,
     premium: `${colors.premium.gradient} text-white hover:shadow-lg ${colors.premium.focusRing}`,
-    outline: `border-2 ${colors.premium.border} ${colors.text.tertiary} `,
+    outline: `border-2 ${colors.premium.border} ${colors.premium.text} `,
+
     ghost: "text-gray-700 hover:bg-gray-100 focus:ring-gray-500",
   };
 

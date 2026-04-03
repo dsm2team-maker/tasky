@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
 import HeaderClient from "@/components/headers/HeaderClient";
-import { Button } from "@/components/Button";
+import { Button } from "@/components/ui/Button";
 import { colors } from "@/config/colors";
 import { spacing } from "@/config/design-tokens";
 import { routes } from "@/config/routes";

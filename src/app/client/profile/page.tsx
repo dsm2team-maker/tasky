@@ -18,8 +18,8 @@ import {
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { phoneSchema } from "@/lib/schemas";
 import HeaderClient from "@/components/headers/HeaderClient";
-import { Button } from "@/components/Button";
-import { Input } from "@/components/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { ProfilePhotoUpload } from "@/components/shared/ProfilePhotoUpload";
 import { CityInput } from "@/components/shared/CityInput";

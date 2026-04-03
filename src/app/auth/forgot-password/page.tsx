@@ -8,9 +8,9 @@ import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { forgotPasswordSchema, ForgotPasswordInput } from "@/lib/schemas";
 import { apiClient, handleApiError } from "@/lib/api-client";
-import { Input } from "@/components/Input";
-import { Button } from "@/components/Button";
-import AuthLayout from "@/components/AuthLayout";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import AuthLayout from "@/components/layout/AuthLayout";
 import { colors } from "@/config/colors";
 import { typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
@@ -117,7 +117,18 @@ export default function ForgotPassword() {
             >
               Retour à la connexion
             </Button>
-
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span
+                  className={`px-3 py-1 ${colors.premium.bg} ${colors.premium.text} font-medium rounded-full`}
+                >
+                  Aucun email reçu ?
+                </span>
+              </div>
+            </div>
             <button
               onClick={() => setEmailSent(false)}
               className={`w-full py-2 px-4 rounded-xl border-2 ${colors.premium.border} ${colors.premium.text} text-sm font-medium hover:bg-purple-50 transition`}
@@ -242,11 +253,7 @@ export default function ForgotPassword() {
       {/* Lien retour */}
       <div className="text-center">
         <Link href={routes.auth.login}>
-          <Button
-            variant="outline"
-            fullWidth
-            className={`w-full py-2 px-4 rounded-xl border-2 ${colors.premium.border} ${colors.premium.text} text-sm font-medium hover:bg-purple-50 transition`}
-          >
+          <Button variant="outline" fullWidth>
             ← Retour à la connexion
           </Button>
         </Link>
