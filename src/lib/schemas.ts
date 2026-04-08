@@ -60,3 +60,22 @@ export type LoginInput = z.infer<typeof loginSchema>;
 // ─── Mot de passe oublié ──────────────────────────────────────────────────────
 export const forgotPasswordSchema = z.object({ email: emailSchema });
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+// ─── OTP ──────────────────────────────────────────────────────────────────────
+export const otpSchema = z.object({
+  otp: z
+    .string()
+    .length(6, "6 chiffres requis")
+    .regex(/^\d{6}$/),
+});
+export type OtpInput = z.infer<typeof otpSchema>;
+
+// ─── Changement téléphone ─────────────────────────────────────────────────────
+export const newPhoneSchema = z.object({ newPhone: phoneSchema });
+export type NewPhoneInput = z.infer<typeof newPhoneSchema>;
+
+// ─── Changement email ─────────────────────────────────────────────────────────
+export const newEmailSchema = z.object({
+  newEmail: z.string().email("Format invalide").toLowerCase(),
+});
+export type NewEmailInput = z.infer<typeof newEmailSchema>;

@@ -293,6 +293,75 @@
           ]
         }
       ]
+    },
+    {
+      "id": "formation-distance",
+      "nom": "Formation à distance",
+      "icon": "🎓",
+      "description": "Formations en ligne animées par des experts artisans",
+      "sousCategories": [
+        {
+          "id": "patisserie",
+          "nom": "Pâtisserie",
+          "prestations": [
+            { "id": "gateaux-orientaux", "nom": "Gâteaux orientaux" },
+            { "id": "gateaux-occidentaux", "nom": "Gâteaux occidentaux" },
+            { "id": "gateaux-asiatiques", "nom": "Gâteaux asiatiques" },
+            { "id": "patisserie-base", "nom": "Pâtisserie de base" },
+            { "id": "cake-design", "nom": "Cake design" },
+            {
+              "id": "patisserie-traditionnelle",
+              "nom": "Pâtisserie traditionnelle"
+            },
+            { "id": "desserts-rapides", "nom": "Desserts rapides" }
+          ]
+        },
+        {
+          "id": "cuisine-monde",
+          "nom": "Cuisine du monde",
+          "prestations": [
+            { "id": "cuisine-marocaine", "nom": "Cuisine marocaine" },
+            { "id": "cuisine-italienne", "nom": "Cuisine italienne" },
+            { "id": "cuisine-asiatique", "nom": "Cuisine asiatique" },
+            { "id": "cuisine-libanaise", "nom": "Cuisine libanaise" },
+            { "id": "cuisine-africaine", "nom": "Cuisine africaine" },
+            { "id": "cuisine-indienne", "nom": "Cuisine indienne" }
+          ]
+        },
+        {
+          "id": "cuisine-saine",
+          "nom": "Cuisine saine & diététique",
+          "prestations": [
+            { "id": "cuisine-healthy", "nom": "Cuisine healthy" },
+            { "id": "batch-cooking", "nom": "Batch cooking" },
+            { "id": "repas-equilibres", "nom": "Repas équilibrés" },
+            { "id": "cuisine-vegetarienne", "nom": "Cuisine végétarienne" },
+            { "id": "cuisine-vegan", "nom": "Cuisine vegan" },
+            { "id": "sans-gluten", "nom": "Sans gluten" }
+          ]
+        },
+        {
+          "id": "cuisine-rapide",
+          "nom": "Cuisine rapide & quotidienne",
+          "prestations": [
+            { "id": "repas-rapides", "nom": "Repas rapides" },
+            { "id": "cuisine-etudiante", "nom": "Cuisine étudiante" },
+            { "id": "meal-prep", "nom": "Meal prep" },
+            { "id": "lunch-box", "nom": "Lunch box" },
+            { "id": "recettes-economiques", "nom": "Recettes économiques" }
+          ]
+        },
+        {
+          "id": "boulangerie-viennoiserie",
+          "nom": "Boulangerie & viennoiserie",
+          "prestations": [
+            { "id": "pain-maison", "nom": "Pain maison" },
+            { "id": "brioche", "nom": "Brioche" },
+            { "id": "viennoiseries", "nom": "Viennoiseries" },
+            { "id": "levain", "nom": "Levain" }
+          ]
+        }
+      ]
     }
   ]
 }

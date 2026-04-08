@@ -569,7 +569,6 @@ export const updatePrestataireProfile = async (
   userId: string,
   data: UpdatePrestataireData,
 ) => {
-  console.log("📝 data reçu:", JSON.stringify(data));
   const prestataire = await prisma.prestataire.findUnique({
     where: { userId },
     select: {

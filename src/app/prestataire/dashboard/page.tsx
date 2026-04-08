@@ -8,7 +8,7 @@ import { useProfile, usePrestataireCompetences } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/Button";
 import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
 import { colors } from "@/config/colors";
-import { spacing, transitions, gradients } from "@/config/design-tokens";
+import { spacing, transitions } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 
 const BIO_MIN = 100;
@@ -92,7 +92,8 @@ export default function PrestataireDashboard() {
           <div className="flex flex-wrap gap-3">
             <Link href={routes.prestataire.profile.view}>
               <Button
-                className={`bg-white ${colors.secondary.text} ${colors.secondary.bgHover}`}
+                variant="outline"
+                className="bg-white/10 border-white/30 text-white hover:bg-white/20"
               >
                 Mon profil
               </Button>
@@ -100,7 +101,8 @@ export default function PrestataireDashboard() {
             {profileComplete && (
               <Link href={routes.prestataire.requests.list}>
                 <Button
-                  className={`bg-white ${colors.secondary.text} ${colors.secondary.bgHover}`}
+                  variant="outline"
+                  className="bg-white/10 border-white/30 text-white hover:bg-white/20"
                 >
                   Voir les demandes
                 </Button>
@@ -114,7 +116,7 @@ export default function PrestataireDashboard() {
           Actions rapides
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          {/* Demandes disponibles — bloqué si profil incomplet */}
+          {/* Demandes disponibles */}
           {profileComplete ? (
             <Link href={routes.prestataire.requests.list}>
               <div
@@ -155,12 +157,10 @@ export default function PrestataireDashboard() {
           ) : (
             <div
               onClick={() => router.push(routes.prestataire.profile.view)}
-              className={`${colors.background.white} rounded-xl p-6 shadow-sm border ${colors.border.light} cursor-pointer group opacity-60 relative`}
+              className={`${colors.background.white} rounded-xl p-6 shadow-sm border ${colors.border.light} cursor-pointer opacity-60`}
             >
               <div className="flex items-start gap-4">
-                <div
-                  className={`w-14 h-14 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0`}
-                >
+                <div className="w-14 h-14 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
                   <svg
                     className="w-7 h-7 text-gray-400"
                     fill="none"
@@ -189,7 +189,7 @@ export default function PrestataireDashboard() {
             </div>
           )}
 
-          {/* Mes prestations — bloqué si profil incomplet */}
+          {/* Mes prestations */}
           {profileComplete ? (
             <Link href={routes.prestataire.services.list}>
               <div

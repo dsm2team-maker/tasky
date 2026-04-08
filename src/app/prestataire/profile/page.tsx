@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -14,17 +13,13 @@ import {
   useProfile,
   useUpdateProfile,
   useUploadAvatar,
-  useRequestPhoneChange,
-  useVerifyPhoneOtp,
-  useRequestEmailChange,
-  useVerifyEmailOtp,
   useUpdatePrestataireProfile,
   usePrestataireCompetences,
   useUpdatePrestataireCompetences,
   usePrestataireStats,
 } from "@/hooks/useProfile";
-import { usePhoneInput } from "@/hooks/usePhoneInput";
-import { phoneSchema } from "@/lib/schemas";
+import { PhoneModal, EmailModal } from "@/components/shared/OtpModals";
+import { validateIban, formatIban, maskIban } from "@/lib/iban";
 import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -44,39 +39,6 @@ const {
   MAX_SOUS_CATEGORIES_PAR_CATEGORIE,
   MAX_COMPETENCES_PAR_SOUS_CATEGORIE,
 } = INSCRIPTION_LIMITS;
-
-// ─── Validation IBAN ──────────────────────────────────────────────────────────
-const formatIban = (value: string): string => {
-  const cleaned = value.replace(/\s/g, "").toUpperCase();
-  return cleaned.match(/.{1,4}/g)?.join(" ") || cleaned;
-};
-
-const validateIban = (iban: string): boolean => {
-  const cleaned = iban.replace(/\s/g, "").toUpperCase();
-  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{4,}$/.test(cleaned)) return false;
-  // Longueur FR = 27
-  if (cleaned.startsWith("FR") && cleaned.length !== 27) return false;
-  // Modulo 97
-  const rearranged = cleaned.slice(4) + cleaned.slice(0, 4);
-  const numeric = rearranged
-    .split("")
-    .map((c) => (isNaN(Number(c)) ? (c.charCodeAt(0) - 55).toString() : c))
-    .join("");
-  let remainder = 0;
-  for (let i = 0; i < numeric.length; i += 7) {
-    remainder = parseInt(remainder.toString() + numeric.slice(i, i + 7)) % 97;
-  }
-  return remainder === 1;
-};
-
-const maskIban = (iban: string): string => {
-  const cleaned = iban.replace(/\s/g, "");
-  if (cleaned.length < 8) return iban;
-  const first = cleaned.slice(0, 4);
-  const last = cleaned.slice(-4);
-  const masked = "*".repeat(cleaned.length - 8);
-  return formatIban(first + masked + last);
-};
 
 // ─── Types sélection compétences ─────────────────────────────────────────────
 interface Selection {
@@ -102,58 +64,7 @@ const profileSchema = z.object({
     .regex(/^[a-zA-ZÀ-ÿ '-]+$/, "Caractères invalides"),
   city: z.string().optional(),
 });
-const newPhoneSchema = z.object({ newPhone: phoneSchema });
-const newEmailSchema = z.object({
-  newEmail: z.string().email("Format invalide").toLowerCase(),
-});
-const otpSchema = z.object({
-  otp: z
-    .string()
-    .length(6, "6 chiffres requis")
-    .regex(/^\d{6}$/),
-});
-
 type ProfileFormData = z.infer<typeof profileSchema>;
-type NewPhoneFormData = z.infer<typeof newPhoneSchema>;
-type NewEmailFormData = z.infer<typeof newEmailSchema>;
-type OtpFormData = z.infer<typeof otpSchema>;
-
-const maskEmail = (email: string): string => {
-  const [local, domain] = email.split("@");
-  if (!domain || local.length <= 2) return email;
-  return `${local[0]}${"*".repeat(local.length - 2)}${local[local.length - 1]}@${domain}`;
-};
-
-// ─── Timer OTP ────────────────────────────────────────────────────────────────
-const OtpTimer: React.FC<{ seconds: number; onExpire: () => void }> = ({
-  seconds,
-  onExpire,
-}) => {
-  const [remaining, setRemaining] = useState(seconds);
-  useEffect(() => {
-    setRemaining(seconds);
-    const interval = setInterval(() => {
-      setRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          onExpire();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [seconds]);
-  const mins = Math.floor(remaining / 60);
-  const secs = remaining % 60;
-  return (
-    <span
-      className={`font-mono font-semibold ${remaining < 60 ? colors.error.text : colors.text.secondary}`}
-    >
-      {mins}:{secs.toString().padStart(2, "0")}
-    </span>
-  );
-};
 
 // ─── Barre de progression 5/5 ────────────────────────────────────────────────
 const ProfileProgress: React.FC<{
@@ -290,8 +201,6 @@ const DisponibiliteBadge: React.FC<{
 
 // ─── Page principale ──────────────────────────────────────────────────────────
 export default function PrestataireProfilePage() {
-  const router = useRouter();
-  const { logout } = useAuthStore();
   const { isHydrated, isReady } = useAuthGuard({ requireEmailVerified: false });
 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -325,34 +234,10 @@ export default function PrestataireProfilePage() {
   const [openComp, setOpenComp] = useState<string | null>(null);
   const [competenceError, setCompetenceError] = useState<string | null>(null);
 
-  const [phoneStep, setPhoneStep] = useState<
-    null | "request" | "otp" | "success"
-  >(null);
-  const [phoneError, setPhoneError] = useState<string | null>(null);
-  const [newPhoneValue, setNewPhoneValue] = useState("");
-  const [phoneOtpExpired, setPhoneOtpExpired] = useState(false);
-  const [phoneCooldown, setPhoneCooldown] = useState(0);
-  const [emailStep, setEmailStep] = useState<
-    null | "request" | "otp" | "success"
-  >(null);
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const [newEmailValue, setNewEmailValue] = useState("");
-  const [emailOtpExpired, setEmailOtpExpired] = useState(false);
-  const [emailCooldown, setEmailCooldown] = useState(0);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
 
   const categories = categoriesData.categories as Categorie[];
-
-  useEffect(() => {
-    if (phoneCooldown <= 0) return;
-    const t = setTimeout(() => setPhoneCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [phoneCooldown]);
-
-  useEffect(() => {
-    if (emailCooldown <= 0) return;
-    const t = setTimeout(() => setEmailCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [emailCooldown]);
 
   useEffect(() => {
     if (ibanCooldown <= 0) return;
@@ -643,114 +528,6 @@ export default function PrestataireProfilePage() {
     });
   };
 
-  // ── Téléphone ────────────────────────────────────────────────────────────
-  const phoneForm = useForm<NewPhoneFormData>({
-    resolver: zodResolver(newPhoneSchema),
-  });
-  const phoneOtpForm = useForm<OtpFormData>({
-    resolver: zodResolver(otpSchema),
-  });
-  const requestPhoneChange = useRequestPhoneChange();
-  const verifyPhoneOtpMutation = useVerifyPhoneOtp();
-  const { displayValue: phoneDisplay, handleChange: handlePhoneChange } =
-    usePhoneInput((val) => phoneForm.setValue("newPhone", val));
-
-  const onRequestPhone = (data: NewPhoneFormData) => {
-    setPhoneError(null);
-    requestPhoneChange.mutate(data.newPhone, {
-      onSuccess: () => {
-        setNewPhoneValue(data.newPhone);
-        setPhoneStep("otp");
-        setPhoneOtpExpired(false);
-        setPhoneCooldown(120);
-        phoneForm.reset();
-      },
-      onError: (err: any) =>
-        setPhoneError(err.response?.data?.message || "Erreur"),
-    });
-  };
-  const onVerifyPhone = (data: OtpFormData) => {
-    setPhoneError(null);
-    verifyPhoneOtpMutation.mutate(data.otp, {
-      onSuccess: () => {
-        setPhoneStep("success");
-        phoneOtpForm.reset();
-      },
-      onError: (err: any) =>
-        setPhoneError(err.response?.data?.message || "Code incorrect"),
-    });
-  };
-  const onResendPhone = () => {
-    if (phoneCooldown > 0) return;
-    requestPhoneChange.mutate(newPhoneValue, {
-      onSuccess: () => {
-        setPhoneOtpExpired(false);
-        setPhoneCooldown(120);
-      },
-      onError: (err: any) =>
-        setPhoneError(err.response?.data?.message || "Erreur"),
-    });
-  };
-  const closePhoneModal = () => {
-    setPhoneStep(null);
-    setPhoneError(null);
-    phoneForm.reset();
-    phoneOtpForm.reset();
-  };
-
-  // ── Email ────────────────────────────────────────────────────────────────
-  const emailForm = useForm<NewEmailFormData>({
-    resolver: zodResolver(newEmailSchema),
-  });
-  const emailOtpForm = useForm<OtpFormData>({
-    resolver: zodResolver(otpSchema),
-  });
-  const requestEmailChange = useRequestEmailChange();
-  const verifyEmailOtpMutation = useVerifyEmailOtp();
-
-  const onRequestEmail = (data: NewEmailFormData) => {
-    setEmailError(null);
-    requestEmailChange.mutate(data.newEmail, {
-      onSuccess: () => {
-        setNewEmailValue(data.newEmail);
-        setEmailStep("otp");
-        setEmailOtpExpired(false);
-        setEmailCooldown(120);
-        emailForm.reset();
-      },
-      onError: (err: any) =>
-        setEmailError(err.response?.data?.message || "Erreur"),
-    });
-  };
-  const onVerifyEmail = (data: OtpFormData) => {
-    setEmailError(null);
-    verifyEmailOtpMutation.mutate(data.otp, {
-      onSuccess: () => {
-        setEmailStep("success");
-        emailOtpForm.reset();
-      },
-      onError: (err: any) =>
-        setEmailError(err.response?.data?.message || "Code incorrect"),
-    });
-  };
-  const onResendEmail = () => {
-    if (emailCooldown > 0) return;
-    requestEmailChange.mutate(newEmailValue, {
-      onSuccess: () => {
-        setEmailOtpExpired(false);
-        setEmailCooldown(120);
-      },
-      onError: (err: any) =>
-        setEmailError(err.response?.data?.message || "Erreur"),
-    });
-  };
-  const closeEmailModal = () => {
-    setEmailStep(null);
-    setEmailError(null);
-    emailForm.reset();
-    emailOtpForm.reset();
-  };
-
   // ── Loading ──────────────────────────────────────────────────────────────
   if (!isHydrated)
     return (
@@ -1027,10 +804,7 @@ export default function PrestataireProfilePage() {
                     variant="secondary"
                     size="sm"
                     fullWidth
-                    onClick={() => {
-                      setEmailError(null);
-                      setEmailStep("request");
-                    }}
+                    onClick={() => setShowEmailModal(true)}
                   >
                     Changer l'email
                   </Button>
@@ -1054,10 +828,7 @@ export default function PrestataireProfilePage() {
                     variant="secondary"
                     size="sm"
                     fullWidth
-                    onClick={() => {
-                      setPhoneError(null);
-                      setPhoneStep("request");
-                    }}
+                    onClick={() => setShowPhoneModal(true)}
                   >
                     Changer le téléphone
                   </Button>
@@ -1997,291 +1768,14 @@ export default function PrestataireProfilePage() {
         </div>
       </Modal>
 
-      {/* ════ MODAL TÉLÉPHONE ════ */}
-      <Modal
-        isOpen={phoneStep !== null}
-        onClose={closePhoneModal}
-        title={
-          phoneStep === "request"
-            ? "Changer de téléphone"
-            : phoneStep === "otp"
-              ? "Code de vérification"
-              : "Téléphone mis à jour !"
-        }
-        icon={phoneStep === "success" ? "✅" : "📱"}
-        headerVariant="secondary"
-      >
-        {phoneStep === "request" && (
-          <form
-            onSubmit={phoneForm.handleSubmit(onRequestPhone)}
-            className="space-y-4"
-          >
-            <p className={`text-sm ${colors.text.secondary}`}>
-              🔒 Un code SMS sera envoyé sur votre nouveau numéro.
-            </p>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Nouveau numéro
-              </label>
-              <Input
-                type="tel"
-                placeholder="06 12 34 56 78"
-                value={phoneDisplay}
-                onChange={handlePhoneChange}
-                error={phoneForm.formState.errors.newPhone?.message}
-              />
-            </div>
-            {phoneError && (
-              <p className={`text-sm ${colors.error.text}`}>{phoneError}</p>
-            )}
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                variant="ghost"
-                fullWidth
-                onClick={closePhoneModal}
-              >
-                Annuler
-              </Button>
-              <Button
-                type="submit"
-                variant="secondary"
-                fullWidth
-                isLoading={requestPhoneChange.isPending}
-              >
-                Envoyer le code
-              </Button>
-            </div>
-          </form>
-        )}
-        {phoneStep === "otp" && (
-          <form
-            onSubmit={phoneOtpForm.handleSubmit(onVerifyPhone)}
-            className="space-y-4"
-          >
-            <div
-              className={`flex items-center gap-2 p-3 rounded-lg ${colors.success.bg}`}
-            >
-              <span>✅</span>
-              <p className={`text-sm ${colors.success.textDark}`}>
-                Code envoyé au{" "}
-                <strong>
-                  {newPhoneValue.replace(/(\d{2})(?=\d)/g, "$1 ").trim()}
-                </strong>
-              </p>
-            </div>
-            <Input
-              label="Code (6 chiffres)"
-              type="text"
-              placeholder="_ _ _ _ _ _"
-              maxLength={6}
-              error={phoneOtpForm.formState.errors.otp?.message}
-              {...phoneOtpForm.register("otp")}
-            />
-            <div className="flex items-center justify-between text-sm">
-              <span className={colors.text.secondary}>
-                ⏱️{" "}
-                <OtpTimer
-                  seconds={600}
-                  onExpire={() => setPhoneOtpExpired(true)}
-                />
-              </span>
-              <button
-                type="button"
-                onClick={onResendPhone}
-                disabled={phoneCooldown > 0}
-                className={`font-medium ${phoneCooldown > 0 ? colors.text.muted : colors.secondary.text} disabled:cursor-not-allowed`}
-              >
-                🔄{" "}
-                {phoneCooldown > 0
-                  ? `Renvoyer (${phoneCooldown}s)`
-                  : "Renvoyer"}
-              </button>
-            </div>
-            {phoneError && (
-              <p className={`text-sm ${colors.error.text}`}>{phoneError}</p>
-            )}
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                variant="ghost"
-                fullWidth
-                onClick={() => {
-                  setPhoneStep("request");
-                  phoneOtpForm.reset();
-                }}
-              >
-                Retour
-              </Button>
-              <Button
-                type="submit"
-                variant="secondary"
-                fullWidth
-                isLoading={verifyPhoneOtpMutation.isPending}
-              >
-                Vérifier
-              </Button>
-            </div>
-          </form>
-        )}
-        {phoneStep === "success" && (
-          <div className="space-y-5 py-2">
-            <p className={`text-sm ${colors.text.secondary} text-center`}>
-              Numéro mis à jour. Veuillez vous reconnecter.
-            </p>
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() => {
-                setPhoneStep(null);
-                logout();
-                router.push(routes.auth.login);
-              }}
-            >
-              Se reconnecter
-            </Button>
-          </div>
-        )}
-      </Modal>
-
-      {/* ════ MODAL EMAIL ════ */}
-      <Modal
-        isOpen={emailStep !== null}
-        onClose={closeEmailModal}
-        title={
-          emailStep === "request"
-            ? "Changer d'adresse email"
-            : emailStep === "otp"
-              ? "Code de vérification"
-              : "Email mis à jour !"
-        }
-        icon={emailStep === "success" ? "✅" : "📧"}
-        headerVariant="secondary"
-      >
-        {emailStep === "request" && (
-          <form
-            onSubmit={emailForm.handleSubmit(onRequestEmail)}
-            className="space-y-4"
-          >
-            <p className={`text-sm ${colors.text.secondary}`}>
-              🔒 Un code sera envoyé sur votre nouvelle adresse email.
-            </p>
-            <Input
-              label="Nouvelle adresse email"
-              type="email"
-              placeholder="nouveau@email.com"
-              error={emailForm.formState.errors.newEmail?.message}
-              {...emailForm.register("newEmail")}
-            />
-            {emailError && (
-              <p className={`text-sm ${colors.error.text}`}>{emailError}</p>
-            )}
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                variant="ghost"
-                fullWidth
-                onClick={closeEmailModal}
-              >
-                Annuler
-              </Button>
-              <Button
-                type="submit"
-                variant="secondary"
-                fullWidth
-                isLoading={requestEmailChange.isPending}
-              >
-                Envoyer le code
-              </Button>
-            </div>
-          </form>
-        )}
-        {emailStep === "otp" && (
-          <form
-            onSubmit={emailOtpForm.handleSubmit(onVerifyEmail)}
-            className="space-y-4"
-          >
-            <div
-              className={`flex items-center gap-2 p-3 rounded-lg ${colors.success.bg}`}
-            >
-              <span>✅</span>
-              <p className={`text-sm ${colors.success.textDark}`}>
-                Code envoyé sur <strong>{maskEmail(newEmailValue)}</strong>
-              </p>
-            </div>
-            <Input
-              label="Code (6 chiffres)"
-              type="text"
-              placeholder="_ _ _ _ _ _"
-              maxLength={6}
-              error={emailOtpForm.formState.errors.otp?.message}
-              {...emailOtpForm.register("otp")}
-            />
-            <div className="flex items-center justify-between text-sm">
-              <span className={colors.text.secondary}>
-                ⏱️{" "}
-                <OtpTimer
-                  seconds={600}
-                  onExpire={() => setEmailOtpExpired(true)}
-                />
-              </span>
-              <button
-                type="button"
-                onClick={onResendEmail}
-                disabled={emailCooldown > 0}
-                className={`font-medium ${emailCooldown > 0 ? colors.text.muted : colors.secondary.text} disabled:cursor-not-allowed`}
-              >
-                🔄{" "}
-                {emailCooldown > 0
-                  ? `Renvoyer (${emailCooldown}s)`
-                  : "Renvoyer"}
-              </button>
-            </div>
-            {emailError && (
-              <p className={`text-sm ${colors.error.text}`}>{emailError}</p>
-            )}
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                variant="ghost"
-                fullWidth
-                onClick={() => {
-                  setEmailStep("request");
-                  emailOtpForm.reset();
-                }}
-              >
-                Retour
-              </Button>
-              <Button
-                type="submit"
-                variant="secondary"
-                fullWidth
-                isLoading={verifyEmailOtpMutation.isPending}
-              >
-                Vérifier
-              </Button>
-            </div>
-          </form>
-        )}
-        {emailStep === "success" && (
-          <div className="space-y-5 py-2">
-            <p className={`text-sm ${colors.text.secondary} text-center`}>
-              Email mis à jour. Veuillez vous reconnecter.
-            </p>
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() => {
-                setEmailStep(null);
-                logout();
-                router.push(routes.auth.login);
-              }}
-            >
-              Se reconnecter
-            </Button>
-          </div>
-        )}
-      </Modal>
+      <PhoneModal
+        isOpen={showPhoneModal}
+        onClose={() => setShowPhoneModal(false)}
+      />
+      <EmailModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+      />
     </div>
   );
 }

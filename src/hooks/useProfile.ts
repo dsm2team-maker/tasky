@@ -23,6 +23,7 @@ export const useProfile = () => {
 
   return useQuery({
     queryKey: PROFILE_QUERY_KEY,
+
     queryFn: async () => {
       try {
         const r = await userService.getProfile();
