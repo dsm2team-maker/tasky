@@ -1,5 +1,5 @@
 // ===========================================
-// TASKY - Schéma Prisma complet v2
+// TASKY - Schéma Prisma complet v4
 // ===========================================
 
 generator client {
@@ -11,10 +11,6 @@ datasource db {
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
-
-// ===========================================
-// UTILISATEURS
-// ===========================================
 
 model User {
   id            String   @id @default(cuid())
@@ -58,9 +54,9 @@ model RefreshToken {
 }
 
 model Client {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id       String    @id @default(cuid())
+  userId   String    @unique
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   demandes Demande[]
   reviews  Review[]
 
@@ -74,34 +70,25 @@ model Prestataire {
   bio         String?
   rating      Float         @default(0)
   reviewCount Int           @default(0)
-
-  // ── Disponibilité ─────────────────────────────
   disponibilite Disponibilite @default(ACTIF)
-
-  // ── Point de dépôt structuré ──────────────────
   pointDepotAdresse      String?
   pointDepotVille        String?
   pointDepotCodePostal   String?
   pointDepotLat          Float?
   pointDepotLng          Float?
   pointDepotInstructions String?
-
-  // ── Stats calculées ───────────────────────────
-  tauxReussite  Float @default(0)  // % prestations terminées
-  delaiMoyen    Int   @default(0)  // délai moyen en jours
-  tempsReponse  Int   @default(0)  // temps moyen de réponse en heures
-
+  tauxReussite  Float @default(0)
+  delaiMoyen    Int   @default(0)
+  tempsReponse  Int   @default(0)
   competences  Competence[]
   devis        Devis[]
   prestations  Prestation[]
   reviews      Review[]
   portfolio    PortfolioImage[]
-
-  // ── IBAN / Paiement ───────────────────────────
-  iban          String?
-  bic           String?
-  bankName      String?
-  ibanVerified  Boolean @default(false)
+  iban         String?
+  bic          String?
+  bankName     String?
+  ibanVerified Boolean @default(false)
 
   @@map("prestataires")
 }
@@ -113,11 +100,11 @@ enum Disponibilite {
 }
 
 model Category {
-  id          String  @id
-  nom         String
-  slug        String  @unique
-  icon        String
-  description String?
+  id            String        @id
+  nom           String
+  slug          String        @unique
+  icon          String
+  description   String?
   subCategories SubCategory[]
   competences   Competence[]
   demandes      Demande[]
@@ -126,16 +113,15 @@ model Category {
 }
 
 model SubCategory {
-  id            String        @id
+  id            String         @id
   categoryId    String
-  category      Category      @relation(fields: [categoryId], references: [id])
+  category      Category       @relation(fields: [categoryId], references: [id])
   nom           String
   slug          String
   interventions Intervention[]
   prestations   Prestation[]
   demandes      Demande[]
-  competences Competence[]
-
+  competences   Competence[]
 
   @@map("sub_categories")
 }
@@ -145,30 +131,33 @@ model Intervention {
   nom           String
   subCategoryId String
   subCategory   SubCategory @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
-competences Competence[]
+  competences   Competence[]
+
   @@map("interventions")
 }
 
-
 model Demande {
-  id             String         @id @default(cuid())
-  clientId       String
-  client         Client         @relation(fields: [clientId], references: [id])
-  titre          String
-  description    String
-  typePrestation TypePrestation
-  categoryId     String
-  category       Category       @relation(fields: [categoryId], references: [id])
-  subCategoryId  String?
-  subCategory    SubCategory?   @relation(fields: [subCategoryId], references: [id])
-  budget         Float?
-  ville          String?
-  photos         String[]
-  status         StatusDemande  @default(PUBLIEE)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  devis          Devis[]
-  prestation     Prestation?
+  id              String         @id @default(cuid())
+  clientId        String
+  client          Client         @relation(fields: [clientId], references: [id])
+  titre           String
+  description     String
+  typePrestation  TypePrestation
+  categoryId      String
+  category        Category       @relation(fields: [categoryId], references: [id])
+  subCategoryId   String?
+  subCategory     SubCategory?   @relation(fields: [subCategoryId], references: [id])
+  interventionIds String[]
+  budget          Float?
+  ville           String?
+  photos          String[]
+  dateEcheance    DateTime?
+  urgence         UrgenceDemande @default(NORMAL)
+  status          StatusDemande  @default(PUBLIEE)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  devis           Devis[]
+  prestation      Prestation?
 
   @@map("demandes")
 }
@@ -177,6 +166,12 @@ enum TypePrestation {
   MODIFICATION
   CREATION
   FORMATION
+}
+
+enum UrgenceDemande {
+  NORMAL
+  URGENT
+  TRES_URGENT
 }
 
 enum StatusDemande {
@@ -302,6 +297,7 @@ model EmailLog {
 
   @@map("email_logs")
 }
+
 model Competence {
   id             String        @id @default(cuid())
   prestataireId  String
