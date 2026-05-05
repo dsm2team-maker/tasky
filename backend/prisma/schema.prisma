@@ -1,5 +1,5 @@
 // ===========================================
-// TASKY - Schéma Prisma complet v4
+// TASKY - Schéma Prisma complet v5
 // ===========================================
 
 generator client {
@@ -64,12 +64,12 @@ model Client {
 }
 
 model Prestataire {
-  id          String        @id @default(cuid())
-  userId      String        @unique
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bio         String?
-  rating      Float         @default(0)
-  reviewCount Int           @default(0)
+  id            String        @id @default(cuid())
+  userId        String        @unique
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio           String?
+  rating        Float         @default(0)
+  reviewCount   Int           @default(0)
   disponibilite Disponibilite @default(ACTIF)
   pointDepotAdresse      String?
   pointDepotVille        String?
@@ -80,15 +80,15 @@ model Prestataire {
   tauxReussite  Float @default(0)
   delaiMoyen    Int   @default(0)
   tempsReponse  Int   @default(0)
+  iban         String?
+  bic          String?
+  bankName     String?
+  ibanVerified Boolean @default(false)
   competences  Competence[]
   devis        Devis[]
   prestations  Prestation[]
   reviews      Review[]
   portfolio    PortfolioImage[]
-  iban         String?
-  bic          String?
-  bankName     String?
-  ibanVerified Boolean @default(false)
 
   @@map("prestataires")
 }
@@ -217,10 +217,14 @@ model Prestation {
   subCategoryId String?
   subCategory   SubCategory?     @relation(fields: [subCategoryId], references: [id])
   montant       Float
+  montantFinal  Float?
   status        StatusPrestation @default(EN_COURS)
   createdAt     DateTime         @default(now())
   completedAt   DateTime?
+  validatedAt   DateTime?
+  autoValidateAt DateTime?
   review        Review?
+  etatDesLieux  EtatDesLieux?
 
   @@map("prestations")
 }
@@ -230,6 +234,25 @@ enum StatusPrestation {
   A_VALIDER
   TERMINEE
   ANNULEE
+}
+
+model EtatDesLieux {
+  id            String            @id @default(cuid())
+  prestationId  String            @unique
+  prestation    Prestation        @relation(fields: [prestationId], references: [id])
+  description   String
+  photos        String[]
+  montantRevise Float?
+  status        StatusEtatDesLieux @default(EN_ATTENTE)
+  createdAt     DateTime          @default(now())
+
+  @@map("etats_des_lieux")
+}
+
+enum StatusEtatDesLieux {
+  EN_ATTENTE
+  VALIDE
+  REFUSE
 }
 
 model Message {

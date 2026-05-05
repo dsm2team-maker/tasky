@@ -8,7 +8,7 @@ import { useMyDemandes, useDeleteDemande } from "@/hooks/useDemande";
 import { Button } from "@/components/ui/Button";
 import HeaderClient from "@/components/headers/HeaderClient";
 import { colors } from "@/config/colors";
-import { spacing, typography } from "@/config/design-tokens";
+import { spacing } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 import type { Demande } from "@/services/demande.service";
 
@@ -53,6 +53,7 @@ function CardDemande({
     label: demande.urgence,
     icon: "🟢",
   };
+  const nbDevis = demande._count?.devis ?? 0;
 
   return (
     <div
@@ -95,7 +96,7 @@ function CardDemande({
         )}
       </div>
 
-      {/* Infos */}
+      {/* Catégorie */}
       <div className="flex flex-wrap gap-3 mb-4">
         <div
           className={`flex items-center gap-1.5 text-xs ${colors.text.secondary}`}
@@ -121,6 +122,7 @@ function CardDemande({
         )}
       </div>
 
+      {/* Infos */}
       <div className="flex flex-wrap gap-4 mb-4">
         {demande.ville && (
           <span className={`text-xs ${colors.text.secondary}`}>
@@ -137,12 +139,16 @@ function CardDemande({
             📅 {new Date(demande.dateEcheance).toLocaleDateString("fr-FR")}
           </span>
         )}
-        {demande._count && (
+
+        {/* ── Badge devis mis en évidence ── */}
+        {nbDevis > 0 ? (
           <span
-            className={`text-xs font-semibold ${demande._count.devis > 0 ? colors.success.text : colors.text.muted}`}
+            className={`text-xs font-bold px-2.5 py-1 rounded-full ${colors.primary.light} ${colors.primary.text} border border-pink-200`}
           >
-            💬 {demande._count.devis} devis
+            💬 {nbDevis} devis reçu{nbDevis > 1 ? "s" : ""} ✨
           </span>
+        ) : (
+          <span className={`text-xs ${colors.text.muted}`}>💬 Aucun devis</span>
         )}
       </div>
 
@@ -156,8 +162,12 @@ function CardDemande({
           href={routes.client.requests.detail(demande.id)}
           className="flex-1"
         >
-          <Button variant="outline" size="sm" fullWidth>
-            Voir les devis
+          <Button
+            variant={nbDevis > 0 ? "primary" : "outline"}
+            size="sm"
+            fullWidth
+          >
+            {nbDevis > 0 ? `Voir les ${nbDevis} devis →` : "Voir les devis"}
           </Button>
         </Link>
         {["PUBLIEE", "EN_ATTENTE"].includes(demande.status) && (
@@ -205,7 +215,9 @@ export default function ClientRequestsPage() {
   const { data: demandes, isLoading } = useMyDemandes();
   const deleteDemande = useDeleteDemande();
   const [filter, setFilter] = useState<string>("TOUTES");
+
   useEffect(() => setIsHydrated(true), []);
+
   if (!isHydrated)
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -223,6 +235,7 @@ export default function ClientRequestsPage() {
     { value: "TOUTES", label: "Toutes" },
     { value: "PUBLIEE", label: "Publiées" },
     { value: "EN_COURS", label: "En cours" },
+    { value: "A_VALIDER", label: "À valider" },
     { value: "TERMINEE", label: "Terminées" },
   ];
 

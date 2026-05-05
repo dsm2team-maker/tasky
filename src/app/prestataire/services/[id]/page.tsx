@@ -1,0 +1,451 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
+import {
+  usePrestationDetail,
+  useCreerEtatDesLieux,
+  useMarquerTermine,
+} from "@/hooks/usePrestation";
+import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { colors } from "@/config/colors";
+import { spacing, typography } from "@/config/design-tokens";
+
+const statusConfig: Record<
+  string,
+  { label: string; color: string; icon: string }
+> = {
+  EN_COURS: {
+    label: "En cours",
+    color: "bg-blue-100 text-blue-700",
+    icon: "⚡",
+  },
+  EN_ATTENTE: {
+    label: "En attente",
+    color: "bg-yellow-100 text-yellow-700",
+    icon: "⏳",
+  },
+
+  A_VALIDER: {
+    label: "À valider par le client",
+    color: "bg-purple-100 text-purple-700",
+    icon: "⏳",
+  },
+  TERMINEE: {
+    label: "Terminée",
+    color: "bg-green-100 text-green-700",
+    icon: "✅",
+  },
+  ANNULEE: { label: "Annulée", color: "bg-red-100 text-red-600", icon: "❌" },
+};
+
+export default function PrestatairePrestationDetailPage() {
+  useAuthGuard();
+  const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
+
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [showEtatForm, setShowEtatForm] = useState(false);
+  const [etatDescription, setEtatDescription] = useState("");
+  const [montantRevise, setMontantRevise] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [confirmTermine, setConfirmTermine] = useState(false);
+
+  const { data: prestation, isLoading } = usePrestationDetail(id);
+  const creerEtatDesLieux = useCreerEtatDesLieux();
+  const marquerTermine = useMarquerTermine();
+
+  useEffect(() => setIsHydrated(true), []);
+
+  if (!isHydrated || isLoading)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500" />
+      </div>
+    );
+
+  if (!prestation) return null;
+
+  const status = statusConfig[prestation.status] || statusConfig.EN_COURS;
+  const isModification = prestation.demande.typePrestation === "MODIFICATION";
+  const montant = prestation.montantFinal || prestation.montant;
+
+  const handleCreerEtat = () => {
+    setError(null);
+    if (etatDescription.trim().length < 10) {
+      setError("Description trop courte (min 10 caractères)");
+      return;
+    }
+
+    creerEtatDesLieux.mutate(
+      {
+        id,
+        data: {
+          description: etatDescription.trim(),
+          montantRevise: montantRevise ? parseFloat(montantRevise) : undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          setSuccess(
+            "État des lieux créé — en attente de validation du client",
+          );
+          setShowEtatForm(false);
+        },
+        onError: (err: any) =>
+          setError(err.response?.data?.message || "Erreur"),
+      },
+    );
+  };
+
+  const handleMarquerTermine = () => {
+    setError(null);
+    marquerTermine.mutate(id, {
+      onSuccess: () =>
+        setSuccess(
+          "Prestation marquée comme terminée — le client a 3 jours pour valider",
+        ),
+      onError: (err: any) => setError(err.response?.data?.message || "Erreur"),
+    });
+  };
+
+  return (
+    <div className={`min-h-screen ${colors.background.gray}`}>
+      <HeaderPrestataire />
+      <main className={`${spacing.container} py-8 max-w-3xl`}>
+        <button
+          onClick={() => router.back()}
+          className={`flex items-center gap-2 text-sm ${colors.text.secondary} mb-6`}
+        >
+          ← Mes prestations
+        </button>
+
+        {/* Status + titre */}
+        <div
+          className={`${colors.secondary.gradient} rounded-2xl p-6 mb-6 text-white`}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <span
+              className={`text-xs px-2.5 py-1 rounded-full font-semibold bg-white/20`}
+            >
+              {(() => {
+                const displayStatus =
+                  prestation.demande.typePrestation === "MODIFICATION" &&
+                  prestation.status === "EN_COURS"
+                    ? statusConfig["EN_ATTENTE"]
+                    : status;
+                return (
+                  <span
+                    className={`text-xs px-2.5 py-1 rounded-full font-semibold ${displayStatus.color}`}
+                  >
+                    {displayStatus.icon} {displayStatus.label}
+                  </span>
+                );
+              })()}
+            </span>
+          </div>
+          <h1 className="text-xl font-bold mb-1">{prestation.demande.titre}</h1>
+          <div className="flex flex-wrap gap-3 text-sm text-emerald-100">
+            <span>💶 {montant} €</span>
+            {prestation.demande.ville && (
+              <span>📍 {prestation.demande.ville}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Succès */}
+        {success && (
+          <div
+            className={`mb-4 p-4 rounded-xl ${colors.success.bg} border ${colors.success.borderLight}`}
+          >
+            <p className={`text-sm font-medium ${colors.success.textDark}`}>
+              ✅ {success}
+            </p>
+          </div>
+        )}
+
+        {/* Infos client */}
+        <div
+          className={`bg-white rounded-2xl ${spacing.card} border ${colors.border.light} shadow-sm mb-6`}
+        >
+          <h2 className={`${typography.h5.base} ${colors.text.primary} mb-4`}>
+            Client
+          </h2>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+              {prestation.demande.client?.user.avatar ? (
+                <img
+                  src={prestation.demande.client.user.avatar}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-lg">
+                  👤
+                </div>
+              )}
+            </div>
+            <div>
+              <div className={`font-medium ${colors.text.primary}`}>
+                {prestation.demande.client?.user.firstName}{" "}
+                {prestation.demande.client?.user.lastName}
+              </div>
+              {prestation.demande.client?.user.city && (
+                <div className={`text-xs ${colors.text.muted}`}>
+                  📍 {prestation.demande.client.user.city}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Description demande */}
+        <div
+          className={`bg-white rounded-2xl ${spacing.card} border ${colors.border.light} shadow-sm mb-6`}
+        >
+          <h2 className={`${typography.h5.base} ${colors.text.primary} mb-3`}>
+            Détail de la demande
+          </h2>
+          <p
+            className={`text-sm ${colors.text.secondary} leading-relaxed mb-4`}
+          >
+            {prestation.demande.description}
+          </p>
+          {prestation.demande.photos &&
+            prestation.demande.photos.length > 0 && (
+              <div className="flex gap-2">
+                {prestation.demande.photos.map((url, i) => (
+                  <div key={i} className="w-20 h-20 rounded-xl overflow-hidden">
+                    <img
+                      src={url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+        </div>
+
+        {/* État des lieux — seulement pour MODIFICATION */}
+        {isModification && (
+          <div
+            className={`bg-white rounded-2xl ${spacing.card} border ${colors.border.light} shadow-sm mb-6`}
+          >
+            <h2 className={`${typography.h5.base} ${colors.text.primary} mb-4`}>
+              État des lieux
+            </h2>
+
+            {!prestation.etatDesLieux ? (
+              prestation.status === "EN_COURS" ? (
+                <>
+                  <div className="p-4 rounded-xl bg-orange-50 border border-orange-200 mb-4">
+                    <p className="text-sm text-orange-700">
+                      ⚠️ Créez l'état des lieux après avoir inspecté l'objet
+                      déposé par le client. Si le montant est plus élevé que
+                      prévu, indiquez le nouveau montant pour que le client
+                      valide.
+                    </p>
+                  </div>
+                  {!showEtatForm ? (
+                    <Button
+                      variant="secondary"
+                      onClick={() => setShowEtatForm(true)}
+                    >
+                      + Créer l'état des lieux
+                    </Button>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <label
+                          className={`block text-sm font-medium ${colors.text.primary} mb-1.5`}
+                        >
+                          Description de l'état de l'objet *
+                        </label>
+                        <textarea
+                          value={etatDescription}
+                          onChange={(e) => setEtatDescription(e.target.value)}
+                          placeholder="Décrivez l'état de l'objet, les travaux à effectuer, les éventuels problèmes constatés..."
+                          rows={4}
+                          className={`w-full px-4 py-3 rounded-xl border ${colors.border.light} text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 resize-none`}
+                        />
+                      </div>
+                      <Input
+                        label="Nouveau montant (€) — optionnel si objet plus abîmé que prévu"
+                        type="number"
+                        min="0"
+                        placeholder={`Montant initial : ${prestation.montant} €`}
+                        value={montantRevise}
+                        onChange={(e) => setMontantRevise(e.target.value)}
+                      />
+                      {error && (
+                        <p className={`text-sm ${colors.error.text}`}>
+                          {error}
+                        </p>
+                      )}
+                      <div className="flex gap-3">
+                        <Button
+                          variant="ghost"
+                          fullWidth
+                          onClick={() => setShowEtatForm(false)}
+                        >
+                          Annuler
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          fullWidth
+                          isLoading={creerEtatDesLieux.isPending}
+                          onClick={handleCreerEtat}
+                        >
+                          Soumettre l'état des lieux
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : null
+            ) : (
+              <div className="space-y-3">
+                <div
+                  className={`p-4 rounded-xl ${
+                    prestation.etatDesLieux.status === "EN_ATTENTE"
+                      ? "bg-yellow-50 border border-yellow-200"
+                      : prestation.etatDesLieux.status === "VALIDE"
+                        ? "bg-green-50 border border-green-200"
+                        : "bg-red-50 border border-red-200"
+                  }`}
+                >
+                  <p className="text-sm font-semibold mb-2">
+                    {prestation.etatDesLieux.status === "EN_ATTENTE"
+                      ? "⏳ En attente de validation client"
+                      : prestation.etatDesLieux.status === "VALIDE"
+                        ? "✅ Validé par le client"
+                        : "❌ Refusé — demande republiée"}
+                  </p>
+                  <p className={`text-sm ${colors.text.secondary}`}>
+                    {prestation.etatDesLieux.description}
+                  </p>
+                  {prestation.etatDesLieux.montantRevise && (
+                    <p className="text-sm font-medium mt-2">
+                      Montant révisé :{" "}
+                      <strong>{prestation.etatDesLieux.montantRevise} €</strong>{" "}
+                      <span className="text-gray-400 line-through">
+                        (initial : {prestation.montant} €)
+                      </span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Action — Marquer terminé */}
+        {prestation.status === "EN_COURS" && (
+          <div
+            className={`bg-white rounded-2xl ${spacing.card} border ${colors.border.light} shadow-sm`}
+          >
+            <h2 className={`${typography.h5.base} ${colors.text.primary} mb-3`}>
+              Marquer comme terminé
+            </h2>
+            <p className={`text-sm ${colors.text.secondary} mb-4`}>
+              {isModification &&
+              !prestation.etatDesLieux?.status !== ("VALIDE" as any)
+                ? "⚠️ Vous devez d'abord créer et faire valider l'état des lieux avant de marquer la prestation comme terminée."
+                : "Une fois marquée comme terminée, le client aura 3 jours pour valider. Sans réponse, la validation sera automatique."}
+            </p>
+            {error && (
+              <p className={`text-sm ${colors.error.text} mb-3`}>{error}</p>
+            )}
+            {confirmTermine ? (
+              <div className="flex gap-3">
+                <Button
+                  variant="ghost"
+                  fullWidth
+                  onClick={() => setConfirmTermine(false)}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  isLoading={marquerTermine.isPending}
+                  onClick={handleMarquerTermine}
+                >
+                  Confirmer ✅
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={() => setConfirmTermine(true)}
+              >
+                Marquer comme terminé
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* A_VALIDER */}
+        {prestation.status === "A_VALIDER" && (
+          <div
+            className={`bg-white rounded-2xl ${spacing.card} border border-purple-200 shadow-sm`}
+          >
+            <div className="text-center py-4">
+              <div className="text-4xl mb-3">⏳</div>
+              <h2 className={`text-lg font-bold ${colors.text.primary} mb-2`}>
+                En attente de validation
+              </h2>
+              <p className={`text-sm ${colors.text.secondary}`}>
+                Le client a jusqu'au{" "}
+                <strong>
+                  {prestation.autoValidateAt
+                    ? new Date(prestation.autoValidateAt).toLocaleDateString(
+                        "fr-FR",
+                      )
+                    : "—"}
+                </strong>{" "}
+                pour valider. Sans réponse, la validation sera automatique.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* TERMINEE */}
+        {prestation.status === "TERMINEE" && (
+          <div
+            className={`bg-white rounded-2xl ${spacing.card} border border-green-200 shadow-sm text-center`}
+          >
+            <div className="text-4xl mb-3">🎉</div>
+            <h2 className={`text-lg font-bold ${colors.text.primary} mb-2`}>
+              Prestation terminée !
+            </h2>
+            <p className={`text-sm ${colors.text.secondary} mb-2`}>
+              Montant : <strong>{montant} €</strong> → Vous recevrez{" "}
+              <strong>{(montant * 0.85).toFixed(2)} €</strong> (après 15%
+              commission Tasky)
+            </p>
+            {prestation.review && (
+              <div className="mt-4 p-4 bg-green-50 rounded-xl">
+                <p className="text-sm font-semibold text-green-700 mb-1">
+                  Avis client : {"⭐".repeat(prestation.review.rating)}
+                </p>
+                {prestation.review.comment && (
+                  <p className={`text-sm ${colors.text.secondary}`}>
+                    {prestation.review.comment}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

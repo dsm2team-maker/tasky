@@ -242,9 +242,19 @@ export const accepterDevis = async (userId: string, devisId: string) => {
     });
 
     // Mettre à jour le statut de la demande
+    const demandeInfo = await tx.demande.findUnique({
+      where: { id: devis.demandeId },
+      select: { typePrestation: true },
+    });
+
     await tx.demande.update({
       where: { id: devis.demandeId },
-      data: { status: "EN_COURS" },
+      data: {
+        status:
+          demandeInfo?.typePrestation === "MODIFICATION"
+            ? "EN_ATTENTE"
+            : "EN_COURS",
+      },
     });
 
     // Créer la prestation

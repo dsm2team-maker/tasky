@@ -106,45 +106,45 @@ export default function PrestataireRequestDetailPage() {
         <div
           className={`bg-white rounded-2xl ${spacing.card} border ${colors.border.light} shadow-sm mb-6`}
         >
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div>
-              <div className="flex items-center gap-2 flex-wrap mb-2">
-                <span className={`text-sm font-semibold ${urgence.color}`}>
-                  {urgence.icon} {urgence.label}
-                </span>
-                <span className={`text-sm ${colors.text.muted}`}>
-                  {typeConfig[demande.typePrestation]}
-                </span>
-              </div>
-              <h1 className={`text-xl font-bold ${colors.text.primary}`}>
-                {demande.titre}
-              </h1>
-            </div>
-            {demande.photos && demande.photos.length > 0 && (
-              <div className="flex gap-2">
-                {demande.photos.map((url, i) => (
-                  <div key={i} className="w-20 h-20 rounded-xl overflow-hidden">
-                    <img
-                      src={url}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+          {/* Badges */}
+          <div className="flex items-center gap-2 flex-wrap mb-3">
+            <span className={`text-sm font-semibold ${urgence.color}`}>
+              {urgence.icon} {urgence.label}
+            </span>
+            <span className={`text-sm ${colors.text.muted}`}>
+              {typeConfig[demande.typePrestation]}
+            </span>
           </div>
 
-          {demande.description && demande.description !== demande.titre && (
-            <p
-              className={`text-sm ${colors.text.secondary} mb-4 leading-relaxed`}
-            >
-              {demande.description}
-            </p>
+          {/* Titre */}
+          <h1 className={`text-xl font-bold ${colors.text.primary} mb-4`}>
+            {demande.titre}
+          </h1>
+
+          {/* Description */}
+          <p
+            className={`text-sm ${colors.text.secondary} mb-5 leading-relaxed`}
+          >
+            {demande.description}
+          </p>
+
+          {/* Photos */}
+          {demande.photos && demande.photos.length > 0 && (
+            <div className="flex gap-2 mb-5">
+              {demande.photos.map((url, i) => (
+                <div key={i} className="w-20 h-20 rounded-xl overflow-hidden">
+                  <img
+                    src={url}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ))}
+            </div>
           )}
 
           {/* Catégorie */}
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-2 mb-5">
             <span
               className={`text-xs px-3 py-1 rounded-lg ${colors.background.gray} ${colors.text.secondary}`}
             >
@@ -159,14 +159,14 @@ export default function PrestataireRequestDetailPage() {
             )}
           </div>
 
-          {/* Infos */}
+          {/* Infos essentielles uniquement */}
           <div
-            className={`grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl ${colors.background.gray}`}
+            className={`grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 rounded-xl ${colors.background.gray}`}
           >
             {demande.ville && (
               <div>
                 <div className={`text-xs ${colors.text.muted} mb-0.5`}>
-                  Ville
+                  Lieu de la prestation
                 </div>
                 <div className={`text-sm font-medium ${colors.text.primary}`}>
                   📍 {demande.ville}
@@ -201,35 +201,6 @@ export default function PrestataireRequestDetailPage() {
               <div className={`text-sm font-medium ${colors.text.primary}`}>
                 💬 {demande._count.devis}
               </div>
-            </div>
-          </div>
-
-          {/* Client */}
-          <div
-            className={`flex items-center gap-3 mt-4 pt-4 border-t ${colors.border.light}`}
-          >
-            <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden">
-              {demande.client.user.avatar ? (
-                <img
-                  src={demande.client.user.avatar}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  👤
-                </div>
-              )}
-            </div>
-            <div>
-              <div className={`text-sm font-medium ${colors.text.primary}`}>
-                {demande.client.user.firstName}
-              </div>
-              {demande.client.user.city && (
-                <div className={`text-xs ${colors.text.muted}`}>
-                  📍 {demande.client.user.city}
-                </div>
-              )}
             </div>
           </div>
         </div>

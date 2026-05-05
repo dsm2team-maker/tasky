@@ -8,12 +8,19 @@ import {
   useAccepterDevis,
   useRefuserDevis,
 } from "@/hooks/useDevis";
+import {
+  useMesPrestationsClient,
+  useValiderEtatDesLieux,
+  useValiderPrestation,
+  useContesterPrestation,
+} from "@/hooks/usePrestation";
 import HeaderClient from "@/components/headers/HeaderClient";
 import { Button } from "@/components/ui/Button";
 import { colors } from "@/config/colors";
 import { spacing, typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 import type { Devis } from "@/services/devis.service";
+import type { Prestation } from "@/services/prestation.service";
 
 // ─── Carte devis ──────────────────────────────────────────────────────────────
 
@@ -54,7 +61,6 @@ function CardDevis({
             : colors.border.light
       } shadow-sm p-6`}
     >
-      {/* Header prestataire */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
@@ -97,7 +103,6 @@ function CardDevis({
         </span>
       </div>
 
-      {/* Offre */}
       <div
         className={`grid grid-cols-2 gap-4 p-4 rounded-xl ${colors.background.gray} mb-4`}
       >
@@ -119,17 +124,13 @@ function CardDevis({
         </div>
       </div>
 
-      {/* Description */}
       <p className={`text-sm ${colors.text.secondary} mb-4 leading-relaxed`}>
         {devis.description}
       </p>
-
-      {/* Expiration */}
       <p className={`text-xs ${colors.text.muted} mb-4`}>
         Valable jusqu'au {new Date(devis.expiresAt).toLocaleDateString("fr-FR")}
       </p>
 
-      {/* Actions */}
       {canAct && (
         <div className="flex gap-3">
           <Button
@@ -153,7 +154,7 @@ function CardDevis({
                 Annuler
               </Button>
               <Button
-                variant="secondary"
+                variant="primary"
                 size="sm"
                 fullWidth
                 isLoading={isAccepting}
@@ -164,7 +165,7 @@ function CardDevis({
             </div>
           ) : (
             <Button
-              variant="secondary"
+              variant="primary"
               size="sm"
               fullWidth
               onClick={() => setConfirmAccept(true)}
@@ -174,6 +175,266 @@ function CardDevis({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Section État des lieux ───────────────────────────────────────────────────
+
+function SectionEtatDesLieux({
+  prestation,
+  onValider,
+}: {
+  prestation: Prestation;
+  onValider: (accepte: boolean) => void;
+}) {
+  const [confirmRefus, setConfirmRefus] = useState(false);
+  const [confirmAccept, setConfirmAccept] = useState(false);
+  const validerEtat = useValiderEtatDesLieux();
+
+  if (!prestation.etatDesLieux) return null;
+  const etat = prestation.etatDesLieux;
+
+  return (
+    <div
+      className={`bg-white rounded-2xl ${spacing.card} border ${colors.border.light} shadow-sm mb-6`}
+    >
+      <h2 className={`${typography.h5.base} ${colors.text.primary} mb-4`}>
+        📋 État des lieux
+      </h2>
+
+      <div
+        className={`p-4 rounded-xl mb-4 ${
+          etat.status === "EN_ATTENTE"
+            ? "bg-yellow-50 border border-yellow-200"
+            : etat.status === "VALIDE"
+              ? "bg-green-50 border border-green-200"
+              : "bg-red-50 border border-red-200"
+        }`}
+      >
+        <p
+          className={`text-sm font-semibold mb-2 ${
+            etat.status === "EN_ATTENTE"
+              ? "text-yellow-700"
+              : etat.status === "VALIDE"
+                ? "text-green-700"
+                : "text-red-700"
+          }`}
+        >
+          {etat.status === "EN_ATTENTE"
+            ? "⏳ En attente de votre validation"
+            : etat.status === "VALIDE"
+              ? "✅ Accepté"
+              : "❌ Refusé"}
+        </p>
+        <p className={`text-sm ${colors.text.secondary} leading-relaxed`}>
+          {etat.description}
+        </p>
+
+        {etat.montantRevise && (
+          <div className="mt-3 p-3 rounded-lg bg-orange-50 border border-orange-200">
+            <p className="text-sm font-semibold text-orange-700">
+              ⚠️ Le prestataire a révisé le montant
+            </p>
+            <p className="text-sm text-orange-600 mt-1">
+              Nouveau montant : <strong>{etat.montantRevise} €</strong>
+              <span className="text-gray-400 line-through ml-2">
+                (initial : {prestation.montant} €)
+              </span>
+            </p>
+          </div>
+        )}
+
+        {etat.photos && etat.photos.length > 0 && (
+          <div className="flex gap-2 mt-3">
+            {etat.photos.map((url, i) => (
+              <div key={i} className="w-20 h-20 rounded-xl overflow-hidden">
+                <img src={url} alt="" className="w-full h-full object-cover" />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {etat.status === "EN_ATTENTE" && (
+        <div>
+          <p className={`text-sm ${colors.text.secondary} mb-4`}>
+            {etat.montantRevise
+              ? "Le prestataire a révisé le montant après inspection. Acceptez-vous le nouveau tarif ?"
+              : "Le prestataire a inspecté votre objet. Confirmez-vous que tout est conforme ?"}
+          </p>
+          <div className="flex gap-3">
+            {confirmRefus ? (
+              <div className="flex gap-2 flex-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  fullWidth
+                  onClick={() => setConfirmRefus(false)}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  size="sm"
+                  fullWidth
+                  className="bg-red-500 hover:bg-red-600 text-white"
+                  isLoading={validerEtat.isPending}
+                  onClick={() =>
+                    validerEtat.mutate(
+                      { id: prestation.id, accepte: false },
+                      { onSuccess: () => onValider(false) },
+                    )
+                  }
+                >
+                  Confirmer le refus
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                fullWidth
+                onClick={() => setConfirmRefus(true)}
+                className={colors.error.text}
+              >
+                ❌ Refuser — annuler la prestation
+              </Button>
+            )}
+            {confirmAccept ? (
+              <div className="flex gap-2 flex-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  fullWidth
+                  onClick={() => setConfirmAccept(false)}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  fullWidth
+                  isLoading={validerEtat.isPending}
+                  onClick={() =>
+                    validerEtat.mutate(
+                      { id: prestation.id, accepte: true },
+                      { onSuccess: () => onValider(true) },
+                    )
+                  }
+                >
+                  Confirmer ✅
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="primary"
+                size="sm"
+                fullWidth
+                onClick={() => setConfirmAccept(true)}
+              >
+                ✅ Accepter
+                {etat.montantRevise ? ` — ${etat.montantRevise} €` : ""}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Section Validation prestation ───────────────────────────────────────────
+
+function SectionValidation({ prestation }: { prestation: Prestation }) {
+  const [confirmValider, setConfirmValider] = useState(false);
+  const [confirmContester, setConfirmContester] = useState(false);
+  const valider = useValiderPrestation();
+  const contester = useContesterPrestation();
+
+  if (prestation.status !== "A_VALIDER") return null;
+
+  return (
+    <div
+      className={`bg-white rounded-2xl ${spacing.card} border border-purple-200 shadow-sm mb-6`}
+    >
+      <h2 className={`${typography.h5.base} ${colors.text.primary} mb-3`}>
+        ⏳ Validation requise
+      </h2>
+      <p className={`text-sm ${colors.text.secondary} mb-2`}>
+        Le prestataire a terminé votre prestation. Veuillez valider ou
+        contester.
+      </p>
+      {prestation.autoValidateAt && (
+        <p className={`text-xs ${colors.text.muted} mb-4`}>
+          ⚠️ Sans action de votre part, la validation sera automatique le{" "}
+          <strong>
+            {new Date(prestation.autoValidateAt).toLocaleDateString("fr-FR")}
+          </strong>
+        </p>
+      )}
+      <div className="flex gap-3">
+        {confirmContester ? (
+          <div className="flex gap-2 flex-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              fullWidth
+              onClick={() => setConfirmContester(false)}
+            >
+              Annuler
+            </Button>
+            <Button
+              size="sm"
+              fullWidth
+              className="bg-red-500 hover:bg-red-600 text-white"
+              isLoading={contester.isPending}
+              onClick={() => contester.mutate(prestation.id)}
+            >
+              Confirmer la contestation
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            fullWidth
+            onClick={() => setConfirmContester(true)}
+            className={colors.error.text}
+          >
+            ⚠️ Contester
+          </Button>
+        )}
+        {confirmValider ? (
+          <div className="flex gap-2 flex-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              fullWidth
+              onClick={() => setConfirmValider(false)}
+            >
+              Annuler
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              fullWidth
+              isLoading={valider.isPending}
+              onClick={() => valider.mutate(prestation.id)}
+            >
+              Confirmer ✅
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="primary"
+            size="sm"
+            fullWidth
+            onClick={() => setConfirmValider(true)}
+          >
+            ✅ Valider la prestation
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
@@ -188,6 +449,7 @@ export default function ClientRequestDetailPage() {
 
   const [isHydrated, setIsHydrated] = useState(false);
   const { data, isLoading } = useDevisDemande(id);
+  const { data: prestations } = useMesPrestationsClient();
   const accepterDevis = useAccepterDevis();
   const refuserDevis = useRefuserDevis();
 
@@ -206,9 +468,12 @@ export default function ClientRequestDetailPage() {
 
   const { demande, devis } = data;
 
+  // Trouver la prestation liée à cette demande
+  const prestation = prestations?.find((p) => p.demandeId === id);
+
   const statusLabel: Record<string, string> = {
     PUBLIEE: "Publiée — en attente de devis",
-    EN_ATTENTE: "En attente",
+    EN_ATTENTE: "Devis accepté — en attente d'inspection",
     EN_COURS: "En cours",
     A_VALIDER: "À valider",
     TERMINEE: "Terminée",
@@ -219,7 +484,6 @@ export default function ClientRequestDetailPage() {
     <div className={`min-h-screen ${colors.background.gray}`}>
       <HeaderClient />
       <main className={`${spacing.container} py-8 max-w-3xl`}>
-        {/* Retour */}
         <button
           onClick={() => router.push(routes.client.requests.list)}
           className={`flex items-center gap-2 text-sm ${colors.text.secondary} mb-6`}
@@ -257,6 +521,35 @@ export default function ClientRequestDetailPage() {
             {demande.description}
           </p>
         </div>
+
+        {/* État des lieux (si prestation existe) */}
+        {prestation && prestation.etatDesLieux && (
+          <SectionEtatDesLieux
+            prestation={prestation}
+            onValider={(accepte) => {
+              if (!accepte) router.push(routes.client.requests.list);
+            }}
+          />
+        )}
+
+        {/* Validation prestation */}
+        {prestation && <SectionValidation prestation={prestation} />}
+
+        {/* Prestation terminée */}
+        {prestation && prestation.status === "TERMINEE" && (
+          <div
+            className={`bg-white rounded-2xl ${spacing.card} border border-green-200 shadow-sm mb-6 text-center`}
+          >
+            <div className="text-4xl mb-3">🎉</div>
+            <h2 className={`text-lg font-bold ${colors.text.primary} mb-2`}>
+              Prestation terminée !
+            </h2>
+            <p className={`text-sm ${colors.text.secondary}`}>
+              Montant payé :{" "}
+              <strong>{prestation.montantFinal || prestation.montant} €</strong>
+            </p>
+          </div>
+        )}
 
         {/* Devis */}
         <div>
