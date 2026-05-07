@@ -33,6 +33,8 @@ export interface Devis {
   delai: number;
   description: string;
   status: "ENVOYE" | "ACCEPTE" | "REFUSE" | "EXPIRE";
+  estSelectionnable: boolean;
+  aVerifier: boolean;
   expiresAt: string;
   createdAt: string;
   prestataire: {

@@ -49,7 +49,10 @@ function CardDevis({
   };
 
   const status = statusConfig[devis.status] || statusConfig.ENVOYE;
-  const canAct = devis.status === "ENVOYE" && demandeStatus === "PUBLIEE";
+  const canAct =
+    devis.status === "ENVOYE" &&
+    demandeStatus === "PUBLIEE" &&
+    devis.estSelectionnable;
 
   return (
     <div
@@ -61,6 +64,11 @@ function CardDevis({
             : colors.border.light
       } shadow-sm p-6`}
     >
+      {devis.aVerifier && (
+        <div className="mb-3 px-3 py-2 rounded-xl bg-orange-50 border border-orange-200 text-sm text-orange-700 font-medium">
+          ⚠️ L'inspection a échoué — ce devis a été annulé. Vous pouvez choisir un autre prestataire.
+        </div>
+      )}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
@@ -472,8 +480,12 @@ export default function ClientRequestDetailPage() {
   const prestation = prestations?.find((p) => p.demandeId === id);
 
   const statusLabel: Record<string, string> = {
-    PUBLIEE: "Publiée — en attente de devis",
-    EN_ATTENTE: "Devis accepté — en attente d'inspection",
+    PUBLIEE:
+      devis.length > 0
+        ? `${devis.length} devis reçu${devis.length > 1 ? "s" : ""} — en attente de votre choix`
+        : "Publiée — en attente de devis",
+    EN_ATTENTE_INSPECTION: "Artisan sélectionné — remettez votre objet à son point de dépôt",
+    EN_ATTENTE_PAIEMENT: "En attente de paiement",
     EN_COURS: "En cours",
     A_VALIDER: "À valider",
     TERMINEE: "Terminée",

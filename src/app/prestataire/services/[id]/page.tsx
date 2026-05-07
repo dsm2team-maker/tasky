@@ -6,6 +6,7 @@ import { useAuthGuard } from "@/hooks/useAuthGuard";
 import {
   usePrestationDetail,
   useCreerEtatDesLieux,
+  useConfirmerConformite,
   useMarquerTermine,
 } from "@/hooks/usePrestation";
 import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
@@ -18,17 +19,21 @@ const statusConfig: Record<
   string,
   { label: string; color: string; icon: string }
 > = {
+  EN_ATTENTE_INSPECTION: {
+    label: "En attente d'inspection",
+    color: "bg-orange-100 text-orange-700",
+    icon: "🔍",
+  },
+  EN_ATTENTE_PAIEMENT: {
+    label: "En attente de paiement",
+    color: "bg-yellow-100 text-yellow-700",
+    icon: "💳",
+  },
   EN_COURS: {
     label: "En cours",
     color: "bg-blue-100 text-blue-700",
     icon: "⚡",
   },
-  EN_ATTENTE: {
-    label: "En attente",
-    color: "bg-yellow-100 text-yellow-700",
-    icon: "⏳",
-  },
-
   A_VALIDER: {
     label: "À valider par le client",
     color: "bg-purple-100 text-purple-700",
@@ -58,6 +63,7 @@ export default function PrestatairePrestationDetailPage() {
 
   const { data: prestation, isLoading } = usePrestationDetail(id);
   const creerEtatDesLieux = useCreerEtatDesLieux();
+  const confirmerConformite = useConfirmerConformite();
   const marquerTermine = useMarquerTermine();
 
   useEffect(() => setIsHydrated(true), []);
@@ -71,9 +77,25 @@ export default function PrestatairePrestationDetailPage() {
 
   if (!prestation) return null;
 
-  const status = statusConfig[prestation.status] || statusConfig.EN_COURS;
   const isModification = prestation.demande.typePrestation === "MODIFICATION";
   const montant = prestation.montantFinal || prestation.montant;
+
+  // Pour EN_ATTENTE_INSPECTION : distinguer "pas encore inspecté" vs "état soumis, attente client"
+  const getDisplayStatus = () => {
+    if (
+      prestation.status === "EN_ATTENTE_INSPECTION" &&
+      prestation.etatDesLieux
+    ) {
+      return {
+        label: "État des lieux soumis — attente client",
+        color: "bg-yellow-100 text-yellow-700",
+        icon: "⏳",
+      };
+    }
+    return statusConfig[prestation.status] || statusConfig.EN_COURS;
+  };
+
+  const status = getDisplayStatus();
 
   const handleCreerEtat = () => {
     setError(null);
@@ -92,15 +114,22 @@ export default function PrestatairePrestationDetailPage() {
       },
       {
         onSuccess: () => {
-          setSuccess(
-            "État des lieux créé — en attente de validation du client",
-          );
+          setSuccess("État des lieux créé — en attente de validation du client");
           setShowEtatForm(false);
         },
         onError: (err: any) =>
           setError(err.response?.data?.message || "Erreur"),
       },
     );
+  };
+
+  const handleConfirmerConformite = () => {
+    setError(null);
+    confirmerConformite.mutate(id, {
+      onSuccess: () =>
+        setSuccess("Objet confirmé conforme — en attente du paiement client"),
+      onError: (err: any) => setError(err.response?.data?.message || "Erreur"),
+    });
   };
 
   const handleMarquerTermine = () => {
@@ -131,22 +160,9 @@ export default function PrestatairePrestationDetailPage() {
         >
           <div className="flex items-center gap-2 mb-2">
             <span
-              className={`text-xs px-2.5 py-1 rounded-full font-semibold bg-white/20`}
+              className={`text-xs px-2.5 py-1 rounded-full font-semibold ${status.color}`}
             >
-              {(() => {
-                const displayStatus =
-                  prestation.demande.typePrestation === "MODIFICATION" &&
-                  prestation.status === "EN_COURS"
-                    ? statusConfig["EN_ATTENTE"]
-                    : status;
-                return (
-                  <span
-                    className={`text-xs px-2.5 py-1 rounded-full font-semibold ${displayStatus.color}`}
-                  >
-                    {displayStatus.icon} {displayStatus.label}
-                  </span>
-                );
-              })()}
+              {status.icon} {status.label}
             </span>
           </div>
           <h1 className="text-xl font-bold mb-1">{prestation.demande.titre}</h1>
@@ -211,28 +227,21 @@ export default function PrestatairePrestationDetailPage() {
           <h2 className={`${typography.h5.base} ${colors.text.primary} mb-3`}>
             Détail de la demande
           </h2>
-          <p
-            className={`text-sm ${colors.text.secondary} leading-relaxed mb-4`}
-          >
+          <p className={`text-sm ${colors.text.secondary} leading-relaxed mb-4`}>
             {prestation.demande.description}
           </p>
-          {prestation.demande.photos &&
-            prestation.demande.photos.length > 0 && (
-              <div className="flex gap-2">
-                {prestation.demande.photos.map((url, i) => (
-                  <div key={i} className="w-20 h-20 rounded-xl overflow-hidden">
-                    <img
-                      src={url}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+          {prestation.demande.photos && prestation.demande.photos.length > 0 && (
+            <div className="flex gap-2">
+              {prestation.demande.photos.map((url, i) => (
+                <div key={i} className="w-20 h-20 rounded-xl overflow-hidden">
+                  <img src={url} alt="" className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* État des lieux — seulement pour MODIFICATION */}
+        {/* État des lieux — MODIFICATION en EN_ATTENTE_INSPECTION */}
         {isModification && (
           <div
             className={`bg-white rounded-2xl ${spacing.card} border ${colors.border.light} shadow-sm mb-6`}
@@ -242,23 +251,35 @@ export default function PrestatairePrestationDetailPage() {
             </h2>
 
             {!prestation.etatDesLieux ? (
-              prestation.status === "EN_COURS" ? (
+              prestation.status === "EN_ATTENTE_INSPECTION" ? (
                 <>
                   <div className="p-4 rounded-xl bg-orange-50 border border-orange-200 mb-4">
                     <p className="text-sm text-orange-700">
-                      ⚠️ Créez l'état des lieux après avoir inspecté l'objet
-                      déposé par le client. Si le montant est plus élevé que
-                      prévu, indiquez le nouveau montant pour que le client
-                      valide.
+                      🔍 Inspectez l'objet déposé par le client. S'il est
+                      conforme à la description, cliquez sur{" "}
+                      <strong>"Objet conforme"</strong>. S'il y a un écart
+                      (état, complexité, tarif), créez un état des lieux
+                      détaillé.
                     </p>
                   </div>
                   {!showEtatForm ? (
-                    <Button
-                      variant="secondary"
-                      onClick={() => setShowEtatForm(true)}
-                    >
-                      + Créer l'état des lieux
-                    </Button>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button
+                        variant="secondary"
+                        fullWidth
+                        isLoading={confirmerConformite.isPending}
+                        onClick={handleConfirmerConformite}
+                      >
+                        ✅ Objet conforme — démarrer sans révision
+                      </Button>
+                      <Button
+                        variant="outline"
+                        fullWidth
+                        onClick={() => setShowEtatForm(true)}
+                      >
+                        ⚠️ Créer un état des lieux détaillé
+                      </Button>
+                    </div>
                   ) : (
                     <div className="space-y-4">
                       <div>
@@ -279,14 +300,14 @@ export default function PrestatairePrestationDetailPage() {
                         label="Nouveau montant (€) — optionnel si objet plus abîmé que prévu"
                         type="number"
                         min="0"
+                        step="any"
                         placeholder={`Montant initial : ${prestation.montant} €`}
                         value={montantRevise}
                         onChange={(e) => setMontantRevise(e.target.value)}
+                        onWheel={(e) => (e.target as HTMLInputElement).blur()}
                       />
                       {error && (
-                        <p className={`text-sm ${colors.error.text}`}>
-                          {error}
-                        </p>
+                        <p className={`text-sm ${colors.error.text}`}>{error}</p>
                       )}
                       <div className="flex gap-3">
                         <Button
@@ -345,7 +366,25 @@ export default function PrestatairePrestationDetailPage() {
           </div>
         )}
 
-        {/* Action — Marquer terminé */}
+        {/* EN_ATTENTE_PAIEMENT */}
+        {prestation.status === "EN_ATTENTE_PAIEMENT" && (
+          <div
+            className={`bg-white rounded-2xl ${spacing.card} border border-yellow-200 shadow-sm mb-6`}
+          >
+            <div className="text-center py-4">
+              <div className="text-4xl mb-3">💳</div>
+              <h2 className={`text-lg font-bold ${colors.text.primary} mb-2`}>
+                En attente du paiement client
+              </h2>
+              <p className={`text-sm ${colors.text.secondary}`}>
+                Le client doit confirmer le paiement avant que la prestation
+                puisse démarrer.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Action — Marquer terminé (EN_COURS uniquement) */}
         {prestation.status === "EN_COURS" && (
           <div
             className={`bg-white rounded-2xl ${spacing.card} border ${colors.border.light} shadow-sm`}
@@ -354,10 +393,8 @@ export default function PrestatairePrestationDetailPage() {
               Marquer comme terminé
             </h2>
             <p className={`text-sm ${colors.text.secondary} mb-4`}>
-              {isModification &&
-              !prestation.etatDesLieux?.status !== ("VALIDE" as any)
-                ? "⚠️ Vous devez d'abord créer et faire valider l'état des lieux avant de marquer la prestation comme terminée."
-                : "Une fois marquée comme terminée, le client aura 3 jours pour valider. Sans réponse, la validation sera automatique."}
+              Une fois marquée comme terminée, le client aura 3 jours pour
+              valider. Sans réponse, la validation sera automatique.
             </p>
             {error && (
               <p className={`text-sm ${colors.error.text} mb-3`}>{error}</p>

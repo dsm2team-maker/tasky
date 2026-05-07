@@ -138,8 +138,9 @@ export default function NewDemandePage() {
   // Validations
   const canGoEtape2 = !!selectedCategoryId && !!selectedSubCategoryId;
   const canGoEtape3 = canGoEtape2 && !!typePrestation;
+  const budgetInvalide = !!budget && parseFloat(budget) <= 0;
   const canSubmit =
-    canGoEtape3 && description.trim().length >= DESC_MIN && !!ville;
+    canGoEtape3 && description.trim().length >= DESC_MIN && !!ville && !budgetInvalide;
 
   // Soumission
   const handleSubmit = () => {
@@ -498,10 +499,13 @@ export default function NewDemandePage() {
               <Input
                 label="Budget estimé (€) — optionnel"
                 type="number"
-                min="0"
+                min="1"
+                step="any"
                 placeholder="Ex: 50"
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
+                onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                error={budget && parseFloat(budget) <= 0 ? "Le budget doit être supérieur à 0 €" : undefined}
               />
 
               {/* Ville */}

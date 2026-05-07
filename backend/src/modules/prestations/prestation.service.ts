@@ -85,7 +85,7 @@ export const getPrestationDetail = async (
 };
 
 // =============================================================================
-// CRÉER ÉTAT DES LIEUX (Prestataire)
+// CRÉER ÉTAT DES LIEUX (Prestataire) — status EN_ATTENTE_INSPECTION requis
 // =============================================================================
 export const creerEtatDesLieux = async (
   userId: string,
@@ -100,18 +100,13 @@ export const creerEtatDesLieux = async (
 
   const prestation = await prisma.prestation.findUnique({
     where: { id: prestationId },
-    include: {
-      demande: true,
-      etatDesLieux: true,
-    },
+    include: { demande: true, etatDesLieux: true },
   });
   if (!prestation) throw new Error("PRESTATION_NOT_FOUND");
   if (prestation.prestataireId !== prestataire.id) throw new Error("FORBIDDEN");
-  if (prestation.status !== "EN_COURS")
-    throw new Error("PRESTATION_NOT_EN_COURS");
+  if (prestation.status !== "EN_ATTENTE_INSPECTION")
+    throw new Error("PRESTATION_NOT_EN_ATTENTE_INSPECTION");
   if (prestation.etatDesLieux) throw new Error("ETAT_DES_LIEUX_ALREADY_EXISTS");
-
-  // Vérifier que c'est une MODIFICATION
   if (prestation.demande.typePrestation !== "MODIFICATION")
     throw new Error("NOT_MODIFICATION");
 
@@ -125,8 +120,6 @@ export const creerEtatDesLieux = async (
     },
   });
 
-  // Si montant révisé → en attente validation client
-  // Si pas de montant révisé → devis conforme, montant final = montant initial
   if (!data.montantRevise) {
     await prisma.prestation.update({
       where: { id: prestationId },
@@ -159,9 +152,10 @@ export const validerEtatDesLieux = async (
     throw new Error("ETAT_DES_LIEUX_ALREADY_PROCESSED");
 
   if (accepte) {
-    // Client accepte → montant final = montant révisé ou montant initial
+    // Client accepte → montant final fixé, attente paiement
     const montantFinal =
       prestation.etatDesLieux.montantRevise || prestation.montant;
+
     await prisma.$transaction([
       prisma.etatDesLieux.update({
         where: { id: prestation.etatDesLieux.id },
@@ -169,30 +163,140 @@ export const validerEtatDesLieux = async (
       }),
       prisma.prestation.update({
         where: { id: prestationId },
-        data: { montantFinal },
-      }),
-    ]);
-  } else {
-    // Client refuse → prestation ANNULEE, demande repasse en PUBLIEE
-    await prisma.$transaction([
-      prisma.etatDesLieux.update({
-        where: { id: prestation.etatDesLieux.id },
-        data: { status: "REFUSE" },
-      }),
-      prisma.prestation.update({
-        where: { id: prestationId },
-        data: { status: "ANNULEE" },
+        data: { montantFinal, status: "EN_ATTENTE_PAIEMENT" },
       }),
       prisma.demande.update({
         where: { id: prestation.demandeId },
-        data: { status: "PUBLIEE" },
+        data: { status: "EN_ATTENTE_PAIEMENT" },
       }),
     ]);
+  } else {
+    // Client refuse → prestation ANNULEE, demande PUBLIEE
+    // Devis accepté → REFUSE + aVerifier=true, autres ENVOYE → estSelectionnable=true
+    const devisAccepte = await prisma.devis.findFirst({
+      where: { demandeId: prestation.demandeId, status: "ACCEPTE" },
+    });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.etatDesLieux.update({
+        where: { id: prestation.etatDesLieux!.id },
+        data: { status: "REFUSE" },
+      });
+
+      await tx.prestation.update({
+        where: { id: prestationId },
+        data: { status: "ANNULEE" },
+      });
+
+      await tx.demande.update({
+        where: { id: prestation.demandeId },
+        data: { status: "PUBLIEE" },
+      });
+
+      if (devisAccepte) {
+        // Marquer le devis accepté comme refusé avec flag aVerifier
+        await tx.devis.update({
+          where: { id: devisAccepte.id },
+          data: { status: "REFUSE", aVerifier: true, estSelectionnable: false },
+        });
+      }
+
+      // Remettre les autres devis ENVOYE comme sélectionnables
+      await tx.devis.updateMany({
+        where: {
+          demandeId: prestation.demandeId,
+          status: "ENVOYE",
+        },
+        data: { estSelectionnable: true },
+      });
+    });
   }
 };
 
 // =============================================================================
-// MARQUER TERMINÉ (Prestataire)
+// CONFIRMER CONFORMITÉ (Prestataire) — objet OK, pas de changement de tarif
+// Crée un état des lieux VALIDE directement et passe à EN_ATTENTE_PAIEMENT
+// =============================================================================
+export const confirmerConformite = async (
+  userId: string,
+  prestationId: string,
+) => {
+  const prestataire = await prisma.prestataire.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  if (!prestataire) throw new Error("PRESTATAIRE_NOT_FOUND");
+
+  const prestation = await prisma.prestation.findUnique({
+    where: { id: prestationId },
+    include: { demande: true, etatDesLieux: true },
+  });
+  if (!prestation) throw new Error("PRESTATION_NOT_FOUND");
+  if (prestation.prestataireId !== prestataire.id) throw new Error("FORBIDDEN");
+  if (prestation.status !== "EN_ATTENTE_INSPECTION")
+    throw new Error("PRESTATION_NOT_EN_ATTENTE_INSPECTION");
+  if (prestation.demande.typePrestation !== "MODIFICATION")
+    throw new Error("NOT_MODIFICATION");
+  if (prestation.etatDesLieux) throw new Error("ETAT_DES_LIEUX_ALREADY_EXISTS");
+
+  await prisma.$transaction(async (tx) => {
+    // Créer l'état des lieux déjà validé (montant conforme, pas de révision)
+    await tx.etatDesLieux.create({
+      data: {
+        prestationId,
+        description: "Objet conforme à la description initiale.",
+        photos: [],
+        montantRevise: null,
+        status: "VALIDE",
+      },
+    });
+
+    await tx.prestation.update({
+      where: { id: prestationId },
+      data: {
+        montantFinal: prestation.montant,
+        status: "EN_ATTENTE_PAIEMENT",
+      },
+    });
+
+    await tx.demande.update({
+      where: { id: prestation.demandeId },
+      data: { status: "EN_ATTENTE_PAIEMENT" },
+    });
+  });
+};
+
+// =============================================================================
+// PASSER EN COURS (stub Stripe) — EN_ATTENTE_PAIEMENT → EN_COURS
+// À remplacer par le webhook Stripe en production
+// =============================================================================
+export const passerEnCours = async (userId: string, prestationId: string) => {
+  const client = await prisma.client.findUnique({ where: { userId } });
+  if (!client) throw new Error("CLIENT_NOT_FOUND");
+
+  const prestation = await prisma.prestation.findUnique({
+    where: { id: prestationId },
+    include: { demande: true },
+  });
+  if (!prestation) throw new Error("PRESTATION_NOT_FOUND");
+  if (prestation.demande.clientId !== client.id) throw new Error("FORBIDDEN");
+  if (prestation.status !== "EN_ATTENTE_PAIEMENT")
+    throw new Error("PRESTATION_NOT_EN_ATTENTE_PAIEMENT");
+
+  await prisma.$transaction([
+    prisma.prestation.update({
+      where: { id: prestationId },
+      data: { status: "EN_COURS" },
+    }),
+    prisma.demande.update({
+      where: { id: prestation.demandeId },
+      data: { status: "EN_COURS" },
+    }),
+  ]);
+};
+
+// =============================================================================
+// MARQUER TERMINÉ (Prestataire) — EN_COURS requis
 // =============================================================================
 export const marquerTermine = async (userId: string, prestationId: string) => {
   const prestataire = await prisma.prestataire.findUnique({

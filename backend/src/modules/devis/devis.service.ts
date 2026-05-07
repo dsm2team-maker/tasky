@@ -5,7 +5,6 @@ import { calculerScore } from "./matching.service";
 // GET DEMANDES DISPONIBLES (avec matching)
 // =============================================================================
 export const getDemandesDisponibles = async (userId: string) => {
-  // Récupérer le prestataire avec ses compétences
   const prestataire = await prisma.prestataire.findUnique({
     where: { userId },
     select: {
@@ -30,7 +29,6 @@ export const getDemandesDisponibles = async (userId: string) => {
   if (prestataire.disponibilite !== "ACTIF")
     throw new Error("PRESTATAIRE_INACTIF");
 
-  // Récupérer les demandes publiées
   const demandes = await prisma.demande.findMany({
     where: { status: "PUBLIEE" },
     include: {
@@ -46,14 +44,12 @@ export const getDemandesDisponibles = async (userId: string) => {
     orderBy: { createdAt: "desc" },
   });
 
-  // IDs des demandes où le prestataire a déjà envoyé un devis
   const devisExistants = await prisma.devis.findMany({
     where: { prestataireId: prestataire.id },
     select: { demandeId: true },
   });
   const demandesAvecDevis = new Set(devisExistants.map((d) => d.demandeId));
 
-  // Calculer le score pour chaque demande
   const results = demandes
     .filter((d) => !demandesAvecDevis.has(d.id))
     .map((demande) => {
@@ -69,10 +65,7 @@ export const getDemandesDisponibles = async (userId: string) => {
 
       if (!score) return null;
 
-      return {
-        ...demande,
-        matching: score,
-      };
+      return { ...demande, matching: score };
     })
     .filter(Boolean)
     .sort((a, b) => b!.matching.score - a!.matching.score);
@@ -106,7 +99,6 @@ export const getDemandeDetail = async (userId: string, demandeId: string) => {
 
   if (!demande) throw new Error("DEMANDE_NOT_FOUND");
 
-  // Vérifier si le prestataire a déjà envoyé un devis
   const devisExistant = await prisma.devis.findFirst({
     where: { demandeId, prestataireId: prestataire.id },
   });
@@ -134,13 +126,11 @@ export const envoyerDevis = async (
   if (!demande) throw new Error("DEMANDE_NOT_FOUND");
   if (demande.status !== "PUBLIEE") throw new Error("DEMANDE_NON_DISPONIBLE");
 
-  // Vérifier pas de devis existant
   const existant = await prisma.devis.findFirst({
     where: { demandeId, prestataireId: prestataire.id },
   });
   if (existant) throw new Error("DEVIS_DEJA_ENVOYE");
 
-  // Expiration dans 7 jours
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
@@ -152,6 +142,8 @@ export const envoyerDevis = async (
       delai: data.delai,
       description: data.description,
       status: "ENVOYE",
+      estSelectionnable: true,
+      aVerifier: false,
       expiresAt,
     },
     include: {
@@ -227,46 +219,60 @@ export const accepterDevis = async (userId: string, devisId: string) => {
   if (!devis) throw new Error("DEVIS_NOT_FOUND");
   if (devis.demande.clientId !== client.id) throw new Error("FORBIDDEN");
   if (devis.status !== "ENVOYE") throw new Error("DEVIS_NON_DISPONIBLE");
+  if (!devis.estSelectionnable) throw new Error("DEVIS_NON_SELECTIONNABLE");
+
+  const isModification = devis.demande.typePrestation === "MODIFICATION";
 
   await prisma.$transaction(async (tx) => {
     // Accepter ce devis
     await tx.devis.update({
       where: { id: devisId },
-      data: { status: "ACCEPTE" },
+      data: { status: "ACCEPTE", estSelectionnable: false },
     });
 
-    // Refuser tous les autres devis de cette demande
-    await tx.devis.updateMany({
-      where: { demandeId: devis.demandeId, id: { not: devisId } },
-      data: { status: "REFUSE" },
-    });
+    if (isModification) {
+      // MODIFICATION : les autres restent ENVOYE mais deviennent non-sélectionnables
+      await tx.devis.updateMany({
+        where: { demandeId: devis.demandeId, id: { not: devisId } },
+        data: { estSelectionnable: false },
+      });
 
-    // Mettre à jour le statut de la demande
-    const demandeInfo = await tx.demande.findUnique({
-      where: { id: devis.demandeId },
-      select: { typePrestation: true },
-    });
+      await tx.demande.update({
+        where: { id: devis.demandeId },
+        data: { status: "EN_ATTENTE_INSPECTION" },
+      });
 
-    await tx.demande.update({
-      where: { id: devis.demandeId },
-      data: {
-        status:
-          demandeInfo?.typePrestation === "MODIFICATION"
-            ? "EN_ATTENTE"
-            : "EN_COURS",
-      },
-    });
+      await tx.prestation.create({
+        data: {
+          demandeId: devis.demandeId,
+          prestataireId: devis.prestataireId,
+          subCategoryId: devis.demande.subCategoryId,
+          montant: devis.montant,
+          status: "EN_ATTENTE_INSPECTION",
+        },
+      });
+    } else {
+      // CREATION : refuser tous les autres devis immédiatement
+      await tx.devis.updateMany({
+        where: { demandeId: devis.demandeId, id: { not: devisId } },
+        data: { status: "REFUSE", estSelectionnable: false },
+      });
 
-    // Créer la prestation
-    await tx.prestation.create({
-      data: {
-        demandeId: devis.demandeId,
-        prestataireId: devis.prestataireId,
-        subCategoryId: devis.demande.subCategoryId,
-        montant: devis.montant,
-        status: "EN_COURS",
-      },
-    });
+      await tx.demande.update({
+        where: { id: devis.demandeId },
+        data: { status: "EN_ATTENTE_PAIEMENT" },
+      });
+
+      await tx.prestation.create({
+        data: {
+          demandeId: devis.demandeId,
+          prestataireId: devis.prestataireId,
+          subCategoryId: devis.demande.subCategoryId,
+          montant: devis.montant,
+          status: "EN_ATTENTE_PAIEMENT",
+        },
+      });
+    }
   });
 };
 

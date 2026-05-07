@@ -18,7 +18,7 @@ export interface Prestation {
   prestataireId: string;
   montant: number;
   montantFinal: number | null;
-  status: "EN_COURS" | "A_VALIDER" | "TERMINEE" | "ANNULEE";
+  status: "EN_ATTENTE_INSPECTION" | "EN_ATTENTE_PAIEMENT" | "EN_COURS" | "A_VALIDER" | "TERMINEE" | "ANNULEE";
   createdAt: string;
   completedAt: string | null;
   validatedAt: string | null;
@@ -101,4 +101,14 @@ export const prestationService = {
       `/api/prestations/${id}/etat-des-lieux/valider`,
       { accepte },
     ),
+
+  confirmerConformite: (id: string) =>
+    apiClient.patch<{ success: boolean }>(
+      `/api/prestations/${id}/confirmer-conformite`,
+      {},
+    ),
+
+  // Stub Stripe — à remplacer par webhook en production
+  passerEnCours: (id: string) =>
+    apiClient.patch<{ success: boolean }>(`/api/prestations/${id}/payer`, {}),
 };

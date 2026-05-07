@@ -244,9 +244,11 @@ export default function PrestataireRequestDetailPage() {
                   label="Montant (€) *"
                   type="number"
                   min="1"
+                  step="any"
                   placeholder="Ex: 45"
                   value={montant}
                   onChange={(e) => setMontant(e.target.value)}
+                  onWheel={(e) => (e.target as HTMLInputElement).blur()}
                 />
                 <Input
                   label="Délai (jours) *"
@@ -255,6 +257,7 @@ export default function PrestataireRequestDetailPage() {
                   placeholder="Ex: 5"
                   value={delai}
                   onChange={(e) => setDelai(e.target.value)}
+                  onWheel={(e) => (e.target as HTMLInputElement).blur()}
                 />
               </div>
 

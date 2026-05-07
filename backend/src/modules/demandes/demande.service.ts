@@ -126,7 +126,13 @@ export const deleteDemande = async (userId: string, demandeId: string) => {
   const demande = await prisma.demande.findUnique({ where: { id: demandeId } });
   if (!demande) throw new Error("DEMANDE_NOT_FOUND");
   if (demande.clientId !== client.id) throw new Error("FORBIDDEN");
-  if (demande.status === "EN_COURS") throw new Error("DEMANDE_EN_COURS");
+  const statusesBloquants: string[] = [
+    "EN_ATTENTE_INSPECTION",
+    "EN_ATTENTE_PAIEMENT",
+    "EN_COURS",
+  ];
+  if (statusesBloquants.includes(demande.status))
+    throw new Error("DEMANDE_EN_COURS");
 
   await prisma.demande.update({
     where: { id: demandeId },

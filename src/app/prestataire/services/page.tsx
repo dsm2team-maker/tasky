@@ -13,30 +13,49 @@ import type { Prestation } from "@/services/prestation.service";
 
 const statusConfig: Record<
   string,
-  { label: string; color: string; icon: string }
+  { label: string; color: string; icon: string; tooltip: string }
 > = {
+  EN_ATTENTE_INSPECTION: {
+    label: "En attente d'inspection",
+    color: "bg-orange-100 text-orange-700",
+    icon: "🔍",
+    tooltip:
+      "L'objet du client est déposé au point de dépôt. Inspectez-le et créez l'état des lieux.",
+  },
+  EN_ATTENTE_PAIEMENT: {
+    label: "En attente de paiement",
+    color: "bg-yellow-100 text-yellow-700",
+    icon: "💳",
+    tooltip:
+      "L'état des lieux a été validé par le client. En attente de son paiement pour démarrer.",
+  },
   EN_COURS: {
     label: "En cours",
     color: "bg-blue-100 text-blue-700",
     icon: "⚡",
+    tooltip:
+      "La prestation est en cours. Marquez-la comme terminée quand le travail est achevé.",
   },
-  EN_ATTENTE: {
-    label: "En attente",
-    color: "bg-yellow-100 text-yellow-700",
-    icon: "⏳",
-  }, // ← ajouter
-
   A_VALIDER: {
     label: "À valider",
     color: "bg-purple-100 text-purple-700",
     icon: "⏳",
+    tooltip:
+      "Vous avez marqué la prestation terminée. Le client a 3 jours pour valider. Auto-validation sinon.",
   },
   TERMINEE: {
     label: "Terminée",
     color: "bg-green-100 text-green-700",
     icon: "✅",
+    tooltip:
+      "Prestation terminée et validée. Votre paiement (moins 15% de commission Tasky) sera versé.",
   },
-  ANNULEE: { label: "Annulée", color: "bg-red-100 text-red-600", icon: "❌" },
+  ANNULEE: {
+    label: "Annulée",
+    color: "bg-red-100 text-red-600",
+    icon: "❌",
+    tooltip: "Cette prestation a été annulée.",
+  },
 };
 
 const typeConfig: Record<string, string> = {
@@ -45,10 +64,53 @@ const typeConfig: Record<string, string> = {
   FORMATION: "🎓 Formation",
 };
 
+// ─── Badge statut avec infobulle ──────────────────────────────────────────────
+
+function StatusBadge({
+  color,
+  icon,
+  label,
+  tooltip,
+}: {
+  color: string;
+  icon: string;
+  label: string;
+  tooltip: string;
+}) {
+  return (
+    <span className="relative group inline-flex items-center gap-1">
+      <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${color}`}>
+        {icon} {label}
+      </span>
+      <span className="text-gray-400 cursor-help text-xs">ⓘ</span>
+      <span className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-30 w-56 bg-gray-800 text-white text-xs p-2.5 rounded-xl shadow-xl leading-relaxed pointer-events-none">
+        {tooltip}
+        <span className="absolute top-full left-4 border-4 border-transparent border-t-gray-800" />
+      </span>
+    </span>
+  );
+}
+
+// Statut d'affichage contextuel (distingue inspection soumise vs pas encore faite)
+function getDisplayStatus(prestation: Prestation) {
+  if (
+    prestation.status === "EN_ATTENTE_INSPECTION" &&
+    prestation.etatDesLieux
+  ) {
+    return {
+      label: "État soumis — attente client",
+      color: "bg-yellow-100 text-yellow-700",
+      icon: "⏳",
+      tooltip: "Vous avez soumis l'état des lieux. En attente de la validation du client.",
+    };
+  }
+  return statusConfig[prestation.status] ?? statusConfig.EN_COURS;
+}
+
 // ─── Carte prestation ─────────────────────────────────────────────────────────
 
 function CardPrestation({ prestation }: { prestation: Prestation }) {
-  const status = statusConfig[prestation.status] || statusConfig.EN_COURS;
+  const displayStatus = getDisplayStatus(prestation);
   const montant = prestation.montantFinal || prestation.montant;
 
   return (
@@ -60,25 +122,12 @@ function CardPrestation({ prestation }: { prestation: Prestation }) {
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span
-                className={`text-xs px-2.5 py-1 rounded-full font-semibold ${status.color}`}
-              >
-                {(() => {
-                  const displayStatus =
-                    prestation.demande.typePrestation === "MODIFICATION" &&
-                    prestation.status === "EN_COURS" &&
-                    !prestation.etatDesLieux
-                      ? statusConfig["EN_ATTENTE"]
-                      : status;
-                  return (
-                    <span
-                      className={`text-xs px-2.5 py-1 rounded-full font-semibold ${displayStatus.color}`}
-                    >
-                      {displayStatus.icon} {displayStatus.label}
-                    </span>
-                  );
-                })()}
-              </span>
+              <StatusBadge
+                color={displayStatus.color}
+                icon={displayStatus.icon}
+                label={displayStatus.label}
+                tooltip={displayStatus.tooltip ?? ""}
+              />
               <span className={`text-xs ${colors.text.muted}`}>
                 {typeConfig[prestation.demande.typePrestation]}
               </span>
@@ -89,16 +138,15 @@ function CardPrestation({ prestation }: { prestation: Prestation }) {
               {prestation.demande.titre}
             </h3>
           </div>
-          {prestation.demande.photos &&
-            prestation.demande.photos.length > 0 && (
-              <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
-                <img
-                  src={prestation.demande.photos[0]}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
+          {prestation.demande.photos && prestation.demande.photos.length > 0 && (
+            <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
+              <img
+                src={prestation.demande.photos[0]}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
         </div>
 
         {/* Catégorie */}
@@ -134,30 +182,34 @@ function CardPrestation({ prestation }: { prestation: Prestation }) {
           )}
         </div>
 
-        {/* État des lieux */}
-        {prestation.demande.typePrestation === "MODIFICATION" && (
-          <div
-            className={`text-xs px-3 py-1.5 rounded-lg ${
-              !prestation.etatDesLieux
-                ? "bg-orange-50 text-orange-700"
-                : prestation.etatDesLieux.status === "EN_ATTENTE"
-                  ? "bg-yellow-50 text-yellow-700"
-                  : prestation.etatDesLieux.status === "VALIDE"
-                    ? "bg-green-50 text-green-700"
-                    : "bg-red-50 text-red-600"
-            }`}
-          >
-            {!prestation.etatDesLieux
-              ? "⚠️ État des lieux à créer"
-              : prestation.etatDesLieux.status === "EN_ATTENTE"
-                ? "⏳ État des lieux en attente de validation"
-                : prestation.etatDesLieux.status === "VALIDE"
-                  ? "✅ État des lieux validé"
-                  : "❌ État des lieux refusé"}
-          </div>
-        )}
+        {/* Bandeau état des lieux (MODIFICATION, hors ANNULEE/TERMINEE) */}
+        {prestation.demande.typePrestation === "MODIFICATION" &&
+          !["ANNULEE", "TERMINEE"].includes(prestation.status) && (() => {
+            const edl = prestation.etatDesLieux;
+            const enInspection = prestation.status === "EN_ATTENTE_INSPECTION";
 
-        {/* A_VALIDER */}
+            let bg = "bg-green-50 text-green-700";
+            let msg = "✅ Inspection effectuée";
+
+            if (enInspection && !edl) {
+              bg = "bg-orange-50 text-orange-700";
+              msg = "🔍 Inspecter l'objet";
+            } else if (enInspection && edl?.status === "EN_ATTENTE") {
+              bg = "bg-yellow-50 text-yellow-700";
+              msg = "⏳ En attente de validation client";
+            } else if (edl?.status === "REFUSE") {
+              bg = "bg-red-50 text-red-600";
+              msg = "❌ État des lieux refusé";
+            }
+
+            return (
+              <div className={`text-xs px-3 py-1.5 rounded-lg ${bg}`}>
+                {msg}
+              </div>
+            );
+          })()}
+
+        {/* Auto-validation */}
         {prestation.status === "A_VALIDER" && prestation.autoValidateAt && (
           <div className="mt-2 text-xs text-purple-600 bg-purple-50 px-3 py-1.5 rounded-lg">
             ⏱️ Auto-validation le{" "}
@@ -188,10 +240,29 @@ function CardPrestation({ prestation }: { prestation: Prestation }) {
 
 // ─── Page principale ──────────────────────────────────────────────────────────
 
+type FilterValue =
+  | "TOUTES"
+  | "EN_ATTENTE_INSPECTION"
+  | "EN_ATTENTE_PAIEMENT"
+  | "EN_COURS"
+  | "A_VALIDER"
+  | "TERMINEE"
+  | "ANNULEE";
+
+const filters: { value: FilterValue; label: string; tooltip: string }[] = [
+  { value: "TOUTES", label: "Toutes", tooltip: "Afficher toutes mes prestations" },
+  { value: "EN_ATTENTE_INSPECTION", label: "🔍 Inspection", tooltip: "Objet déposé à inspecter — créer l'état des lieux" },
+  { value: "EN_ATTENTE_PAIEMENT", label: "💳 Paiement", tooltip: "État des lieux validé — en attente du paiement client" },
+  { value: "EN_COURS", label: "⚡ En cours", tooltip: "Prestation en cours de réalisation" },
+  { value: "A_VALIDER", label: "⏳ À valider", tooltip: "En attente de validation client" },
+  { value: "TERMINEE", label: "✅ Terminées", tooltip: "Prestations terminées et validées" },
+  { value: "ANNULEE", label: "❌ Annulées", tooltip: "Prestations annulées (inspection refusée ou autre)" },
+];
+
 export default function PrestatairePrestationsPage() {
   useAuthGuard();
   const [isHydrated, setIsHydrated] = useState(false);
-  const [filter, setFilter] = useState<string>("TOUTES");
+  const [filter, setFilter] = useState<FilterValue>("TOUTES");
   const { data: prestations, isLoading } = useMesPrestations();
 
   useEffect(() => setIsHydrated(true), []);
@@ -202,16 +273,6 @@ export default function PrestatairePrestationsPage() {
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500" />
       </div>
     );
-
-  const filters = [
-    { value: "TOUTES", label: "Toutes" },
-    { value: "EN_ATTENTE", label: "⏳ En attente" }, // ← ajouter
-
-    { value: "EN_COURS", label: "⚡ En cours" },
-    { value: "A_VALIDER", label: "⏳ À valider" },
-    { value: "TERMINEE", label: "✅ Terminées" },
-    { value: "ANNULEE", label: "❌ Annulées" },
-  ];
 
   const filtered = prestations?.filter((p) =>
     filter === "TOUTES" ? true : p.status === filter,
@@ -234,17 +295,22 @@ export default function PrestatairePrestationsPage() {
         {/* Filtres */}
         <div className="flex gap-2 mb-6 flex-wrap">
           {filters.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setFilter(f.value)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
-                filter === f.value
-                  ? `${colors.secondary.gradient} text-white border-transparent`
-                  : `bg-white ${colors.text.secondary} ${colors.border.light} hover:border-gray-300`
-              }`}
-            >
-              {f.label}
-            </button>
+            <span key={f.value} className="relative group">
+              <button
+                onClick={() => setFilter(f.value)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+                  filter === f.value
+                    ? `${colors.secondary.gradient} text-white border-transparent`
+                    : `bg-white ${colors.text.secondary} ${colors.border.light} hover:border-gray-300`
+                }`}
+              >
+                {f.label}
+              </button>
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-30 w-44 bg-gray-800 text-white text-xs p-2 rounded-xl shadow-xl text-center pointer-events-none">
+                {f.tooltip}
+                <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+              </span>
+            </span>
           ))}
         </div>
 

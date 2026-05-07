@@ -1,5 +1,5 @@
 // ===========================================
-// TASKY - Schéma Prisma complet v5
+// TASKY - Schéma Prisma complet v6
 // ===========================================
 
 generator client {
@@ -8,8 +8,8 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+  url       = env("DATABASE_URL")
 }
 
 model User {
@@ -158,6 +158,7 @@ model Demande {
   updatedAt       DateTime       @updatedAt
   devis           Devis[]
   prestation      Prestation?
+  signalements    Signalement[]
 
   @@map("demandes")
 }
@@ -176,7 +177,8 @@ enum UrgenceDemande {
 
 enum StatusDemande {
   PUBLIEE
-  EN_ATTENTE
+  EN_ATTENTE_INSPECTION
+  EN_ATTENTE_PAIEMENT
   EN_COURS
   A_VALIDER
   TERMINEE
@@ -185,18 +187,20 @@ enum StatusDemande {
 }
 
 model Devis {
-  id            String      @id @default(cuid())
-  demandeId     String
-  demande       Demande     @relation(fields: [demandeId], references: [id])
-  prestataireId String
-  prestataire   Prestataire @relation(fields: [prestataireId], references: [id])
-  montant       Float
-  delai         Int
-  description   String
-  status        StatusDevis @default(ENVOYE)
-  expiresAt     DateTime
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id               String      @id @default(cuid())
+  demandeId        String
+  demande          Demande     @relation(fields: [demandeId], references: [id])
+  prestataireId    String
+  prestataire      Prestataire @relation(fields: [prestataireId], references: [id])
+  montant          Float
+  delai            Int
+  description      String
+  status           StatusDevis @default(ENVOYE)
+  estSelectionnable Boolean    @default(true)
+  aVerifier        Boolean     @default(false)
+  expiresAt        DateTime
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
   @@map("devis")
 }
@@ -209,27 +213,30 @@ enum StatusDevis {
 }
 
 model Prestation {
-  id            String           @id @default(cuid())
-  demandeId     String           @unique
-  demande       Demande          @relation(fields: [demandeId], references: [id])
-  prestataireId String
-  prestataire   Prestataire      @relation(fields: [prestataireId], references: [id])
-  subCategoryId String?
-  subCategory   SubCategory?     @relation(fields: [subCategoryId], references: [id])
-  montant       Float
-  montantFinal  Float?
-  status        StatusPrestation @default(EN_COURS)
-  createdAt     DateTime         @default(now())
-  completedAt   DateTime?
-  validatedAt   DateTime?
+  id             String           @id @default(cuid())
+  demandeId      String           @unique
+  demande        Demande          @relation(fields: [demandeId], references: [id])
+  prestataireId  String
+  prestataire    Prestataire      @relation(fields: [prestataireId], references: [id])
+  subCategoryId  String?
+  subCategory    SubCategory?     @relation(fields: [subCategoryId], references: [id])
+  montant        Float
+  montantFinal   Float?
+  status         StatusPrestation @default(EN_ATTENTE_INSPECTION)
+  createdAt      DateTime         @default(now())
+  completedAt    DateTime?
+  validatedAt    DateTime?
   autoValidateAt DateTime?
-  review        Review?
-  etatDesLieux  EtatDesLieux?
+  review         Review?
+  etatDesLieux   EtatDesLieux?
+  messages       Message[]
 
   @@map("prestations")
 }
 
 enum StatusPrestation {
+  EN_ATTENTE_INSPECTION
+  EN_ATTENTE_PAIEMENT
   EN_COURS
   A_VALIDER
   TERMINEE
@@ -256,14 +263,27 @@ enum StatusEtatDesLieux {
 }
 
 model Message {
-  id         String   @id @default(cuid())
-  senderId   String
-  receiverId String
-  content    String
-  read       Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  id           String     @id @default(cuid())
+  prestationId String
+  prestation   Prestation @relation(fields: [prestationId], references: [id])
+  auteurId     String
+  contenu      String
+  lu           Boolean    @default(false)
+  createdAt    DateTime   @default(now())
 
   @@map("messages")
+}
+
+model Signalement {
+  id        String   @id @default(cuid())
+  demandeId String
+  demande   Demande  @relation(fields: [demandeId], references: [id])
+  auteurId  String
+  message   String
+  statut    String   @default("EN_ATTENTE")
+  createdAt DateTime @default(now())
+
+  @@map("signalements")
 }
 
 model Review {

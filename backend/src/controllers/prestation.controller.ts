@@ -4,7 +4,9 @@ import {
   getMesPrestations,
   getPrestationDetail,
   creerEtatDesLieux,
+  confirmerConformite,
   validerEtatDesLieux,
+  passerEnCours,
   marquerTermine,
   validerPrestation,
   contesterPrestation,
@@ -36,6 +38,14 @@ const handleError = (res: Response, error: any) => {
     NOT_MODIFICATION: [
       400,
       "L'état des lieux n'est disponible que pour les modifications",
+    ],
+    PRESTATION_NOT_EN_ATTENTE_INSPECTION: [
+      400,
+      "La prestation n'est pas en attente d'inspection",
+    ],
+    PRESTATION_NOT_EN_ATTENTE_PAIEMENT: [
+      400,
+      "La prestation n'est pas en attente de paiement",
     ],
   };
 
@@ -135,6 +145,40 @@ export const validerEtatDesLieuxHandler = async (
         ? "État des lieux accepté"
         : "État des lieux refusé — demande republiée",
     });
+  } catch (error: any) {
+    return handleError(res, error);
+  }
+};
+
+// PATCH /api/prestations/:id/confirmer-conformite — Prestataire
+export const confirmerConformiteHandler = async (
+  req: AuthRequest,
+  res: Response,
+) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId)
+      return res.status(401).json({ success: false, message: "Non authentifié" });
+    await confirmerConformite(userId, req.params.id);
+    return res.json({
+      success: true,
+      message: "Objet confirmé conforme — en attente du paiement client",
+    });
+  } catch (error: any) {
+    return handleError(res, error);
+  }
+};
+
+// PATCH /api/prestations/:id/payer — Client (stub Stripe)
+export const passerEnCoursHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId)
+      return res
+        .status(401)
+        .json({ success: false, message: "Non authentifié" });
+    await passerEnCours(userId, req.params.id);
+    return res.json({ success: true, message: "Paiement confirmé — prestation démarrée" });
   } catch (error: any) {
     return handleError(res, error);
   }

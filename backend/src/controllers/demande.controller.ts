@@ -63,6 +63,10 @@ export const createDemandeHandler = async (req: AuthRequest, res: Response) => {
         .status(400)
         .json({ success: false, message: "Maximum 2 photos" });
 
+    const budgetParsed = budget !== undefined && budget !== null && budget !== "" ? parseFloat(budget) : undefined;
+    if (budgetParsed !== undefined && (isNaN(budgetParsed) || budgetParsed <= 0))
+      return res.status(400).json({ success: false, message: "Le budget doit être supérieur à 0 €" });
+
     const demande = await createDemande(userId, {
       titre: titre.trim(),
       description: description.trim(),
@@ -70,7 +74,7 @@ export const createDemandeHandler = async (req: AuthRequest, res: Response) => {
       categoryId,
       subCategoryId,
       interventionIds,
-      budget: budget ? parseFloat(budget) : undefined,
+      budget: budgetParsed,
       ville,
       photos: photos || [],
       dateEcheance,
