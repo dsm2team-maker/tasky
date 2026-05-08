@@ -17,42 +17,42 @@ const statusConfig: Record<
 > = {
   EN_ATTENTE_INSPECTION: {
     label: "En attente d'inspection",
-    color: "bg-orange-100 text-orange-700",
+    color: colors.status.enAttenteInspection.color,
     icon: "🔍",
     tooltip:
       "L'objet du client est déposé au point de dépôt. Inspectez-le et créez l'état des lieux.",
   },
   EN_ATTENTE_PAIEMENT: {
     label: "En attente de paiement",
-    color: "bg-yellow-100 text-yellow-700",
+    color: colors.status.enAttentePaiement.color,
     icon: "💳",
     tooltip:
       "L'état des lieux a été validé par le client. En attente de son paiement pour démarrer.",
   },
   EN_COURS: {
     label: "En cours",
-    color: "bg-blue-100 text-blue-700",
+    color: colors.status.enCours.color,
     icon: "⚡",
     tooltip:
       "La prestation est en cours. Marquez-la comme terminée quand le travail est achevé.",
   },
   A_VALIDER: {
     label: "À valider",
-    color: "bg-purple-100 text-purple-700",
+    color: colors.status.aValider.color,
     icon: "⏳",
     tooltip:
       "Vous avez marqué la prestation terminée. Le client a 3 jours pour valider. Auto-validation sinon.",
   },
   TERMINEE: {
     label: "Terminée",
-    color: "bg-green-100 text-green-700",
+    color: colors.status.terminee.color,
     icon: "✅",
     tooltip:
       "Prestation terminée et validée. Votre paiement (moins 15% de commission Tasky) sera versé.",
   },
   ANNULEE: {
     label: "Annulée",
-    color: "bg-red-100 text-red-600",
+    color: colors.status.annulee.color,
     icon: "❌",
     tooltip: "Cette prestation a été annulée.",
   },
@@ -99,7 +99,7 @@ function getDisplayStatus(prestation: Prestation) {
   ) {
     return {
       label: "État soumis — attente client",
-      color: "bg-yellow-100 text-yellow-700",
+      color: colors.status.etatSoumis.color,
       icon: "⏳",
       tooltip: "Vous avez soumis l'état des lieux. En attente de la validation du client.",
     };

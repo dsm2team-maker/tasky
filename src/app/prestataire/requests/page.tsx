@@ -357,15 +357,15 @@ export default function PrestataireRequestsPage() {
           <div
             className={`bg-white rounded-2xl p-12 text-center border ${colors.border.light}`}
           >
-            <div className="text-5xl mb-4">⚠️</div>
+            <div className="text-5xl mb-4">🚫</div>
             <h3 className={`text-lg font-bold ${colors.text.primary} mb-2`}>
-              Profil incomplet
+              Profil inactif
             </h3>
             <p className={`text-sm ${colors.text.secondary} mb-6`}>
-              Complétez votre profil pour voir les demandes disponibles
+              Passez votre statut en "Actif" ou "Occupé" pour accéder aux demandes disponibles
             </p>
             <Link href={routes.prestataire.profile.view}>
-              <Button variant="secondary">Compléter mon profil →</Button>
+              <Button variant="secondary">Gérer mon profil →</Button>
             </Link>
           </div>
         ) : !filtered || filtered.length === 0 ? (

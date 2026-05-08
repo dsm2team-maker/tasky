@@ -46,7 +46,6 @@ export const calculerScore = (
   prestataire: PrestataireForMatching,
 ): MatchScore | null => {
   // ── Hard filters ────────────────────────────────────────────────────────────
-  if (prestataire.disponibilite !== "ACTIF") return null;
   if (!prestataire.iban) return null;
   if (!prestataire.bio || prestataire.bio.length < BIO_MIN) return null;
   if (!prestataire.pointDepotAdresse) return null;

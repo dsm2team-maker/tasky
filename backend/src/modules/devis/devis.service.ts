@@ -26,7 +26,7 @@ export const getDemandesDisponibles = async (userId: string) => {
   });
 
   if (!prestataire) throw new Error("PRESTATAIRE_NOT_FOUND");
-  if (prestataire.disponibilite !== "ACTIF")
+  if (prestataire.disponibilite === "ABSENT")
     throw new Error("PRESTATAIRE_INACTIF");
 
   const demandes = await prisma.demande.findMany({
@@ -119,7 +119,7 @@ export const envoyerDevis = async (
     select: { id: true, disponibilite: true },
   });
   if (!prestataire) throw new Error("PRESTATAIRE_NOT_FOUND");
-  if (prestataire.disponibilite !== "ACTIF")
+  if (prestataire.disponibilite === "ABSENT")
     throw new Error("PRESTATAIRE_INACTIF");
 
   const demande = await prisma.demande.findUnique({ where: { id: demandeId } });

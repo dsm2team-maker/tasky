@@ -120,3 +120,14 @@ export const usePasserEnCours = () => {
     },
   });
 };
+
+export const useCreerReview = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { rating: number; comment?: string } }) =>
+      prestationService.creerReview(id, data).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PRESTATIONS_CLIENT_KEY });
+    },
+  });
+};

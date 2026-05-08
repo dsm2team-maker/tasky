@@ -13,8 +13,11 @@ import {
   useValiderEtatDesLieux,
   useValiderPrestation,
   useContesterPrestation,
+  usePasserEnCours,
+  useCreerReview,
 } from "@/hooks/usePrestation";
 import HeaderClient from "@/components/headers/HeaderClient";
+import SectionChat from "@/components/chat/SectionChat";
 import { Button } from "@/components/ui/Button";
 import { colors } from "@/config/colors";
 import { spacing, typography } from "@/config/design-tokens";
@@ -71,7 +74,10 @@ function CardDevis({
       )}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+          <a
+            href={`/prestataires/${devis.prestataire.id}`}
+            className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-pink-300 transition-all"
+          >
             {devis.prestataire.user.avatar ? (
               <img
                 src={devis.prestataire.user.avatar}
@@ -83,12 +89,15 @@ function CardDevis({
                 👤
               </div>
             )}
-          </div>
+          </a>
           <div>
-            <div className={`font-bold ${colors.text.primary}`}>
+            <a
+              href={`/prestataires/${devis.prestataire.id}`}
+              className={`font-bold ${colors.text.primary} hover:underline`}
+            >
               {devis.prestataire.user.firstName}{" "}
               {devis.prestataire.user.lastName}
-            </div>
+            </a>
             <div className="flex items-center gap-2">
               {devis.prestataire.rating > 0 && (
                 <span className={`text-xs ${colors.text.secondary}`}>
@@ -351,6 +360,172 @@ function SectionEtatDesLieux({
   );
 }
 
+// ─── Section Review ───────────────────────────────────────────────────────────
+
+const ratingLabels = ["", "Très mauvais", "Mauvais", "Correct", "Bien", "Excellent"];
+
+function SectionReview({ prestation }: { prestation: Prestation }) {
+  const [rating, setRating] = useState(0);
+  const [hover, setHover] = useState(0);
+  const [comment, setComment] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const creerReview = useCreerReview();
+
+  if (prestation.status !== "TERMINEE") return null;
+
+  if (prestation.review) {
+    return (
+      <div className={`bg-white rounded-2xl ${spacing.card} border border-green-200 shadow-sm mb-6`}>
+        <h2 className={`${typography.h5.base} ${colors.text.primary} mb-3`}>⭐ Votre avis</h2>
+        <div className="flex items-center gap-1 mb-2">
+          {[1, 2, 3, 4, 5].map((s) => (
+            <span key={s} className={`text-xl ${s <= prestation.review!.rating ? "text-yellow-400" : "text-gray-300"}`}>★</span>
+          ))}
+          <span className={`text-sm ${colors.text.secondary} ml-2`}>{prestation.review.rating}/5</span>
+        </div>
+        {prestation.review.comment && (
+          <p className={`text-sm ${colors.text.secondary}`}>{prestation.review.comment}</p>
+        )}
+      </div>
+    );
+  }
+
+  if (submitted) {
+    return (
+      <div className={`bg-white rounded-2xl ${spacing.card} border border-green-200 shadow-sm mb-6 text-center`}>
+        <div className="text-3xl mb-2">🙏</div>
+        <p className={`font-semibold ${colors.text.primary}`}>Merci pour votre avis !</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`bg-white rounded-2xl ${spacing.card} border ${colors.border.light} shadow-sm mb-6`}>
+      <h2 className={`${typography.h5.base} ${colors.text.primary} mb-1`}>⭐ Laisser un avis</h2>
+      <p className={`text-sm ${colors.text.secondary} mb-4`}>Comment s'est passée votre expérience ?</p>
+
+      <div className="flex items-center gap-1 mb-4">
+        {[1, 2, 3, 4, 5].map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setRating(s)}
+            onMouseEnter={() => setHover(s)}
+            onMouseLeave={() => setHover(0)}
+            className={`text-3xl transition-transform hover:scale-110 ${
+              s <= (hover || rating) ? "text-yellow-400" : "text-gray-300"
+            }`}
+          >
+            ★
+          </button>
+        ))}
+        {(hover || rating) > 0 && (
+          <span className={`text-sm ${colors.text.secondary} ml-2`}>
+            {ratingLabels[hover || rating]}
+          </span>
+        )}
+      </div>
+
+      <textarea
+        rows={3}
+        placeholder="Décrivez votre expérience (optionnel)..."
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        className={`w-full px-4 py-3 rounded-xl border ${colors.border.light} text-sm focus:outline-none focus:ring-2 focus:ring-pink-300 resize-none mb-4`}
+      />
+
+      <Button
+        variant="primary"
+        fullWidth
+        disabled={rating === 0}
+        isLoading={creerReview.isPending}
+        onClick={() =>
+          creerReview.mutate(
+            { id: prestation.id, data: { rating, comment: comment || undefined } },
+            { onSuccess: () => setSubmitted(true) },
+          )
+        }
+      >
+        Envoyer mon avis
+      </Button>
+    </div>
+  );
+}
+
+// ─── Section Paiement ────────────────────────────────────────────────────────
+
+function SectionPaiement({
+  prestation,
+  onSuccess,
+}: {
+  prestation: Prestation;
+  onSuccess: () => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const passerEnCours = usePasserEnCours();
+  const montant = prestation.montantFinal ?? prestation.montant;
+
+  if (prestation.status !== "EN_ATTENTE_PAIEMENT") return null;
+
+  return (
+    <div
+      className={`bg-white rounded-2xl ${spacing.card} border border-yellow-200 shadow-sm mb-6`}
+    >
+      <h2 className={`${typography.h5.base} ${colors.text.primary} mb-4`}>
+        💳 Paiement requis
+      </h2>
+
+      <div className="p-4 rounded-xl bg-yellow-50 border border-yellow-200 mb-4">
+        <p className="text-sm text-yellow-700 mb-3">
+          L'inspection a été validée. Procédez au paiement pour démarrer la
+          prestation.
+        </p>
+        <div className={`text-3xl font-bold ${colors.text.primary}`}>
+          {montant} €
+        </div>
+        {prestation.montantFinal && prestation.montantFinal !== prestation.montant && (
+          <p className={`text-xs ${colors.text.muted} mt-1`}>
+            <span className="line-through">{prestation.montant} € (montant initial)</span>
+            {" "}→ révisé après inspection
+          </p>
+        )}
+      </div>
+
+      {confirming ? (
+        <div className="flex gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            fullWidth
+            onClick={() => setConfirming(false)}
+          >
+            Annuler
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            fullWidth
+            isLoading={passerEnCours.isPending}
+            onClick={() =>
+              passerEnCours.mutate(prestation.id, { onSuccess })
+            }
+          >
+            Confirmer le paiement ✅
+          </Button>
+        </div>
+      ) : (
+        <Button variant="primary" fullWidth onClick={() => setConfirming(true)}>
+          💳 Payer {montant} €
+        </Button>
+      )}
+
+      <p className={`text-xs ${colors.text.muted} text-center mt-3`}>
+        🔒 Paiement sécurisé — intégration Stripe à venir
+      </p>
+    </div>
+  );
+}
+
 // ─── Section Validation prestation ───────────────────────────────────────────
 
 function SectionValidation({ prestation }: { prestation: Prestation }) {
@@ -484,7 +659,7 @@ export default function ClientRequestDetailPage() {
       devis.length > 0
         ? `${devis.length} devis reçu${devis.length > 1 ? "s" : ""} — en attente de votre choix`
         : "Publiée — en attente de devis",
-    EN_ATTENTE_INSPECTION: "Artisan sélectionné — remettez votre objet à son point de dépôt",
+    EN_ATTENTE_INSPECTION: "Prestataire sélectionné — contactez-le pour un RDV de remise en main propre et inspection",
     EN_ATTENTE_PAIEMENT: "En attente de paiement",
     EN_COURS: "En cours",
     A_VALIDER: "À valider",
@@ -544,6 +719,14 @@ export default function ClientRequestDetailPage() {
           />
         )}
 
+        {/* Paiement */}
+        {prestation && (
+          <SectionPaiement
+            prestation={prestation}
+            onSuccess={() => router.push(routes.client.requests.list)}
+          />
+        )}
+
         {/* Validation prestation */}
         {prestation && <SectionValidation prestation={prestation} />}
 
@@ -562,6 +745,12 @@ export default function ClientRequestDetailPage() {
             </p>
           </div>
         )}
+
+        {/* Avis */}
+        {prestation && <SectionReview prestation={prestation} />}
+
+        {/* Messagerie */}
+        {prestation && <SectionChat prestationId={prestation.id} />}
 
         {/* Devis */}
         <div>

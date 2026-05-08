@@ -194,48 +194,86 @@ export const colors = {
   },
 
   /**
-   * 📊 STATUS
+   * 📊 STATUS — Workflow Tasky
+   *
+   * Chaque statut expose :
+   *   .bg     → fond seul          (ex: bandeau, tooltip)
+   *   .text   → texte seul         (ex: icône standalone)
+   *   .border → bordure seule      (ex: carte avec bordure colorée)
+   *   .color  → bg + text combinés (ex: className d'un badge pill)
+   *
+   * Statuts Demande : publiee → enAttenteInspection → enAttentePaiement → enCours → aValider → terminee
+   * Statuts Devis   : envoye, accepte, refuse
    */
   status: {
+    // ── Demande ───────────────────────────────────────────────────────────────
     publiee: {
       bg: "bg-blue-100",
       text: "text-blue-700",
+      color: "bg-blue-100 text-blue-700",
       border: "border-blue-200",
     },
-    enAttente: {
-      bg: "bg-amber-100",
-      text: "text-amber-700",
-      border: "border-amber-200",
+    enAttenteInspection: {
+      bg: "bg-orange-100",
+      text: "text-orange-700",
+      color: "bg-orange-100 text-orange-700",
+      border: "border-orange-200",
     },
-    acceptee: {
-      bg: "bg-emerald-100",
-      text: "text-emerald-700",
-      border: "border-emerald-200",
+    enAttentePaiement: {
+      bg: "bg-yellow-100",
+      text: "text-yellow-700",
+      color: "bg-yellow-100 text-yellow-700",
+      border: "border-yellow-200",
     },
     enCours: {
+      bg: "bg-blue-100",
+      text: "text-blue-700",
+      color: "bg-blue-100 text-blue-700",
+      border: "border-blue-200",
+    },
+    aValider: {
       bg: "bg-purple-100",
       text: "text-purple-700",
+      color: "bg-purple-100 text-purple-700",
       border: "border-purple-200",
     },
     terminee: {
       bg: "bg-green-100",
       text: "text-green-700",
+      color: "bg-green-100 text-green-700",
       border: "border-green-200",
     },
     annulee: {
-      bg: "bg-gray-100",
-      text: "text-gray-700",
-      border: "border-gray-200",
+      bg: "bg-red-100",
+      text: "text-red-600",
+      color: "bg-red-100 text-red-600",
+      border: "border-red-200",
     },
+    // ── Devis ─────────────────────────────────────────────────────────────────
     envoye: {
       bg: "bg-blue-100",
       text: "text-blue-700",
+      color: "bg-blue-100 text-blue-700",
       border: "border-blue-200",
+    },
+    accepte: {
+      bg: "bg-emerald-100",
+      text: "text-emerald-700",
+      color: "bg-emerald-100 text-emerald-700",
+      border: "border-emerald-200",
     },
     refuse: {
       bg: "bg-red-100",
       text: "text-red-700",
+      color: "bg-red-100 text-red-700",
       border: "border-red-200",
+    },
+    // ── Contextuel (affiché différemment selon l'action en cours) ─────────────
+    etatSoumis: {
+      bg: "bg-yellow-100",
+      text: "text-yellow-700",
+      color: "bg-yellow-100 text-yellow-700",
+      border: "border-yellow-200",
     },
   },
 

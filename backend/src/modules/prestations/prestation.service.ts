@@ -421,8 +421,59 @@ export const getMesPrestationsClient = async (userId: string) => {
         },
       },
       etatDesLieux: true,
-      review: { select: { rating: true } },
+      review: { select: { rating: true, comment: true } },
     },
     orderBy: { createdAt: "desc" },
   });
+};
+
+// =============================================================================
+// CREER REVIEW (Client)
+// =============================================================================
+export const creerReview = async (
+  userId: string,
+  prestationId: string,
+  data: { rating: number; comment?: string },
+) => {
+  const client = await prisma.client.findUnique({ where: { userId } });
+  if (!client) throw new Error("CLIENT_NOT_FOUND");
+
+  const prestation = await prisma.prestation.findUnique({
+    where: { id: prestationId },
+    include: {
+      review: true,
+      demande: { select: { clientId: true } },
+    },
+  });
+  if (!prestation) throw new Error("PRESTATION_NOT_FOUND");
+  if (prestation.demande.clientId !== client.id) throw new Error("FORBIDDEN");
+  if (prestation.status !== "TERMINEE") throw new Error("PRESTATION_NOT_TERMINEE");
+  if (prestation.review) throw new Error("REVIEW_ALREADY_EXISTS");
+  if (data.rating < 1 || data.rating > 5) throw new Error("RATING_INVALID");
+
+  const review = await prisma.review.create({
+    data: {
+      prestationId,
+      clientId: client.id,
+      prestataireId: prestation.prestataireId,
+      rating: data.rating,
+      comment: data.comment?.trim() || null,
+    },
+  });
+
+  // Recalcul note moyenne du prestataire
+  const allReviews = await prisma.review.findMany({
+    where: { prestataireId: prestation.prestataireId },
+    select: { rating: true },
+  });
+  const avg = allReviews.reduce((s, r) => s + r.rating, 0) / allReviews.length;
+  await prisma.prestataire.update({
+    where: { id: prestation.prestataireId },
+    data: {
+      rating: Math.round(avg * 10) / 10,
+      reviewCount: allReviews.length,
+    },
+  });
+
+  return review;
 };

@@ -86,7 +86,7 @@ export default function ClientDashboard() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Link href={routes.client.search.base}>
+          <Link href={routes.client.prestataires.list}>
             <div
               className={`${colors.background.white} rounded-xl p-6 shadow-sm border ${colors.border.light} hover:shadow-md ${transitions.base} cursor-pointer group`}
             >
@@ -196,7 +196,7 @@ export default function ClientDashboard() {
                 Créer une demande
               </Button>
             </Link>
-            <Link href={routes.client.search.base}>
+            <Link href={routes.client.prestataires.list}>
               <Button size="lg" variant="secondary" className="text-white">
                 Rechercher des prestataires
               </Button>

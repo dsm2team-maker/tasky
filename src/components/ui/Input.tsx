@@ -40,6 +40,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               className,
             )}
             {...props}
+            onWheel={
+              props.type === "number"
+                ? (e) => e.currentTarget.blur()
+                : props.onWheel
+            }
           />
         </div>
 

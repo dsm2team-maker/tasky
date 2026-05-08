@@ -111,4 +111,7 @@ export const prestationService = {
   // Stub Stripe — à remplacer par webhook en production
   passerEnCours: (id: string) =>
     apiClient.patch<{ success: boolean }>(`/api/prestations/${id}/payer`, {}),
+
+  creerReview: (id: string, data: { rating: number; comment?: string }) =>
+    apiClient.post<{ success: boolean }>(`/api/prestations/${id}/review`, data),
 };

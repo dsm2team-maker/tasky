@@ -10,6 +10,7 @@ import {
   useMarquerTermine,
 } from "@/hooks/usePrestation";
 import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
+import SectionChat from "@/components/chat/SectionChat";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { colors } from "@/config/colors";
@@ -253,13 +254,16 @@ export default function PrestatairePrestationDetailPage() {
             {!prestation.etatDesLieux ? (
               prestation.status === "EN_ATTENTE_INSPECTION" ? (
                 <>
-                  <div className="p-4 rounded-xl bg-orange-50 border border-orange-200 mb-4">
+                  <div className="p-4 rounded-xl bg-orange-50 border border-orange-200 mb-4 space-y-1">
                     <p className="text-sm text-orange-700">
-                      🔍 Inspectez l'objet déposé par le client. S'il est
-                      conforme à la description, cliquez sur{" "}
-                      <strong>"Objet conforme"</strong>. S'il y a un écart
-                      (état, complexité, tarif), créez un état des lieux
-                      détaillé.
+                      🔍 Inspectez l'objet remis par le client.
+                    </p>
+                    <p className="text-sm text-orange-700">
+                      S'il est conforme à la description, cliquez sur{" "}
+                      <strong>"Objet conforme"</strong>.
+                    </p>
+                    <p className="text-sm text-orange-700">
+                      S'il y a un écart (état, complexité…), créez un état des lieux détaillé.
                     </p>
                   </div>
                   {!showEtatForm ? (
@@ -304,7 +308,6 @@ export default function PrestatairePrestationDetailPage() {
                         placeholder={`Montant initial : ${prestation.montant} €`}
                         value={montantRevise}
                         onChange={(e) => setMontantRevise(e.target.value)}
-                        onWheel={(e) => (e.target as HTMLInputElement).blur()}
                       />
                       {error && (
                         <p className={`text-sm ${colors.error.text}`}>{error}</p>
@@ -453,6 +456,9 @@ export default function PrestatairePrestationDetailPage() {
             </div>
           </div>
         )}
+
+        {/* Messagerie */}
+        <SectionChat prestationId={id} />
 
         {/* TERMINEE */}
         {prestation.status === "TERMINEE" && (

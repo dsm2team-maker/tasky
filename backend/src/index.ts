@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import demandeRoutes from "./routes/demande.routes";
 import devisActionsRoutes from "./routes/devis-actions.routes";
 import prestationRoutes from "./routes/prestation.routes";
+import messageRoutes from "./routes/message.routes";
 
 dotenv.config();
 
@@ -70,6 +71,7 @@ app.use("/api/prestataires", prestatairesRoutes);
 app.use("/api/demandes", demandeRoutes);
 app.use("/api/devis", devisActionsRoutes);
 app.use("/api/prestations", prestationRoutes);
+app.use("/api/messages", messageRoutes);
 
 app.use("*", (req, res) => {
   res.status(404).json({

@@ -123,9 +123,11 @@ export const getPublicPrestataire = async (req: Request, res: Response) => {
 // =============================================
 export const listPrestataires = async (req: Request, res: Response) => {
   try {
-    const { city, categoryId } = req.query as {
+    const { city, categoryId, disponibilite, nom } = req.query as {
       city?: string;
       categoryId?: string;
+      disponibilite?: string;
+      nom?: string;
     };
 
     const prestataires = await prisma.prestataire.findMany({
@@ -133,12 +135,15 @@ export const listPrestataires = async (req: Request, res: Response) => {
         // Seulement les prestataires avec profil complet
         bio: { not: null },
         pointDepotAdresse: { not: null },
-        disponibilite: { in: ["ACTIF", "OCCUPE"] },
+        disponibilite: disponibilite && ["ACTIF", "OCCUPE"].includes(disponibilite)
+          ? (disponibilite as any)
+          : { in: ["ACTIF", "OCCUPE"] },
         competences: { some: {} },
         ...(city && {
           user: { city: { contains: city, mode: "insensitive" } },
         }),
         ...(categoryId && { competences: { some: { categoryId } } }),
+        ...(nom && { user: { firstName: { contains: nom, mode: "insensitive" as const } } }),
       },
       select: {
         id: true,

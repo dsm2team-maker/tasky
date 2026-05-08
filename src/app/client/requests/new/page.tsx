@@ -504,7 +504,6 @@ export default function NewDemandePage() {
                 placeholder="Ex: 50"
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
-                onWheel={(e) => (e.target as HTMLInputElement).blur()}
                 error={budget && parseFloat(budget) <= 0 ? "Le budget doit être supérieur à 0 €" : undefined}
               />
 

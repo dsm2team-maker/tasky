@@ -231,7 +231,7 @@ export const routes = {
 export const navigation = {
   clientNav: [
     { label: "Dashboard", href: routes.client.dashboard, icon: "🏠" },
-    { label: "Recherche", href: routes.client.search.base, icon: "🔍" },
+    { label: "Artisans", href: routes.client.prestataires.list, icon: "🔍" },
     { label: "Mes demandes", href: routes.client.requests.list, icon: "📋" },
     { label: "Messages", href: routes.client.messages.list, icon: "💬" },
   ],

@@ -21,47 +21,47 @@ const statusConfig: Record<
 > = {
   PUBLIEE: {
     label: "Publiée",
-    color: "bg-blue-100 text-blue-700",
+    color: colors.status.publiee.color,
     icon: "📢",
     tooltip:
-      "Votre demande est visible par les artisans. En attente de devis.",
+      "Votre demande est publiée et visible par les prestataires.",
   },
   EN_ATTENTE_INSPECTION: {
-    label: "Inspection",
-    color: "bg-orange-100 text-orange-700",
-    icon: "🔍",
+    label: "Remise & Inspection",
+    color: colors.status.enAttenteInspection.color,
+    icon: "📦",
     tooltip:
-      "Un artisan a été sélectionné. Remettez votre objet à son point de dépôt pour qu'il puisse l'inspecter.",
+      "Prestataire sélectionné. Contactez-le pour un RDV de remise en main propre et inspection.",
   },
   EN_ATTENTE_PAIEMENT: {
     label: "En attente de paiement",
-    color: "bg-yellow-100 text-yellow-700",
+    color: colors.status.enAttentePaiement.color,
     icon: "💳",
     tooltip:
       "L'inspection est validée. En attente de votre paiement pour démarrer la prestation.",
   },
   EN_COURS: {
     label: "En cours",
-    color: "bg-green-100 text-green-700",
+    color: colors.status.enCours.color,
     icon: "⚡",
     tooltip: "Votre prestation est en cours de réalisation par l'artisan.",
   },
   A_VALIDER: {
     label: "À valider",
-    color: "bg-purple-100 text-purple-700",
+    color: colors.status.aValider.color,
     icon: "⏳",
     tooltip:
       "L'artisan a terminé. Vous avez 3 jours pour valider ou contester. Sans action, la validation est automatique.",
   },
   TERMINEE: {
     label: "Terminée",
-    color: "bg-gray-100 text-gray-600",
+    color: colors.status.terminee.color,
     icon: "✅",
     tooltip: "Prestation terminée et validée. Merci pour votre confiance !",
   },
   ANNULEE: {
     label: "Annulée",
-    color: "bg-red-100 text-red-600",
+    color: colors.status.annulee.color,
     icon: "❌",
     tooltip: "Cette prestation a été annulée.",
   },
@@ -298,37 +298,37 @@ const filters: { value: FilterValue; label: string; tooltip: string }[] = [
   {
     value: "PUBLIEE",
     label: "📢 Publiées",
-    tooltip: "Demandes en attente de devis",
+    tooltip: "Demande publiée — en attente de devis de la part des prestataires",
   },
   {
     value: "EN_ATTENTE_INSPECTION",
-    label: "🔍 Inspection",
-    tooltip: "Artisan sélectionné — remettez votre objet à son point de dépôt pour inspection",
+    label: "📦 Remise & Inspection",
+    tooltip: "Demande en attente de remise en main propre pour inspection",
   },
   {
     value: "EN_ATTENTE_PAIEMENT",
     label: "💳 Paiement",
-    tooltip: "Inspection validée — en attente de votre paiement",
+    tooltip: "Demande en attente de paiement",
   },
   {
     value: "EN_COURS",
     label: "⚡ En cours",
-    tooltip: "Prestation en cours de réalisation",
+    tooltip: "Demande en cours de réalisation",
   },
   {
     value: "A_VALIDER",
     label: "⏳ À valider",
-    tooltip: "Prestation terminée — en attente de votre validation",
+    tooltip: "Demande en attente de validation client",
   },
   {
     value: "TERMINEE",
     label: "✅ Terminées",
-    tooltip: "Prestations terminées et validées",
+    tooltip: "Demande terminée et validée",
   },
   {
     value: "ANNULEE",
     label: "❌ Annulées",
-    tooltip: "Demandes annulées (inspection refusée ou autre)",
+    tooltip: "Demande annulée (inspection refusée ou autre)",
   },
 ];
 

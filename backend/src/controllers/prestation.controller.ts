@@ -11,6 +11,7 @@ import {
   validerPrestation,
   contesterPrestation,
   getMesPrestationsClient,
+  creerReview,
 } from "../modules/prestations/prestation.service";
 
 const handleError = (res: Response, error: any) => {
@@ -47,6 +48,9 @@ const handleError = (res: Response, error: any) => {
       400,
       "La prestation n'est pas en attente de paiement",
     ],
+    PRESTATION_NOT_TERMINEE: [400, "La prestation n'est pas terminée"],
+    REVIEW_ALREADY_EXISTS: [409, "Un avis existe déjà pour cette prestation"],
+    RATING_INVALID: [400, "La note doit être entre 1 et 5"],
   };
 
   const [status, message] = errorMap[error.message] || [500, "Erreur serveur"];
@@ -240,6 +244,24 @@ export const contesterPrestationHandler = async (
       success: true,
       message: "Contestation enregistrée — prestation remise en cours",
     });
+  } catch (error: any) {
+    return handleError(res, error);
+  }
+};
+
+// POST /api/prestations/:id/review — Client
+export const creerReviewHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId)
+      return res.status(401).json({ success: false, message: "Non authentifié" });
+
+    const { rating, comment } = req.body;
+    if (!rating || typeof rating !== "number")
+      return res.status(400).json({ success: false, message: "Note (1-5) requise" });
+
+    const review = await creerReview(userId, req.params.id, { rating, comment });
+    return res.status(201).json({ success: true, message: "Avis enregistré", data: review });
   } catch (error: any) {
     return handleError(res, error);
   }
