@@ -98,16 +98,39 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Section À propos / Légal */}
+          {/* Section Support */}
+          <div>
+            <h4 className="text-white font-semibold mb-4">Support</h4>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link
+                  href={routes.public.contact}
+                  className="hover:text-white transition"
+                >
+                  Nous contacter
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href={routes.public.legal.cguPrestataire}
+                  className="hover:text-white transition"
+                >
+                  CGU Prestataires
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Section Légal */}
           <div>
             <h4 className="text-white font-semibold mb-4">Légal</h4>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
-                  href={routes.public.legal.cgu}
+                  href={routes.public.legal.cguClient}
                   className="hover:text-white transition"
                 >
-                  CGU
+                  CGU Clients
                 </Link>
               </li>
               <li>

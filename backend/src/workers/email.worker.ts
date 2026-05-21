@@ -7,6 +7,8 @@ import { resetPasswordTemplate } from "../emails/reset-password.template";
 import { newMessageTemplate } from "../emails/new-message.template";
 import { phoneChangeOtpTemplate } from "../emails/phone-change-otp.template";
 import { emailChangeAlertTemplate } from "../emails/email-change-alert.template";
+import { devisRefuseTemplate } from "../emails/devis-refuse.template";
+import { deleteAccountOtpTemplate } from "../emails/delete-account-otp.template";
 import { prisma } from "../lib/prisma";
 
 const processEmailJob = async (job: Job<EmailJobData>) => {
@@ -65,6 +67,24 @@ const processEmailJob = async (job: Job<EmailJobData>) => {
       html = emailChangeAlertTemplate({
         firstName: payload.firstName,
         newEmail: payload.newEmail,
+      });
+      break;
+
+    case "devis-refuse":
+      subject = `Votre devis pour ${payload.demandeReference} n'a pas été retenu — Tasky`;
+      html = devisRefuseTemplate({
+        firstName: payload.firstName,
+        demandeReference: payload.demandeReference,
+        demandeTitre: payload.demandeTitre,
+        demandesUrl: payload.demandesUrl,
+      });
+      break;
+
+    case "delete-account-otp":
+      subject = "Suppression de compte — Code de confirmation — Tasky";
+      html = deleteAccountOtpTemplate({
+        firstName: payload.firstName,
+        otp: payload.otp,
       });
       break;
 

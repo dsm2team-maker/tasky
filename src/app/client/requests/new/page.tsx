@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { CityInput } from "@/components/shared/CityInput";
 import HeaderClient from "@/components/headers/HeaderClient";
+import { Modal } from "@/components/ui/Modal";
 import { colors } from "@/config/colors";
 import { spacing, typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
@@ -32,6 +33,7 @@ const AUTRE_INTERVENTION_ID = "autre";
 export default function NewDemandePage() {
   const router = useRouter();
   useAuthGuard();
+  const [showPublieModal, setShowPublieModal] = useState(false);
 
   const categories = categoriesData.categories as Categorie[];
   const createDemande = useCreateDemande();
@@ -54,7 +56,7 @@ export default function NewDemandePage() {
   const [description, setDescription] = useState("");
   const [budget, setBudget] = useState("");
   const [ville, setVille] = useState("");
-  const [dateEcheance, setDateEcheance] = useState("");
+  const [delaiJours, setDelaiJours] = useState<number | null>(null);
   const [urgence, setUrgence] = useState<Urgence>("NORMAL");
   const [photos, setPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -70,9 +72,6 @@ export default function NewDemandePage() {
     (s) => s.id === selectedSubCategoryId,
   );
   const interventions = selectedSubCategory?.prestations || [];
-
-  // Date min = aujourd'hui
-  const today = new Date().toISOString().split("T")[0];
 
   // Auto-set type formation
   useEffect(() => {
@@ -140,17 +139,13 @@ export default function NewDemandePage() {
   const canGoEtape3 = canGoEtape2 && !!typePrestation;
   const budgetInvalide = !!budget && parseFloat(budget) <= 0;
   const canSubmit =
-    canGoEtape3 && description.trim().length >= DESC_MIN && !!ville && !budgetInvalide;
+    canGoEtape3 && description.trim().length >= DESC_MIN && !!ville && !budgetInvalide && delaiJours !== null;
 
   // Soumission
   const handleSubmit = () => {
     setError(null);
-    if (!canSubmit) {
+    if (!canSubmit || delaiJours === null) {
       setError("Veuillez remplir tous les champs obligatoires");
-      return;
-    }
-    if (dateEcheance && dateEcheance < today) {
-      setError("La date ne peut pas être dans le passé");
       return;
     }
 
@@ -169,11 +164,11 @@ export default function NewDemandePage() {
         budget: budget ? parseFloat(budget) : undefined,
         ville,
         photos,
-        dateEcheance: dateEcheance || undefined,
+        delaiJours,
         urgence,
       },
       {
-        onSuccess: () => router.push(routes.client.requests.list),
+        onSuccess: () => setShowPublieModal(true),
         onError: (err: any) =>
           setError(err.response?.data?.message || "Erreur lors de la création"),
       },
@@ -515,20 +510,40 @@ export default function NewDemandePage() {
                 placeholder="Ex: Paris ou 75001"
               />
 
-              {/* Date souhaitée */}
+              {/* Délai souhaité */}
               <div>
-                <label
-                  className={`block text-sm font-medium ${colors.text.primary} mb-1.5`}
-                >
-                  Date souhaitée — optionnel
+                <label className={`block text-sm font-medium ${colors.text.primary} mb-1.5`}>
+                  Délai de réalisation souhaité <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="date"
-                  value={dateEcheance}
-                  min={today}
-                  onChange={(e) => setDateEcheance(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border ${colors.border.light} text-sm focus:outline-none focus:ring-2 focus:ring-pink-300`}
-                />
+                <p className={`text-xs ${colors.text.muted} mb-3`}>
+                  Le compte à rebours démarre uniquement après le paiement.
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { jours: 3,  label: "3 jours" },
+                    { jours: 7,  label: "1 semaine" },
+                    { jours: 14, label: "2 semaines" },
+                    { jours: 21, label: "3 semaines" },
+                    { jours: 30, label: "1 mois" },
+                    { jours: 60, label: "2 mois" },
+                  ].map(({ jours, label }) => (
+                    <button
+                      key={jours}
+                      type="button"
+                      onClick={() => setDelaiJours(jours)}
+                      className={`py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
+                        delaiJours === jours
+                          ? "border-pink-400 bg-pink-50 text-pink-700"
+                          : `${colors.border.light} ${colors.text.secondary} hover:border-gray-300`
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {delaiJours === null && (
+                  <p className={`text-xs ${colors.error.text} mt-1.5`}>Veuillez choisir un délai</p>
+                )}
               </div>
 
               {/* Urgence */}
@@ -540,11 +555,11 @@ export default function NewDemandePage() {
                 </label>
                 <div className="flex gap-3">
                   {[
-                    { value: "NORMAL" as Urgence, label: "Normal", icon: "🟢" },
-                    { value: "URGENT" as Urgence, label: "Urgent", icon: "🟡" },
+                    { value: "NORMAL" as Urgence, label: "Flexible", icon: "🟢" },
+                    { value: "URGENT" as Urgence, label: "Cette semaine", icon: "🟡" },
                     {
                       value: "TRES_URGENT" as Urgence,
-                      label: "Très urgent",
+                      label: "Urgent",
                       icon: "🔴",
                     },
                   ].map((u) => (
@@ -642,6 +657,29 @@ export default function NewDemandePage() {
           </div>
         )}
       </main>
+
+      <Modal
+        isOpen={showPublieModal}
+        onClose={() => {}}
+        preventClose
+        title="Demande publiée !"
+        icon="🎉"
+        headerVariant="primary"
+      >
+        <div className="text-center space-y-4">
+          <p className="text-sm text-gray-600 leading-relaxed">
+            Votre demande est en ligne. Les prestataires qualifiés vont maintenant pouvoir vous envoyer leurs devis.
+          </p>
+          <div className="bg-pink-50 border border-pink-200 rounded-xl p-3">
+            <p className="text-xs text-pink-700 font-medium">
+              💡 Conseil : vous recevrez une notification dès qu'un prestataire envoie un devis. Comparez bien les offres avant d'accepter !
+            </p>
+          </div>
+          <Button variant="primary" fullWidth onClick={() => router.push(routes.client.requests.list)}>
+            Voir mes demandes →
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

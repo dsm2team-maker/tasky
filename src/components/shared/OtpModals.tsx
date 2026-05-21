@@ -10,6 +10,8 @@ import {
   useVerifyPhoneOtp,
   useRequestEmailChange,
   useVerifyEmailOtp,
+  useRequestDeleteAccount,
+  useConfirmDeleteAccount,
 } from "@/hooks/useProfile";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 import { otpSchema, newPhoneSchema, newEmailSchema } from "@/lib/schemas";
@@ -230,6 +232,194 @@ export const PhoneModal: React.FC<PhoneModalProps> = ({ isOpen, onClose }) => {
             }}
           >
             Se reconnecter
+          </Button>
+        </div>
+      )}
+    </Modal>
+  );
+};
+
+// ─── Modal Suppression de compte ─────────────────────────────────────────────
+interface DeleteAccountModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
+  isOpen,
+  onClose,
+}) => {
+  const router = useRouter();
+  const { logout } = useAuthStore();
+  const [step, setStep] = useState<"warning" | "otp" | "success">("warning");
+  const [error, setError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+
+  const otpForm = useForm<OtpFormData>({ resolver: zodResolver(otpSchema) });
+  const requestDelete = useRequestDeleteAccount();
+  const confirmDelete = useConfirmDeleteAccount();
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  const handleClose = () => {
+    if (step === "success") return;
+    setStep("warning");
+    setError(null);
+    otpForm.reset();
+    onClose();
+  };
+
+  const onRequestOtp = () => {
+    setError(null);
+    requestDelete.mutate(undefined, {
+      onSuccess: () => {
+        setStep("otp");
+        setCooldown(120);
+      },
+      onError: (err: any) =>
+        setError(err.response?.data?.message || "Erreur lors de l'envoi"),
+    });
+  };
+
+  const onVerify = (data: OtpFormData) => {
+    setError(null);
+    confirmDelete.mutate(data.otp, {
+      onSuccess: () => setStep("success"),
+      onError: (err: any) =>
+        setError(err.response?.data?.message || "Code incorrect"),
+    });
+  };
+
+  const onResend = () => {
+    if (cooldown > 0) return;
+    requestDelete.mutate(undefined, {
+      onSuccess: () => setCooldown(120),
+      onError: (err: any) => setError(err.response?.data?.message || "Erreur"),
+    });
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      preventClose={step === "success"}
+      title={
+        step === "warning"
+          ? "Supprimer mon compte"
+          : step === "otp"
+            ? "Code de confirmation"
+            : "Compte supprimé"
+      }
+      icon={step === "success" ? "✅" : "🗑️"}
+      headerVariant="error"
+    >
+      {step === "warning" && (
+        <div className="space-y-4">
+          <div className="p-3 rounded-xl bg-red-50 border border-red-200">
+            <p className="text-sm text-red-700 font-semibold mb-1">
+              ⚠️ Cette action est irréversible
+            </p>
+            <ul className="text-sm text-red-600 space-y-1 list-disc pl-4">
+              <li>Vos données personnelles seront anonymisées</li>
+              <li>Vous ne pourrez plus vous connecter</li>
+              <li>Vos échanges et historique seront conservés anonymement</li>
+            </ul>
+          </div>
+          <p className={`text-sm ${colors.text.secondary}`}>
+            Un code de confirmation vous sera envoyé par email pour valider cette suppression.
+          </p>
+          <p className={`text-xs ${colors.text.muted}`}>
+            Toute prestation en cours doit être finalisée avant de supprimer votre compte.
+          </p>
+          {error && <p className={`text-sm ${colors.error.text}`}>{error}</p>}
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="ghost" fullWidth onClick={handleClose}>
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              fullWidth
+              isLoading={requestDelete.isPending}
+              onClick={onRequestOtp}
+              className="!bg-red-600 hover:!bg-red-700"
+            >
+              Recevoir le code
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {step === "otp" && (
+        <form onSubmit={otpForm.handleSubmit(onVerify)} className="space-y-4">
+          <div className={`flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200`}>
+            <span>📧</span>
+            <p className="text-sm text-red-700">
+              Code envoyé sur votre adresse email
+            </p>
+          </div>
+          <Input
+            label="Code (6 chiffres)"
+            type="text"
+            placeholder="_ _ _ _ _ _"
+            maxLength={6}
+            error={otpForm.formState.errors.otp?.message}
+            {...otpForm.register("otp")}
+          />
+          <div className="flex items-center justify-between text-sm">
+            <span className={colors.text.secondary}>
+              ⏱️ <OtpTimer seconds={600} onExpire={() => {}} />
+            </span>
+            <button
+              type="button"
+              onClick={onResend}
+              disabled={cooldown > 0}
+              className={`font-medium ${cooldown > 0 ? colors.text.muted : "text-red-600"} disabled:cursor-not-allowed`}
+            >
+              🔄 {cooldown > 0 ? `Renvoyer (${cooldown}s)` : "Renvoyer"}
+            </button>
+          </div>
+          {error && <p className={`text-sm ${colors.error.text}`}>{error}</p>}
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              fullWidth
+              onClick={() => { setStep("warning"); otpForm.reset(); setError(null); }}
+            >
+              Retour
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              isLoading={confirmDelete.isPending}
+              className="!bg-red-600 hover:!bg-red-700"
+            >
+              Confirmer la suppression
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {step === "success" && (
+        <div className="space-y-5 py-2 text-center">
+          <p className={`text-sm ${colors.text.secondary}`}>
+            Votre compte a bien été supprimé. Merci d'avoir utilisé Tasky.
+          </p>
+          <Button
+            variant="ghost"
+            fullWidth
+            onClick={() => {
+              logout();
+              router.push("/");
+            }}
+          >
+            Retour à l'accueil
           </Button>
         </div>
       )}

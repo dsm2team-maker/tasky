@@ -6,7 +6,6 @@ import { env } from "../../config/env.config";
 // ─── Constantes ───────────────────────────────────────────────────────────────
 const OTP_COOLDOWN_MS = 2 * 60 * 1000;
 const MAX_OTP_ATTEMPTS = 5;
-const OTP_BLOCK_DURATION_MS = 30 * 60 * 1000;
 const BIO_MIN = 100;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -358,6 +357,148 @@ export const verifyEmailOtp = async (userId: string, otp: string) => {
       `🔐 [DEV] Email mis à jour : ${user?.email} → ${metadata.newEmail}`,
     );
   }
+};
+
+// =============================================================================
+// REQUEST DELETE ACCOUNT
+// =============================================================================
+export const requestDeleteAccount = async (userId: string) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      email: true,
+      firstName: true,
+      isActive: true,
+      client: { select: { id: true } },
+      prestataire: { select: { id: true } },
+    },
+  });
+
+  if (!user) throw new Error("USER_NOT_FOUND");
+  if (!user.isActive) throw new Error("ACCOUNT_ALREADY_INACTIVE");
+
+  // Bloquer si prestations actives côté client
+  if (user.client) {
+    const clientActive = await prisma.prestation.count({
+      where: {
+        status: { notIn: ["TERMINEE", "ANNULEE"] },
+        demande: { clientId: user.client.id },
+      },
+    });
+    if (clientActive > 0) throw new Error("HAS_ACTIVE_PRESTATIONS");
+  }
+
+  // Bloquer si prestations actives côté prestataire
+  if (user.prestataire) {
+    const prestaActive = await prisma.prestation.count({
+      where: {
+        status: { notIn: ["TERMINEE", "ANNULEE"] },
+        prestataireId: user.prestataire.id,
+      },
+    });
+    if (prestaActive > 0) throw new Error("HAS_ACTIVE_PRESTATIONS");
+  }
+
+  // Cooldown
+  const lastOtp = await prisma.verificationToken.findFirst({
+    where: { userId, type: "DELETE_ACCOUNT_OTP", used: false },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (lastOtp) {
+    const elapsed = Date.now() - lastOtp.createdAt.getTime();
+    if (elapsed < OTP_COOLDOWN_MS) {
+      const waitSeconds = Math.ceil((OTP_COOLDOWN_MS - elapsed) / 1000);
+      throw new Error(`COOLDOWN:${waitSeconds}`);
+    }
+    await prisma.verificationToken.update({
+      where: { id: lastOtp.id },
+      data: { used: true },
+    });
+  }
+
+  const { otp, expiresAt } = generateOtp();
+
+  await prisma.verificationToken.create({
+    data: {
+      userId,
+      token: otp,
+      type: "DELETE_ACCOUNT_OTP",
+      expiresAt,
+      metadata: { attempts: 0 },
+    },
+  });
+
+  if (env.isDev) {
+    console.log(`🔐 [DEV] OTP suppression compte → ${user.email} : ${otp}`);
+  } else {
+    await addEmailJob(
+      {
+        type: "delete-account-otp",
+        to: user.email,
+        userId,
+        payload: { firstName: user.firstName, otp },
+      },
+      EMAIL_PRIORITY.CRITICAL,
+    );
+  }
+};
+
+// =============================================================================
+// CONFIRM DELETE ACCOUNT
+// =============================================================================
+export const confirmDeleteAccount = async (userId: string, otp: string) => {
+  const record = await prisma.verificationToken.findFirst({
+    where: {
+      userId,
+      type: "DELETE_ACCOUNT_OTP",
+      used: false,
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!record) throw new Error("OTP_EXPIRED_OR_NOT_FOUND");
+
+  const metadata = record.metadata as { attempts: number };
+
+  if (metadata.attempts >= MAX_OTP_ATTEMPTS) throw new Error("OTP_MAX_ATTEMPTS");
+
+  if (record.token !== otp) {
+    await prisma.verificationToken.update({
+      where: { id: record.id },
+      data: { metadata: { ...metadata, attempts: metadata.attempts + 1 } },
+    });
+    const remaining = MAX_OTP_ATTEMPTS - (metadata.attempts + 1);
+    throw new Error(`OTP_INVALID:${remaining}`);
+  }
+
+  // Anonymisation RGPD + désactivation
+  // L'id complet est encodé dans l'email anonyme pour retrouver le compte en cas de litige
+  const now = Date.now();
+  const anonEmail = `DEL_${userId}_${now}@deleted.tasky.fr`;
+  const anonPhone = `DEL_${userId.slice(0, 15)}`;
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: {
+        isActive: false,
+        deletedAt: new Date(),
+        email: anonEmail,
+        firstName: "Utilisateur",
+        lastName: "Supprimé",
+        phone: anonPhone,
+        avatar: null,
+        city: null,
+      },
+    }),
+    prisma.verificationToken.update({
+      where: { id: record.id },
+      data: { used: true },
+    }),
+    prisma.refreshToken.deleteMany({ where: { userId } }),
+  ]);
 };
 
 // =============================================================================

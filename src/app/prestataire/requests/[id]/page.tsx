@@ -7,6 +7,7 @@ import { useDemandeDetail, useEnvoyerDevis } from "@/hooks/useDevis";
 import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { colors } from "@/config/colors";
 import { spacing, typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
@@ -15,9 +16,9 @@ const urgenceConfig: Record<
   string,
   { icon: string; label: string; color: string }
 > = {
-  NORMAL: { icon: "🟢", label: "Normal", color: "text-green-600" },
-  URGENT: { icon: "🟡", label: "Urgent", color: "text-yellow-600" },
-  TRES_URGENT: { icon: "🔴", label: "Très urgent", color: "text-red-600" },
+  NORMAL:      { icon: "🟢", label: "Flexible",      color: "text-green-600" },
+  URGENT:      { icon: "🟡", label: "Cette semaine", color: "text-yellow-600" },
+  TRES_URGENT: { icon: "🔴", label: "Urgent",        color: "text-red-600 font-bold" },
 };
 
 const typeConfig: Record<string, string> = {
@@ -37,7 +38,7 @@ export default function PrestataireRequestDetailPage() {
   const [delai, setDelai] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const { data: demande, isLoading } = useDemandeDetail(id);
   const envoyerDevis = useEnvoyerDevis();
@@ -80,10 +81,7 @@ export default function PrestataireRequestDetailPage() {
         },
       },
       {
-        onSuccess: () => {
-          setSuccess(true);
-          setTimeout(() => router.push(routes.prestataire.requests.list), 2000);
-        },
+        onSuccess: () => setShowSuccessModal(true),
         onError: (err: any) =>
           setError(err.response?.data?.message || "Erreur lors de l'envoi"),
       },
@@ -107,13 +105,23 @@ export default function PrestataireRequestDetailPage() {
           className={`bg-white rounded-2xl ${spacing.card} border ${colors.border.light} shadow-sm mb-6`}
         >
           {/* Badges */}
-          <div className="flex items-center gap-2 flex-wrap mb-3">
-            <span className={`text-sm font-semibold ${urgence.color}`}>
-              {urgence.icon} {urgence.label}
-            </span>
-            <span className={`text-sm ${colors.text.muted}`}>
-              {typeConfig[demande.typePrestation]}
-            </span>
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`text-sm font-semibold ${urgence.color}`}>
+                {urgence.icon} {urgence.label}
+              </span>
+              <span className={`text-sm ${colors.text.muted}`}>
+                {typeConfig[demande.typePrestation]}
+              </span>
+            </div>
+            {demande.reference && (
+              <div className="flex flex-col items-end">
+                <span className={`text-[10px] uppercase tracking-wide leading-none mb-0.5 ${colors.text.muted}`}>Référence</span>
+                <span className="text-sm font-mono font-bold bg-gray-100 px-2.5 py-1 rounded-lg text-gray-700 select-all">
+                  TSK-{String(demande.reference).padStart(6, "0")}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Titre */}
@@ -183,17 +191,15 @@ export default function PrestataireRequestDetailPage() {
                 </div>
               </div>
             )}
-            {demande.dateEcheance && (
-              <div>
-                <div className={`text-xs ${colors.text.muted} mb-0.5`}>
-                  Date souhaitée
-                </div>
-                <div className={`text-sm font-medium ${colors.text.primary}`}>
-                  📅{" "}
-                  {new Date(demande.dateEcheance).toLocaleDateString("fr-FR")}
-                </div>
+            <div>
+              <div className={`text-xs ${colors.text.muted} mb-0.5`}>
+                Délai souhaité
               </div>
-            )}
+              <div className={`text-sm font-semibold text-orange-600`}>
+                ⏱️ {demande.delaiJours} jour{demande.delaiJours > 1 ? "s" : ""}
+                <span className={`text-xs font-normal ${colors.text.muted} ml-1`}>(après paiement)</span>
+              </div>
+            </div>
             <div>
               <div className={`text-xs ${colors.text.muted} mb-0.5`}>
                 Devis reçus
@@ -206,17 +212,23 @@ export default function PrestataireRequestDetailPage() {
         </div>
 
         {/* Formulaire devis */}
-        {success ? (
+        {demande.devisRefuse ? (
           <div
             className={`bg-white rounded-2xl ${spacing.card} border ${colors.border.light} shadow-sm text-center`}
           >
-            <div className="text-5xl mb-4">🎉</div>
-            <h2 className={`text-xl font-bold ${colors.text.primary} mb-2`}>
-              Devis envoyé !
+            <div className="text-4xl mb-3">❌</div>
+            <h2 className={`text-lg font-bold ${colors.text.primary} mb-2`}>
+              Votre devis n'a pas été retenu
             </h2>
-            <p className={`text-sm ${colors.text.secondary}`}>
-              Le client recevra votre proposition. Redirection en cours...
+            <p className={`text-sm ${colors.text.secondary} mb-4`}>
+              Le client a choisi une autre proposition pour cette demande.
             </p>
+            <button
+              onClick={() => router.push(routes.prestataire.requests.list)}
+              className="text-sm font-medium text-emerald-600 hover:underline"
+            >
+              Voir les autres demandes →
+            </button>
           </div>
         ) : demande.devisExistant ? (
           <div
@@ -310,6 +322,32 @@ export default function PrestataireRequestDetailPage() {
           </div>
         )}
       </main>
+
+      <Modal
+        isOpen={showSuccessModal}
+        onClose={() => { setShowSuccessModal(false); router.push(routes.prestataire.requests.list); }}
+        title="Devis envoyé !"
+        icon="🎉"
+        headerVariant="secondary"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 leading-relaxed">
+            Votre devis a bien été transmis au client. Vous serez notifié dès qu'il prendra une décision.
+          </p>
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+            <p className="text-xs text-emerald-700 font-medium">
+              💡 Votre devis est valable 7 jours. En attendant, continuez à prospecter d'autres demandes !
+            </p>
+          </div>
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={() => { setShowSuccessModal(false); router.push(routes.prestataire.requests.list); }}
+          >
+            Voir les demandes disponibles →
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

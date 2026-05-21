@@ -23,13 +23,17 @@ export interface Prestation {
   completedAt: string | null;
   validatedAt: string | null;
   autoValidateAt: string | null;
+  dateEcheanceFinal: string | null;
   demande: {
     id: string;
+    reference: number;
     titre: string;
     description: string;
     typePrestation: "MODIFICATION" | "CREATION" | "FORMATION";
     photos: string[];
     ville: string | null;
+    delaiJours: number;
+    urgence: "NORMAL" | "URGENT" | "TRES_URGENT";
     category: { id: string; nom: string; icon: string };
     subCategory: { id: string; nom: string } | null;
     client?: {
@@ -90,10 +94,10 @@ export const prestationService = {
   validerPrestation: (id: string) =>
     apiClient.patch<{ success: boolean }>(`/api/prestations/${id}/valider`, {}),
 
-  contesterPrestation: (id: string) =>
+  contesterPrestation: (id: string, motif: string) =>
     apiClient.patch<{ success: boolean }>(
       `/api/prestations/${id}/contester`,
-      {},
+      { motif },
     ),
 
   validerEtatDesLieux: (id: string, accepte: boolean) =>

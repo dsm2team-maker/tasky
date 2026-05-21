@@ -31,6 +31,7 @@ export default function HeaderPrestataire() {
     { href: routes.prestataire.services.list, label: "Mes prestations" },
     { href: routes.prestataire.messages.list, label: "Messages", badge: unreadCount },
     { href: routes.prestataire.profile.view, label: "Mon profil" },
+    { href: routes.public.contact, label: "Contact" },
   ];
 
   return (

@@ -3,9 +3,10 @@ import { apiClient } from "@/lib/api-client";
 export interface Message {
   id: string;
   prestationId: string;
-  auteurId: string;
+  auteurId: string | null;
   contenu: string;
   lu: boolean;
+  isSystem: boolean;
   createdAt: string;
 }
 

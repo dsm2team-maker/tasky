@@ -13,6 +13,7 @@ import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
 import SectionChat from "@/components/chat/SectionChat";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { colors } from "@/config/colors";
 import { spacing, typography } from "@/config/design-tokens";
 
@@ -59,8 +60,8 @@ export default function PrestatairePrestationDetailPage() {
   const [etatDescription, setEtatDescription] = useState("");
   const [montantRevise, setMontantRevise] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [confirmTermine, setConfirmTermine] = useState(false);
+  const [modal, setModal] = useState<"etat" | "conforme" | "termine" | null>(null);
 
   const { data: prestation, isLoading } = usePrestationDetail(id);
   const creerEtatDesLieux = useCreerEtatDesLieux();
@@ -115,7 +116,7 @@ export default function PrestatairePrestationDetailPage() {
       },
       {
         onSuccess: () => {
-          setSuccess("État des lieux créé — en attente de validation du client");
+          setModal("etat");
           setShowEtatForm(false);
         },
         onError: (err: any) =>
@@ -127,8 +128,7 @@ export default function PrestatairePrestationDetailPage() {
   const handleConfirmerConformite = () => {
     setError(null);
     confirmerConformite.mutate(id, {
-      onSuccess: () =>
-        setSuccess("Objet confirmé conforme — en attente du paiement client"),
+      onSuccess: () => setModal("conforme"),
       onError: (err: any) => setError(err.response?.data?.message || "Erreur"),
     });
   };
@@ -136,10 +136,7 @@ export default function PrestatairePrestationDetailPage() {
   const handleMarquerTermine = () => {
     setError(null);
     marquerTermine.mutate(id, {
-      onSuccess: () =>
-        setSuccess(
-          "Prestation marquée comme terminée — le client a 3 jours pour valider",
-        ),
+      onSuccess: () => setModal("termine"),
       onError: (err: any) => setError(err.response?.data?.message || "Erreur"),
     });
   };
@@ -159,12 +156,20 @@ export default function PrestatairePrestationDetailPage() {
         <div
           className={`${colors.secondary.gradient} rounded-2xl p-6 mb-6 text-white`}
         >
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center justify-between gap-2 mb-2">
             <span
               className={`text-xs px-2.5 py-1 rounded-full font-semibold ${status.color}`}
             >
               {status.icon} {status.label}
             </span>
+            {prestation.demande.reference && (
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] text-white/60 uppercase tracking-wide leading-none mb-0.5">Référence</span>
+                <span className="text-sm font-mono font-bold bg-white/20 px-2.5 py-1 rounded-lg text-white select-all">
+                  TSK-{String(prestation.demande.reference).padStart(6, "0")}
+                </span>
+              </div>
+            )}
           </div>
           <h1 className="text-xl font-bold mb-1">{prestation.demande.titre}</h1>
           <div className="flex flex-wrap gap-3 text-sm text-emerald-100">
@@ -174,17 +179,6 @@ export default function PrestatairePrestationDetailPage() {
             )}
           </div>
         </div>
-
-        {/* Succès */}
-        {success && (
-          <div
-            className={`mb-4 p-4 rounded-xl ${colors.success.bg} border ${colors.success.borderLight}`}
-          >
-            <p className={`text-sm font-medium ${colors.success.textDark}`}>
-              ✅ {success}
-            </p>
-          </div>
-        )}
 
         {/* Infos client */}
         <div
@@ -407,6 +401,7 @@ export default function PrestatairePrestationDetailPage() {
                 <Button
                   variant="ghost"
                   fullWidth
+                  disabled={marquerTermine.isPending || marquerTermine.isSuccess}
                   onClick={() => setConfirmTermine(false)}
                 >
                   Annuler
@@ -415,9 +410,10 @@ export default function PrestatairePrestationDetailPage() {
                   variant="secondary"
                   fullWidth
                   isLoading={marquerTermine.isPending}
+                  disabled={marquerTermine.isSuccess}
                   onClick={handleMarquerTermine}
                 >
-                  Confirmer ✅
+                  {marquerTermine.isSuccess ? "Terminé ✅" : "Confirmer ✅"}
                 </Button>
               </div>
             ) : (
@@ -459,6 +455,69 @@ export default function PrestatairePrestationDetailPage() {
 
         {/* Messagerie */}
         <SectionChat prestationId={id} />
+
+        {/* Modals */}
+        <Modal
+          isOpen={modal === "etat"}
+          onClose={() => setModal(null)}
+          title="État des lieux soumis"
+          icon="📋"
+          headerVariant="secondary"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Votre état des lieux a été envoyé au client. Il doit maintenant l'examiner et l'accepter avant que la prestation puisse continuer.
+            </p>
+            <p className="text-sm text-gray-600">
+              Vous serez notifié dès qu'il aura répondu.
+            </p>
+            <Button variant="secondary" fullWidth onClick={() => setModal(null)}>
+              Compris
+            </Button>
+          </div>
+        </Modal>
+
+        <Modal
+          isOpen={modal === "conforme"}
+          onClose={() => setModal(null)}
+          title="Objet confirmé conforme !"
+          icon="✅"
+          headerVariant="success"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Vous avez confirmé que l'objet est conforme à la description. La prestation peut démarrer dès que le client aura effectué le paiement.
+            </p>
+            <p className="text-sm text-gray-600">
+              Le client va maintenant procéder au paiement pour débloquer la prestation.
+            </p>
+            <Button variant="secondary" fullWidth onClick={() => setModal(null)}>
+              Compris
+            </Button>
+          </div>
+        </Modal>
+
+        <Modal
+          isOpen={modal === "termine"}
+          onClose={() => setModal(null)}
+          title="Prestation marquée comme terminée"
+          icon="🎉"
+          headerVariant="success"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Le client a <strong>3 jours</strong> pour valider la prestation après lui avoir remis sa commande. Sans réponse de sa part, la validation sera automatique.
+            </p>
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+              <p className="text-sm font-medium text-emerald-700">
+                💬 N'oubliez pas d'envoyer un message au client pour convenir d'un RDV de remise de l'objet !
+              </p>
+            </div>
+            <Button variant="secondary" fullWidth onClick={() => setModal(null)}>
+              Envoyer un message
+            </Button>
+          </div>
+        </Modal>
 
         {/* TERMINEE */}
         {prestation.status === "TERMINEE" && (

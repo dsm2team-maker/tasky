@@ -6,6 +6,8 @@ export const env = {
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || "refresh-secret",
   redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
   resendApiKey: process.env.RESEND_API_KEY || "",
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY || "",
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
   isDev: process.env.NODE_ENV === "development",
   isProd: process.env.NODE_ENV === "production",
 };

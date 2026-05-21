@@ -46,10 +46,10 @@ const matchConfig: Record<
   },
 };
 
-const urgenceConfig: Record<string, { icon: string; label: string }> = {
-  NORMAL: { icon: "🟢", label: "Normal" },
-  URGENT: { icon: "🟡", label: "Urgent" },
-  TRES_URGENT: { icon: "🔴", label: "Très urgent" },
+const urgenceConfig: Record<string, { icon: string; label: string; badge: string }> = {
+  NORMAL:      { icon: "🟢", label: "Flexible",       badge: "" },
+  URGENT:      { icon: "🟡", label: "Cette semaine",  badge: "bg-yellow-100 text-yellow-700 border border-yellow-200" },
+  TRES_URGENT: { icon: "🔴", label: "Urgent",         badge: "bg-red-100 text-red-700 border border-red-200" },
 };
 
 const typeConfig: Record<string, string> = {
@@ -99,9 +99,15 @@ function CardDemande({ demande }: { demande: DemandeDisponible }) {
           >
             {Math.round(demande.matching.score)}/100
           </span>
-          <span className={`text-xs ${colors.text.muted}`}>
-            {urgence.icon} {urgence.label}
-          </span>
+          {urgence.badge ? (
+            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${urgence.badge}`}>
+              {urgence.icon} {urgence.label}
+            </span>
+          ) : (
+            <span className={`text-xs ${colors.text.muted}`}>
+              {urgence.icon} {urgence.label}
+            </span>
+          )}
           <span className={`text-xs ${colors.text.muted}`}>
             {typeConfig[demande.typePrestation]}
           </span>
@@ -124,6 +130,11 @@ function CardDemande({ demande }: { demande: DemandeDisponible }) {
             >
               {demande.titre}
             </h3>
+            {demande.reference && (
+              <div className={`text-[11px] font-mono font-semibold ${colors.text.muted} mt-0.5`}>
+                Réf. TSK-{String(demande.reference).padStart(6, "0")}
+              </div>
+            )}
           </div>
           {demande.photos && demande.photos.length > 0 && (
             <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
@@ -169,9 +180,9 @@ function CardDemande({ demande }: { demande: DemandeDisponible }) {
               💶 {demande.budget} €
             </span>
           )}
-          {demande.dateEcheance && (
+          {demande.delaiJours && (
             <span className={`text-xs ${colors.text.secondary}`}>
-              📅 {new Date(demande.dateEcheance).toLocaleDateString("fr-FR")}
+              ⏱️ {demande.delaiJours} jour{demande.delaiJours > 1 ? "s" : ""}
             </span>
           )}
           <span className={`text-xs ${colors.text.muted}`}>

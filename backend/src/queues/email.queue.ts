@@ -10,7 +10,9 @@ export type EmailJobType =
   | "order-confirmed"
   | "order-completed"
   | "phone-change-otp" // OTP changement téléphone → envoyé par email
-  | "email-change-alert"; // Alerte sécurité → envoyé sur l'ancienne adresse
+  | "email-change-alert" // Alerte sécurité → envoyé sur l'ancienne adresse
+  | "devis-refuse" // Notification prestataire — devis non retenu
+  | "delete-account-otp"; // OTP suppression de compte
 
 export interface EmailJobData {
   type: EmailJobType;

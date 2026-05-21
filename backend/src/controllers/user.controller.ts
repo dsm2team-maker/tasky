@@ -9,6 +9,8 @@ import {
   verifyPhoneOtp,
   requestEmailChange,
   verifyEmailOtp,
+  requestDeleteAccount,
+  confirmDeleteAccount,
   updatePrestataireProfile,
   getPrestataireCompetences,
   updatePrestataireCompetences,
@@ -390,6 +392,93 @@ export const verifyEmailOtpHandler = async (
         message: "Cette adresse vient d'être prise par un autre compte",
       });
     console.error("Erreur verifyEmailOtp:", error);
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+};
+
+// =============================================
+// POST /api/users/profile/request-delete-account
+// =============================================
+export const requestDeleteAccountHandler = async (
+  req: AuthRequest,
+  res: Response,
+) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId)
+      return res.status(401).json({ success: false, message: "Non authentifié" });
+
+    await requestDeleteAccount(userId);
+    return res.json({
+      success: true,
+      message: "Un code de confirmation a été envoyé par email.",
+    });
+  } catch (error: any) {
+    if (error.message === "HAS_ACTIVE_PRESTATIONS")
+      return res.status(400).json({
+        success: false,
+        message:
+          "Vous avez des prestations en cours. Finalisez-les avant de supprimer votre compte.",
+      });
+    if (error.message === "ACCOUNT_ALREADY_INACTIVE")
+      return res
+        .status(400)
+        .json({ success: false, message: "Ce compte est déjà désactivé" });
+    if (error.message?.startsWith("COOLDOWN:")) {
+      const seconds = error.message.split(":")[1];
+      return res.status(429).json({
+        success: false,
+        message: `Veuillez attendre ${seconds} secondes avant de réessayer`,
+      });
+    }
+    console.error("Erreur requestDeleteAccount:", error);
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+};
+
+// =============================================
+// POST /api/users/profile/confirm-delete-account
+// =============================================
+export const confirmDeleteAccountHandler = async (
+  req: AuthRequest,
+  res: Response,
+) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId)
+      return res.status(401).json({ success: false, message: "Non authentifié" });
+
+    const { otp } = req.body;
+    if (!otp || typeof otp !== "string" || otp.length !== 6) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Code invalide — 6 chiffres attendus" });
+    }
+
+    await confirmDeleteAccount(userId, otp);
+    return res.json({
+      success: true,
+      message: "Votre compte a été supprimé.",
+    });
+  } catch (error: any) {
+    if (error.message === "OTP_EXPIRED_OR_NOT_FOUND")
+      return res.status(400).json({
+        success: false,
+        message: "Code expiré ou introuvable — recommencez",
+      });
+    if (error.message === "OTP_MAX_ATTEMPTS")
+      return res.status(429).json({
+        success: false,
+        message: "Trop de tentatives — réessayez dans 30 minutes",
+      });
+    if (error.message?.startsWith("OTP_INVALID:")) {
+      const remaining = error.message.split(":")[1];
+      return res.status(400).json({
+        success: false,
+        message: `Code incorrect — ${remaining} tentative(s) restante(s)`,
+      });
+    }
+    console.error("Erreur confirmDeleteAccount:", error);
     return res.status(500).json({ success: false, message: "Erreur serveur" });
   }
 };

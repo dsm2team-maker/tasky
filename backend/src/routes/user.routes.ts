@@ -7,6 +7,8 @@ import {
   verifyPhoneOtpHandler,
   requestEmailChangeHandler,
   verifyEmailOtpHandler,
+  requestDeleteAccountHandler,
+  confirmDeleteAccountHandler,
   updatePrestataireProfileHandler,
   getPrestataireCompetencesHandler,
   updatePrestataireCompetencesHandler,
@@ -38,6 +40,18 @@ router.post(
   requestEmailChangeHandler,
 );
 router.post("/profile/verify-email-otp", authMiddleware, verifyEmailOtpHandler);
+
+// ─── Suppression de compte ────────────────────────────────────────────────────
+router.post(
+  "/profile/request-delete-account",
+  authMiddleware,
+  requestDeleteAccountHandler,
+);
+router.post(
+  "/profile/confirm-delete-account",
+  authMiddleware,
+  confirmDeleteAccountHandler,
+);
 
 // ─── Profil prestataire (bio) ─────────────────────────────────────────────────
 router.patch("/prestataire", authMiddleware, updatePrestataireProfileHandler);

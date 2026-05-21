@@ -1,6 +1,31 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { devisService, EnvoyerDevisPayload } from "@/services/devis.service";
 
+export const useMesDevisRefuses = () =>
+  useQuery({
+    queryKey: ["mes-devis-refuses"],
+    queryFn: () => devisService.getMesDevisRefuses().then((r) => r.data.data),
+    staleTime: 30_000,
+  });
+
+export const useDismisserDevis = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (devisId: string) =>
+      devisService.dismisserDevis(devisId).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["mes-devis-refuses"] });
+    },
+  });
+};
+
+export const useMesStatsDevis = () =>
+  useQuery({
+    queryKey: ["mes-stats-devis"],
+    queryFn: () => devisService.getMesStats().then((r) => r.data.data),
+    staleTime: 60_000,
+  });
+
 const DISPONIBLES_KEY = ["demandes-disponibles"];
 const DEVIS_KEY = (id: string) => ["devis", id];
 

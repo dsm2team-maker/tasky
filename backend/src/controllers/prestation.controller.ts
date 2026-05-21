@@ -239,12 +239,15 @@ export const contesterPrestationHandler = async (
       return res
         .status(401)
         .json({ success: false, message: "Non authentifié" });
-    await contesterPrestation(userId, req.params.id);
+    const { motif } = req.body;
+    await contesterPrestation(userId, req.params.id, motif);
     return res.json({
       success: true,
       message: "Contestation enregistrée — prestation remise en cours",
     });
   } catch (error: any) {
+    if (error.message === "MOTIF_TROP_COURT")
+      return res.status(400).json({ success: false, message: "Le motif doit faire au moins 10 caractères" });
     return handleError(res, error);
   }
 };

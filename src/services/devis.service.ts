@@ -57,6 +57,22 @@ export interface EnvoyerDevisPayload {
   description: string;
 }
 
+export interface StatsDevis {
+  envoyes: number;
+  acceptes: number;
+  taux: number;
+}
+
+export interface DevisRefuse {
+  id: string;
+  updatedAt: string;
+  demande: {
+    id: string;
+    titre: string;
+    reference: number | null;
+  };
+}
+
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 export const devisService = {
@@ -69,7 +85,7 @@ export const devisService = {
   getDemandeDetail: (id: string) =>
     apiClient.get<{
       success: boolean;
-      data: DemandeDisponible & { devisExistant: boolean };
+      data: DemandeDisponible & { devisExistant: boolean; devisRefuse: boolean };
     }>(`/api/demandes/${id}/detail`),
 
   envoyerDevis: (demandeId: string, data: EnvoyerDevisPayload) =>
@@ -90,4 +106,13 @@ export const devisService = {
 
   refuserDevis: (devisId: string) =>
     apiClient.patch<{ success: boolean }>(`/api/devis/${devisId}/refuse`, {}),
+
+  getMesStats: () =>
+    apiClient.get<{ success: boolean; data: StatsDevis }>("/api/devis/mes-stats"),
+
+  getMesDevisRefuses: () =>
+    apiClient.get<{ success: boolean; data: DevisRefuse[] }>("/api/devis/mes-devis-refuses"),
+
+  dismisserDevis: (devisId: string) =>
+    apiClient.patch<{ success: boolean }>(`/api/devis/${devisId}/dismiss`, {}),
 };

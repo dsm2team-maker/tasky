@@ -118,3 +118,9 @@ export const sendMessage = async (
     data: { prestationId, auteurId: userId, contenu: contenu.trim() },
   });
 };
+
+export const sendSystemMessage = async (prestationId: string, contenu: string) => {
+  return prisma.message.create({
+    data: { prestationId, auteurId: null, contenu, isSystem: true, lu: true },
+  });
+};

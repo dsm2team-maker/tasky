@@ -136,7 +136,9 @@ export default function LoginPage() {
       clearError();
       setAuth(data.data.user, data.data.tokens.accessToken);
       localStorage.setItem("refresh_token", data.data.tokens.refreshToken);
-      if (data.data.user.role === "CLIENT") {
+      if (data.data.user.role === "ADMIN") {
+        router.push("/admin/dashboard");
+      } else if (data.data.user.role === "CLIENT") {
         router.push(routes.client.dashboard);
       } else {
         router.push(routes.prestataire.dashboard);

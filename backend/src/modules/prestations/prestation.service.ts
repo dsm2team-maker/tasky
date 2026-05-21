@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { sendSystemMessage } from "../messages/message.service";
 
 // =============================================================================
 // GET MES PRESTATIONS (Prestataire)
@@ -127,6 +128,13 @@ export const creerEtatDesLieux = async (
     });
   }
 
+  await sendSystemMessage(
+    prestationId,
+    data.montantRevise
+      ? "📋 Tasky-Infos — Le prestataire a soumis un état des lieux avec révision de montant. Le client doit l'examiner."
+      : "📋 Tasky-Infos — Le prestataire a soumis un état des lieux. Le client doit l'examiner.",
+  ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+
   return etatDesLieux;
 };
 
@@ -170,6 +178,11 @@ export const validerEtatDesLieux = async (
         data: { status: "EN_ATTENTE_PAIEMENT" },
       }),
     ]);
+
+    await sendSystemMessage(
+      prestationId,
+      "✅ Tasky-Infos — État des lieux accepté. En attente du paiement pour démarrer la prestation.",
+    ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
   } else {
     // Client refuse → prestation ANNULEE, demande PUBLIEE
     // Devis accepté → REFUSE + aVerifier=true, autres ENVOYE → estSelectionnable=true
@@ -210,6 +223,11 @@ export const validerEtatDesLieux = async (
         data: { estSelectionnable: true },
       });
     });
+
+    await sendSystemMessage(
+      prestationId,
+      "❌ Tasky-Infos — État des lieux refusé. La prestation est annulée, la demande est à nouveau disponible.",
+    ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
   }
 };
 
@@ -264,6 +282,11 @@ export const confirmerConformite = async (
       data: { status: "EN_ATTENTE_PAIEMENT" },
     });
   });
+
+  await sendSystemMessage(
+    prestationId,
+    "✅ Tasky-Infos — Objet conforme. En attente du paiement pour démarrer la prestation.",
+  ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
 };
 
 // =============================================================================
@@ -283,16 +306,25 @@ export const passerEnCours = async (userId: string, prestationId: string) => {
   if (prestation.status !== "EN_ATTENTE_PAIEMENT")
     throw new Error("PRESTATION_NOT_EN_ATTENTE_PAIEMENT");
 
+  const delaiJours = (prestation.demande as any).delaiJours ?? 7;
+  const dateEcheanceFinal = new Date();
+  dateEcheanceFinal.setDate(dateEcheanceFinal.getDate() + delaiJours);
+
   await prisma.$transaction([
     prisma.prestation.update({
       where: { id: prestationId },
-      data: { status: "EN_COURS" },
+      data: { status: "EN_COURS", dateEcheanceFinal },
     }),
     prisma.demande.update({
       where: { id: prestation.demandeId },
       data: { status: "EN_COURS" },
     }),
   ]);
+
+  await sendSystemMessage(
+    prestationId,
+    `💳 Tasky-Infos — Paiement confirmé par le client. La prestation est maintenant en cours ! Date limite de livraison : ${dateEcheanceFinal.toLocaleDateString("fr-FR")}.`,
+  ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
 };
 
 // =============================================================================
@@ -333,6 +365,11 @@ export const marquerTermine = async (userId: string, prestationId: string) => {
       data: { status: "A_VALIDER" },
     }),
   ]);
+
+  await sendSystemMessage(
+    prestationId,
+    "🔔 Tasky-Infos — Prestation marquée comme terminée. Convenez d'un rendez-vous pour la remise de l'objet, puis le client devra valider depuis la page de la demande.",
+  ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
 };
 
 // =============================================================================
@@ -364,6 +401,11 @@ export const validerPrestation = async (
       data: { status: "TERMINEE" },
     }),
   ]);
+
+  await sendSystemMessage(
+    prestationId,
+    "🎉 Tasky-Infos — Prestation validée par le client ! Le paiement sera libéré sous 1 à 2 jours ouvrés.",
+  ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
 };
 
 // =============================================================================
@@ -372,6 +414,7 @@ export const validerPrestation = async (
 export const contesterPrestation = async (
   userId: string,
   prestationId: string,
+  motif: string,
 ) => {
   const client = await prisma.client.findUnique({ where: { userId } });
   if (!client) throw new Error("CLIENT_NOT_FOUND");
@@ -384,6 +427,8 @@ export const contesterPrestation = async (
   if (prestation.demande.clientId !== client.id) throw new Error("FORBIDDEN");
   if (prestation.status !== "A_VALIDER")
     throw new Error("PRESTATION_NOT_A_VALIDER");
+  if (!motif || motif.trim().length < 10)
+    throw new Error("MOTIF_TROP_COURT");
 
   await prisma.$transaction([
     prisma.prestation.update({
@@ -393,6 +438,13 @@ export const contesterPrestation = async (
     prisma.demande.update({
       where: { id: prestation.demandeId },
       data: { status: "EN_COURS" },
+    }),
+    prisma.message.create({
+      data: {
+        prestationId,
+        contenu: `⚠️ Tasky-Infos — Prestation contestée par le client.\n\nMotif : ${motif.trim()}`,
+        isSystem: true,
+      },
     }),
   ]);
 };

@@ -7,7 +7,8 @@ export const routes = {
     about: "/about",
     contact: "/contact",
     legal: {
-      cgu: "/legal/cgu",
+      cguClient: "/legal/cgu-client",
+      cguPrestataire: "/legal/cgu-prestataire",
       privacy: "/legal/privacy",
       cookies: "/legal/cookies",
       mentions: "/legal/mentions",
@@ -180,6 +181,8 @@ export const routes = {
       verifyPhoneOtp: "/api/users/profile/verify-phone-otp",
       requestEmailChange: "/api/users/profile/request-email-change",
       verifyEmailOtp: "/api/users/profile/verify-email-otp",
+      requestDeleteAccount: "/api/users/profile/request-delete-account",
+      confirmDeleteAccount: "/api/users/profile/confirm-delete-account",
     },
     demandes: {
       list: "/api/demandes",
@@ -248,7 +251,8 @@ export const navigation = {
   footerNav: [
     { label: "À propos", href: routes.public.about },
     { label: "Contact", href: routes.public.contact },
-    { label: "CGU", href: routes.public.legal.cgu },
+    { label: "CGU Clients", href: routes.public.legal.cguClient },
+    { label: "CGU Prestataires", href: routes.public.legal.cguPrestataire },
     { label: "Confidentialité", href: routes.public.legal.privacy },
   ],
 };

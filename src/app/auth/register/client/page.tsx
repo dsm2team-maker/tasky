@@ -16,12 +16,43 @@ import { ProfilePhotoUpload } from "@/components/shared/ProfilePhotoUpload";
 import { Input } from "@/components/ui/Input";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import AuthLayout from "@/components/layout/AuthLayout";
 import { PasswordStrengthIndicator } from "@/components/ui/PasswordStrengthIndicator";
 
 import { colors } from "@/config/colors";
 import { typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
+
+function PhoneField({
+  field,
+  error,
+}: {
+  field: { onChange: (val: string) => void };
+  error?: string;
+}) {
+  const { displayValue, handleChange } = usePhoneInput(field.onChange);
+  return (
+    <div>
+      <Input
+        label="Téléphone"
+        type="tel"
+        placeholder="06 12 34 56 78"
+        value={displayValue}
+        onChange={handleChange}
+        error={error}
+        icon={
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+          </svg>
+        }
+      />
+      <p className={`mt-1.5 text-xs ${colors.text.tertiary}`}>
+        🔒 Utilisé uniquement pour les notifications SMS — jamais partagé
+      </p>
+    </div>
+  );
+}
 
 export default function RegisterClient() {
   const router = useRouter();
@@ -213,48 +244,13 @@ export default function RegisterClient() {
           }
         />
 
-        <div>
-          <Controller
-            name="phone"
-            control={control}
-            render={({ field }) => {
-              const { displayValue, handleChange } = usePhoneInput(
-                field.onChange,
-              );
-              return (
-                <div>
-                  <Input
-                    label="Téléphone"
-                    type="tel"
-                    placeholder="06 12 34 56 78"
-                    value={displayValue}
-                    onChange={handleChange}
-                    error={errors.phone?.message}
-                    icon={
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                        />
-                      </svg>
-                    }
-                  />
-                  <p className={`mt-1.5 text-xs ${colors.text.tertiary}`}>
-                    🔒 Utilisé uniquement pour les notifications SMS — jamais
-                    partagé
-                  </p>
-                </div>
-              );
-            }}
-          />
-        </div>
+        <Controller
+          name="phone"
+          control={control}
+          render={({ field }) => (
+            <PhoneField field={field} error={errors.phone?.message} />
+          )}
+        />
 
         <Input
           label="Adresse email"
@@ -385,7 +381,7 @@ export default function RegisterClient() {
             <>
               J'accepte les{" "}
               <Link
-                href={routes.public.legal.cgu}
+                href={routes.public.legal.cguClient}
                 className={`${colors.premium.text} hover:underline font-bold`}
               >
                 conditions générales d'utilisation
@@ -440,6 +436,29 @@ export default function RegisterClient() {
           </Link>
         </p>
       </div>
+      <Modal
+        isOpen={modal.open}
+        onClose={() => setModal({ open: false, type: null })}
+        title={modal.type === "email" ? "Email déjà utilisé" : "Téléphone déjà utilisé"}
+        icon="⚠️"
+        headerVariant="error"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            {modal.type === "email"
+              ? `L'adresse ${modal.value} est déjà associée à un compte. Connectez-vous ou utilisez une autre adresse.`
+              : `Le numéro ${modal.value} est déjà associé à un compte. Connectez-vous ou utilisez un autre numéro.`}
+          </p>
+          <div className="flex gap-3">
+            <Button variant="ghost" fullWidth onClick={() => setModal({ open: false, type: null })}>
+              Modifier
+            </Button>
+            <Button variant="primary" fullWidth onClick={() => { setModal({ open: false, type: null }); router.push(routes.auth.login); }}>
+              Se connecter →
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </AuthLayout>
   );
 }

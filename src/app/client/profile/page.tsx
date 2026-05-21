@@ -11,7 +11,7 @@ import {
   useUpdateProfile,
   useUploadAvatar,
 } from "@/hooks/useProfile";
-import { PhoneModal, EmailModal } from "@/components/shared/OtpModals";
+import { PhoneModal, EmailModal, DeleteAccountModal } from "@/components/shared/OtpModals";
 import HeaderClient from "@/components/headers/HeaderClient";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -50,6 +50,7 @@ export default function ClientProfilePage() {
   const [localPhoto, setLocalPhoto] = useState<string | null>(null);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Hydratation + auth
   useEffect(() => setIsHydrated(true), []);
@@ -396,6 +397,20 @@ export default function ClientProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* Zone dangereuse */}
+        <div className="mt-8 p-5 rounded-2xl border border-red-200 bg-red-50">
+          <h3 className="text-sm font-semibold text-red-700 mb-1">Zone dangereuse</h3>
+          <p className="text-sm text-red-600 mb-4">
+            La suppression de votre compte est définitive et irréversible.
+          </p>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="text-sm font-semibold text-red-600 border border-red-300 px-4 py-2 rounded-xl hover:bg-red-100 transition"
+          >
+            🗑️ Supprimer mon compte
+          </button>
+        </div>
       </main>
 
       <PhoneModal
@@ -405,6 +420,10 @@ export default function ClientProfilePage() {
       <EmailModal
         isOpen={showEmailModal}
         onClose={() => setShowEmailModal(false)}
+      />
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
       />
     </div>
   );

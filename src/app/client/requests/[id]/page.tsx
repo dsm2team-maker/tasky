@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { useProfile } from "@/hooks/useProfile";
 import {
   useDevisDemande,
   useAccepterDevis,
@@ -13,11 +14,13 @@ import {
   useValiderEtatDesLieux,
   useValiderPrestation,
   useContesterPrestation,
-  usePasserEnCours,
   useCreerReview,
 } from "@/hooks/usePrestation";
 import HeaderClient from "@/components/headers/HeaderClient";
+import { Modal } from "@/components/ui/Modal";
 import SectionChat from "@/components/chat/SectionChat";
+import { StripeCheckout } from "@/components/payment/StripeCheckout";
+import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/Button";
 import { colors } from "@/config/colors";
 import { spacing, typography } from "@/config/design-tokens";
@@ -456,14 +459,30 @@ function SectionReview({ prestation }: { prestation: Prestation }) {
 
 function SectionPaiement({
   prestation,
+  clientInfo,
   onSuccess,
 }: {
   prestation: Prestation;
+  clientInfo: { name: string; email: string; phone: string };
   onSuccess: () => void;
 }) {
-  const [confirming, setConfirming] = useState(false);
-  const passerEnCours = usePasserEnCours();
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [loadingIntent, setLoadingIntent] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const montant = prestation.montantFinal ?? prestation.montant;
+
+  useEffect(() => {
+    if (prestation.status !== "EN_ATTENTE_PAIEMENT") return;
+    setLoadingIntent(true);
+    apiClient
+      .post<{ clientSecret: string }>("/api/payment/create-intent", {
+        prestationId: prestation.id,
+      })
+      .then((res) => setClientSecret(res.data.clientSecret))
+      .catch(() => setErrorMsg("Impossible de préparer le paiement. Réessayez."))
+      .finally(() => setLoadingIntent(false));
+  }, [prestation.id, prestation.status]);
 
   if (prestation.status !== "EN_ATTENTE_PAIEMENT") return null;
 
@@ -475,7 +494,7 @@ function SectionPaiement({
         💳 Paiement requis
       </h2>
 
-      <div className="p-4 rounded-xl bg-yellow-50 border border-yellow-200 mb-4">
+      <div className="p-4 rounded-xl bg-yellow-50 border border-yellow-200 mb-5">
         <p className="text-sm text-yellow-700 mb-3">
           L'inspection a été validée. Procédez au paiement pour démarrer la
           prestation.
@@ -491,37 +510,57 @@ function SectionPaiement({
         )}
       </div>
 
-      {confirming ? (
-        <div className="flex gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            fullWidth
-            onClick={() => setConfirming(false)}
-          >
-            Annuler
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            fullWidth
-            isLoading={passerEnCours.isPending}
-            onClick={() =>
-              passerEnCours.mutate(prestation.id, { onSuccess })
-            }
-          >
-            Confirmer le paiement ✅
-          </Button>
+      {errorMsg && (
+        <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
+          {errorMsg}
         </div>
-      ) : (
-        <Button variant="primary" fullWidth onClick={() => setConfirming(true)}>
-          💳 Payer {montant} €
-        </Button>
       )}
 
-      <p className={`text-xs ${colors.text.muted} text-center mt-3`}>
-        🔒 Paiement sécurisé — intégration Stripe à venir
-      </p>
+      {loadingIntent ? (
+        <div className={`flex items-center justify-center py-6 ${colors.text.muted}`}>
+          <div className={`animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 ${colors.primary.border} mr-2`} />
+          Préparation du formulaire de paiement…
+        </div>
+      ) : clientSecret ? (
+        <StripeCheckout
+          clientSecret={clientSecret}
+          montant={montant}
+          prestationId={prestation.id}
+          clientInfo={clientInfo}
+          onSuccess={() => setShowSuccessModal(true)}
+          onError={(msg) => setErrorMsg(msg)}
+        />
+      ) : null}
+
+      <Modal
+        isOpen={showSuccessModal}
+        onClose={() => { setShowSuccessModal(false); onSuccess(); }}
+        title="Paiement confirmé !"
+        icon="🔒"
+        headerVariant="success"
+      >
+        <div className="text-center space-y-4">
+          <p className="text-sm text-gray-600 leading-relaxed">
+            Votre argent est sécurisé et{" "}
+            <strong>bloqué jusqu'à la récupération de votre objet</strong>.
+            Le prestataire va maintenant commencer la prestation.
+          </p>
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+            <p className="text-xs text-emerald-700 font-medium">
+              💡 Vous serez notifié lorsque la prestation sera terminée. Il
+              vous faudra alors valider la remise de l'objet pour libérer le
+              paiement.
+            </p>
+          </div>
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={() => { setShowSuccessModal(false); onSuccess(); }}
+          >
+            Compris !
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -530,11 +569,22 @@ function SectionPaiement({
 
 function SectionValidation({ prestation }: { prestation: Prestation }) {
   const [confirmValider, setConfirmValider] = useState(false);
-  const [confirmContester, setConfirmContester] = useState(false);
+  const [showContestForm, setShowContestForm] = useState(false);
+  const [motif, setMotif] = useState("");
+  const [motifError, setMotifError] = useState<string | null>(null);
+  const [showValideModal, setShowValideModal] = useState(false);
   const valider = useValiderPrestation();
   const contester = useContesterPrestation();
 
-  if (prestation.status !== "A_VALIDER") return null;
+  if (prestation.status !== "A_VALIDER" && !showValideModal) return null;
+
+  const handleContester = () => {
+    if (motif.trim().length < 10) {
+      setMotifError("Veuillez décrire le problème (minimum 10 caractères)");
+      return;
+    }
+    contester.mutate({ id: prestation.id, motif });
+  };
 
   return (
     <div
@@ -555,33 +605,48 @@ function SectionValidation({ prestation }: { prestation: Prestation }) {
           </strong>
         </p>
       )}
-      <div className="flex gap-3">
-        {confirmContester ? (
-          <div className="flex gap-2 flex-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              fullWidth
-              onClick={() => setConfirmContester(false)}
-            >
+
+      {/* Formulaire de contestation */}
+      {showContestForm && (
+        <div className="mb-4 p-4 rounded-xl bg-red-50 border border-red-200">
+          <p className="text-sm font-medium text-red-700 mb-2">⚠️ Motif de contestation</p>
+          <p className="text-xs text-red-600 mb-3">
+            Décrivez précisément le problème constaté. Tasky utilisera ce motif pour traiter votre litige.
+          </p>
+          <textarea
+            value={motif}
+            onChange={(e) => { setMotif(e.target.value); setMotifError(null); }}
+            placeholder="Ex : L'écran est toujours fissuré après la réparation, le problème n'est pas résolu..."
+            rows={3}
+            maxLength={500}
+            className="w-full px-3 py-2.5 rounded-xl border border-red-300 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-300 bg-white"
+          />
+          {motifError && <p className="text-xs text-red-600 mt-1">{motifError}</p>}
+          <p className="text-xs text-red-400 mt-1 text-right">{motif.length}/500</p>
+          <div className="flex gap-2 mt-3">
+            <Button variant="ghost" size="sm" fullWidth onClick={() => { setShowContestForm(false); setMotif(""); setMotifError(null); }}>
               Annuler
             </Button>
             <Button
               size="sm"
               fullWidth
-              className="bg-red-500 hover:bg-red-600 text-white"
+              className="!bg-red-500 hover:!bg-red-600 text-white"
               isLoading={contester.isPending}
-              onClick={() => contester.mutate(prestation.id)}
+              onClick={handleContester}
             >
               Confirmer la contestation
             </Button>
           </div>
-        ) : (
+        </div>
+      )}
+
+      <div className="flex gap-3">
+        {!showContestForm && (
           <Button
             variant="ghost"
             size="sm"
             fullWidth
-            onClick={() => setConfirmContester(true)}
+            onClick={() => setShowContestForm(true)}
             className={colors.error.text}
           >
             ⚠️ Contester
@@ -602,7 +667,7 @@ function SectionValidation({ prestation }: { prestation: Prestation }) {
               size="sm"
               fullWidth
               isLoading={valider.isPending}
-              onClick={() => valider.mutate(prestation.id)}
+              onClick={() => valider.mutate(prestation.id, { onSuccess: () => setShowValideModal(true) })}
             >
               Confirmer ✅
             </Button>
@@ -618,6 +683,28 @@ function SectionValidation({ prestation }: { prestation: Prestation }) {
           </Button>
         )}
       </div>
+
+      <Modal
+        isOpen={showValideModal}
+        onClose={() => setShowValideModal(false)}
+        title="Prestation validée !"
+        icon="🎉"
+        headerVariant="success"
+      >
+        <div className="text-center space-y-4">
+          <p className="text-sm text-gray-600 leading-relaxed">
+            Merci pour votre confiance ! Le prestataire va recevoir son paiement sous <strong>1 à 2 jours ouvrés</strong>.
+          </p>
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+            <p className="text-xs text-emerald-700 font-medium">
+              ⭐ N'oubliez pas de laisser un avis — cela aide les autres clients à choisir les meilleurs prestataires !
+            </p>
+          </div>
+          <Button variant="secondary" fullWidth onClick={() => setShowValideModal(false)}>
+            Fermer
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -631,10 +718,13 @@ export default function ClientRequestDetailPage() {
   const id = params.id as string;
 
   const [isHydrated, setIsHydrated] = useState(false);
+  const [showAcceptModal, setShowAcceptModal] = useState(false);
   const { data, isLoading } = useDevisDemande(id);
   const { data: prestations } = useMesPrestationsClient();
+  const { data: profile } = useProfile();
   const accepterDevis = useAccepterDevis();
   const refuserDevis = useRefuserDevis();
+  const isModification = data?.demande?.typePrestation === "MODIFICATION";
 
   useEffect(() => setIsHydrated(true), []);
 
@@ -678,21 +768,40 @@ export default function ClientRequestDetailPage() {
           ← Mes demandes
         </button>
 
+        {/* Badge contestation — EN_COURS après avoir été A_VALIDER = contestation */}
+        {prestation?.status === "EN_COURS" && prestation?.autoValidateAt && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2">
+            <span className="text-red-500 text-lg">⚠️</span>
+            <div>
+              <p className="text-sm font-semibold text-red-700">Commande contestée</p>
+              <p className="text-xs text-red-600">Tasky a bien reçu votre contestation et va traiter votre litige. Consultez l'onglet Tasky-Infos pour le détail.</p>
+            </div>
+          </div>
+        )}
+
         {/* Header demande */}
         <div
           className={`${colors.primary.gradient} rounded-2xl p-6 mb-6 text-white`}
         >
-          <div className={`text-sm text-pink-100 mb-1`}>
-            {statusLabel[demande.status] || demande.status}
+          <div className="flex items-center justify-between mb-1">
+            <div className={`text-sm text-pink-100`}>
+              {statusLabel[demande.status] || demande.status}
+            </div>
+            {demande.reference && (
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] text-pink-200 uppercase tracking-wide leading-none mb-0.5">Référence</span>
+                <span className="text-sm font-mono font-bold bg-white/20 px-2.5 py-1 rounded-lg text-white select-all">
+                  TSK-{String(demande.reference).padStart(6, "0")}
+                </span>
+              </div>
+            )}
           </div>
           <h1 className="text-xl font-bold mb-2">{demande.titre}</h1>
           <div className="flex flex-wrap gap-3 text-sm text-pink-100">
             {demande.ville && <span>📍 {demande.ville}</span>}
             {demande.budget && <span>💶 {demande.budget} €</span>}
-            {demande.dateEcheance && (
-              <span>
-                📅 {new Date(demande.dateEcheance).toLocaleDateString("fr-FR")}
-              </span>
+            {demande.delaiJours && (
+              <span>⏱️ {demande.delaiJours} jour{demande.delaiJours > 1 ? "s" : ""} après paiement</span>
             )}
           </div>
         </div>
@@ -723,6 +832,11 @@ export default function ClientRequestDetailPage() {
         {prestation && (
           <SectionPaiement
             prestation={prestation}
+            clientInfo={{
+              name: `${profile?.firstName ?? ""} ${profile?.lastName ?? ""}`.trim(),
+              email: profile?.email ?? "",
+              phone: profile?.phoneMasked ?? "",
+            }}
             onSuccess={() => router.push(routes.client.requests.list)}
           />
         )}
@@ -782,7 +896,7 @@ export default function ClientRequestDetailPage() {
                   isRefusing={refuserDevis.isPending}
                   onAccept={(devisId) =>
                     accepterDevis.mutate(devisId, {
-                      onSuccess: () => router.push(routes.client.requests.list),
+                      onSuccess: () => setShowAcceptModal(true),
                     })
                   }
                   onRefuse={(devisId) => refuserDevis.mutate(devisId)}
@@ -792,6 +906,44 @@ export default function ClientRequestDetailPage() {
           )}
         </div>
       </main>
+
+      <Modal
+        isOpen={showAcceptModal}
+        onClose={() => {}}
+        preventClose
+        title="Devis accepté !"
+        icon="✅"
+        headerVariant="primary"
+      >
+        <div className="text-center space-y-4">
+          {isModification ? (
+            <>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Votre prestataire est sélectionné. La prochaine étape est l'<strong>inspection de votre objet</strong>.
+              </p>
+              <div className="bg-pink-50 border border-pink-200 rounded-xl p-3">
+                <p className="text-xs text-pink-700 font-medium">
+                  💬 N'oubliez pas de contacter le prestataire via la messagerie pour convenir d'un <strong>rendez-vous d'inspection</strong> !
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Votre prestataire est sélectionné. La prochaine étape est le <strong>paiement</strong> pour démarrer la création.
+              </p>
+              <div className="bg-pink-50 border border-pink-200 rounded-xl p-3">
+                <p className="text-xs text-pink-700 font-medium">
+                  💳 Rendez-vous dans l'onglet "Mes demandes" pour procéder au paiement et lancer la prestation.
+                </p>
+              </div>
+            </>
+          )}
+          <Button variant="primary" fullWidth onClick={() => { setShowAcceptModal(false); router.push(routes.client.requests.list); }}>
+            Voir mes demandes →
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

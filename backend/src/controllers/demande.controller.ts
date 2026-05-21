@@ -24,11 +24,10 @@ export const createDemandeHandler = async (req: AuthRequest, res: Response) => {
       typePrestation,
       categoryId,
       subCategoryId,
-      interventionId,
       budget,
       ville,
       photos,
-      dateEcheance,
+      delaiJours,
       urgence,
       interventionIds,
     } = req.body;
@@ -67,6 +66,10 @@ export const createDemandeHandler = async (req: AuthRequest, res: Response) => {
     if (budgetParsed !== undefined && (isNaN(budgetParsed) || budgetParsed <= 0))
       return res.status(400).json({ success: false, message: "Le budget doit être supérieur à 0 €" });
 
+    const delaiJoursParsed = delaiJours !== undefined ? parseInt(delaiJours, 10) : undefined;
+    if (!delaiJoursParsed || isNaN(delaiJoursParsed) || delaiJoursParsed < 1 || delaiJoursParsed > 365)
+      return res.status(400).json({ success: false, message: "Délai requis (entre 1 et 365 jours)" });
+
     const demande = await createDemande(userId, {
       titre: titre.trim(),
       description: description.trim(),
@@ -77,7 +80,7 @@ export const createDemandeHandler = async (req: AuthRequest, res: Response) => {
       budget: budgetParsed,
       ville,
       photos: photos || [],
-      dateEcheance,
+      delaiJours: delaiJoursParsed,
       urgence: urgence || "NORMAL",
     });
 

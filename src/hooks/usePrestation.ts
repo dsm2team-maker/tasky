@@ -80,8 +80,8 @@ export const useValiderPrestation = () => {
 export const useContesterPrestation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      prestationService.contesterPrestation(id).then((r) => r.data),
+    mutationFn: ({ id, motif }: { id: string; motif: string }) =>
+      prestationService.contesterPrestation(id, motif).then((r) => r.data),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: PRESTATIONS_CLIENT_KEY }),
   });

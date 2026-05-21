@@ -8,6 +8,9 @@ import demandeRoutes from "./routes/demande.routes";
 import devisActionsRoutes from "./routes/devis-actions.routes";
 import prestationRoutes from "./routes/prestation.routes";
 import messageRoutes from "./routes/message.routes";
+import contactRoutes from "./routes/contact.routes";
+import paymentRoutes, { stripeWebhookHandler } from "./routes/payment.routes";
+import adminRoutes from "./routes/admin.routes";
 
 dotenv.config();
 
@@ -22,6 +25,9 @@ const PORT = process.env.PORT || 3001;
 
 app.use(helmet());
 app.use(morgan("dev"));
+
+// Webhook Stripe — doit recevoir le body brut AVANT express.json
+app.post("/api/payment/webhook", express.raw({ type: "application/json" }), stripeWebhookHandler);
 
 app.use(
   cors({
@@ -72,6 +78,9 @@ app.use("/api/demandes", demandeRoutes);
 app.use("/api/devis", devisActionsRoutes);
 app.use("/api/prestations", prestationRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/contact", contactRoutes);
+app.use("/api/payment", paymentRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use("*", (req, res) => {
   res.status(404).json({

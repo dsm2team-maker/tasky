@@ -68,9 +68,9 @@ const statusConfig: Record<
 };
 
 const urgenceLabel: Record<string, { label: string; icon: string }> = {
-  NORMAL: { label: "Normal", icon: "🟢" },
-  URGENT: { label: "Urgent", icon: "🟡" },
-  TRES_URGENT: { label: "Très urgent", icon: "🔴" },
+  NORMAL: { label: "Flexible", icon: "🟢" },
+  URGENT: { label: "Cette semaine", icon: "🟡" },
+  TRES_URGENT: { label: "Urgent", icon: "🔴" },
 };
 
 const typeLabel: Record<string, string> = {
@@ -151,11 +151,18 @@ function CardDemande({
               {typeLabel[demande.typePrestation]}
             </span>
           </div>
-          <h3
-            className={`font-bold ${colors.text.primary} text-base leading-tight truncate`}
-          >
-            {demande.titre}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3
+              className={`font-bold ${colors.text.primary} text-base leading-tight truncate`}
+            >
+              {demande.titre}
+            </h3>
+            {demande.reference && (
+              <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 ${colors.text.muted} flex-shrink-0 select-all`}>
+                TSK-{String(demande.reference).padStart(6, "0")}
+              </span>
+            )}
+          </div>
           <p className={`text-sm ${colors.text.secondary} mt-1 line-clamp-2`}>
             {demande.description}
           </p>
@@ -209,9 +216,9 @@ function CardDemande({
             💶 {demande.budget} €
           </span>
         )}
-        {demande.dateEcheance && (
+        {demande.delaiJours && (
           <span className={`text-xs ${colors.text.secondary}`}>
-            📅 {new Date(demande.dateEcheance).toLocaleDateString("fr-FR")}
+            ⏱️ {demande.delaiJours} jour{demande.delaiJours > 1 ? "s" : ""}
           </span>
         )}
         {nbDevis > 0 ? (

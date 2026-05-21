@@ -7,6 +7,9 @@ import {
   getDevisDemande,
   accepterDevis,
   refuserDevis,
+  getMesStatsDevis,
+  getMesDevisRefuses,
+  dismisserDevis,
 } from "../modules/devis/devis.service";
 
 // =============================================================================
@@ -155,6 +158,24 @@ export const getDevisDemandeHandler = async (
 };
 
 // =============================================================================
+// GET /api/devis/mes-stats — Stats devis du prestataire connecté
+// =============================================================================
+export const getMesStatsDevisHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId)
+      return res.status(401).json({ success: false, message: "Non authentifié" });
+    const stats = await getMesStatsDevis(userId);
+    return res.json({ success: true, data: stats });
+  } catch (error: any) {
+    if (error.message === "PRESTATAIRE_NOT_FOUND")
+      return res.status(404).json({ success: false, message: "Profil prestataire introuvable" });
+    console.error("Erreur getMesStatsDevis:", error);
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+};
+
+// =============================================================================
 // PATCH /api/devis/:id/accept — Accepter un devis
 // =============================================================================
 export const accepterDevisHandler = async (req: AuthRequest, res: Response) => {
@@ -182,6 +203,46 @@ export const accepterDevisHandler = async (req: AuthRequest, res: Response) => {
         .status(400)
         .json({ success: false, message: "Ce devis n'est plus disponible" });
     console.error("Erreur accepterDevis:", error);
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+};
+
+// =============================================================================
+// GET /api/devis/mes-devis-refuses — Devis refusés récents (prestataire)
+// =============================================================================
+export const getMesDevisRefusesHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId)
+      return res.status(401).json({ success: false, message: "Non authentifié" });
+    const data = await getMesDevisRefuses(userId);
+    return res.json({ success: true, data });
+  } catch (error: any) {
+    if (error.message === "PRESTATAIRE_NOT_FOUND")
+      return res.status(404).json({ success: false, message: "Profil prestataire introuvable" });
+    console.error("Erreur getMesDevisRefuses:", error);
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+};
+
+// =============================================================================
+// PATCH /api/devis/:id/dismiss — Masquer un devis refusé (prestataire)
+// =============================================================================
+export const dismisserDevisHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId)
+      return res.status(401).json({ success: false, message: "Non authentifié" });
+    await dismisserDevis(userId, req.params.id);
+    return res.json({ success: true });
+  } catch (error: any) {
+    if (error.message === "DEVIS_NOT_FOUND")
+      return res.status(404).json({ success: false, message: "Devis introuvable" });
+    if (error.message === "FORBIDDEN")
+      return res.status(403).json({ success: false, message: "Accès refusé" });
+    if (error.message === "DEVIS_NON_REFUSE")
+      return res.status(400).json({ success: false, message: "Ce devis n'est pas refusé" });
+    console.error("Erreur dismisserDevis:", error);
     return res.status(500).json({ success: false, message: "Erreur serveur" });
   }
 };

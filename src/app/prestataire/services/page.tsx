@@ -137,6 +137,11 @@ function CardPrestation({ prestation }: { prestation: Prestation }) {
             >
               {prestation.demande.titre}
             </h3>
+            {prestation.demande.reference && (
+              <div className={`text-[11px] font-mono font-semibold ${colors.text.muted} mt-1`}>
+                Réf. TSK-{String(prestation.demande.reference).padStart(6, "0")}
+              </div>
+            )}
           </div>
           {prestation.demande.photos && prestation.demande.photos.length > 0 && (
             <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">

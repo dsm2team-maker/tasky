@@ -144,6 +144,17 @@ export const userService = {
       { otp },
     ),
 
+  requestDeleteAccount: () =>
+    apiClient.post<{ success: boolean; message: string }>(
+      routes.api.users.requestDeleteAccount,
+    ),
+
+  confirmDeleteAccount: (otp: string) =>
+    apiClient.post<{ success: boolean; message: string }>(
+      routes.api.users.confirmDeleteAccount,
+      { otp },
+    ),
+
   // ── Prestataire ───────────────────────────────────────────────────────────
 
   updatePrestataireProfile: (data: UpdatePrestatairePayload) =>

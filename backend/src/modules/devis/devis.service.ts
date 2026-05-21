@@ -1,5 +1,7 @@
 import { prisma } from "../../lib/prisma";
 import { calculerScore } from "./matching.service";
+import { addEmailJob } from "../../queues/email.queue";
+import { sendSystemMessage } from "../messages/message.service";
 
 // =============================================================================
 // GET DEMANDES DISPONIBLES (avec matching)
@@ -101,9 +103,14 @@ export const getDemandeDetail = async (userId: string, demandeId: string) => {
 
   const devisExistant = await prisma.devis.findFirst({
     where: { demandeId, prestataireId: prestataire.id },
+    select: { id: true, status: true },
   });
 
-  return { ...demande, devisExistant: !!devisExistant };
+  return {
+    ...demande,
+    devisExistant: devisExistant?.status === "ENVOYE",
+    devisRefuse: devisExistant?.status === "REFUSE",
+  };
 };
 
 // =============================================================================
@@ -223,12 +230,14 @@ export const accepterDevis = async (userId: string, devisId: string) => {
 
   const isModification = devis.demande.typePrestation === "MODIFICATION";
 
-  await prisma.$transaction(async (tx) => {
+  const { prestationId } = await prisma.$transaction(async (tx) => {
     // Accepter ce devis
     await tx.devis.update({
       where: { id: devisId },
       data: { status: "ACCEPTE", estSelectionnable: false },
     });
+
+    let newPrestation;
 
     if (isModification) {
       // MODIFICATION : les autres restent ENVOYE mais deviennent non-sélectionnables
@@ -242,7 +251,7 @@ export const accepterDevis = async (userId: string, devisId: string) => {
         data: { status: "EN_ATTENTE_INSPECTION" },
       });
 
-      await tx.prestation.create({
+      newPrestation = await tx.prestation.create({
         data: {
           demandeId: devis.demandeId,
           prestataireId: devis.prestataireId,
@@ -263,7 +272,7 @@ export const accepterDevis = async (userId: string, devisId: string) => {
         data: { status: "EN_ATTENTE_PAIEMENT" },
       });
 
-      await tx.prestation.create({
+      newPrestation = await tx.prestation.create({
         data: {
           demandeId: devis.demandeId,
           prestataireId: devis.prestataireId,
@@ -273,7 +282,38 @@ export const accepterDevis = async (userId: string, devisId: string) => {
         },
       });
     }
+
+    return { prestationId: newPrestation.id };
   });
+
+  await sendSystemMessage(
+    prestationId,
+    isModification
+      ? "✅ Tasky-Infos — Devis accepté. La prochaine étape est l'inspection de l'objet par le prestataire."
+      : "✅ Tasky-Infos — Devis accepté. La prestation démarrera dès que le paiement sera confirmé.",
+  ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+};
+
+// =============================================================================
+// MES STATS DEVIS (pour prestataire)
+// =============================================================================
+export const getMesStatsDevis = async (userId: string) => {
+  const prestataire = await prisma.prestataire.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  if (!prestataire) throw new Error("PRESTATAIRE_NOT_FOUND");
+
+  const [envoyes, acceptes] = await Promise.all([
+    prisma.devis.count({ where: { prestataireId: prestataire.id } }),
+    prisma.devis.count({ where: { prestataireId: prestataire.id, status: "ACCEPTE" } }),
+  ]);
+
+  return {
+    envoyes,
+    acceptes,
+    taux: envoyes > 0 ? Math.round((acceptes / envoyes) * 100) : 0,
+  };
 };
 
 // =============================================================================
@@ -285,7 +325,15 @@ export const refuserDevis = async (userId: string, devisId: string) => {
 
   const devis = await prisma.devis.findUnique({
     where: { id: devisId },
-    include: { demande: true },
+    include: {
+      demande: true,
+      prestataire: {
+        select: {
+          userId: true,
+          user: { select: { firstName: true, email: true } },
+        },
+      },
+    },
   });
   if (!devis) throw new Error("DEVIS_NOT_FOUND");
   if (devis.demande.clientId !== client.id) throw new Error("FORBIDDEN");
@@ -294,5 +342,76 @@ export const refuserDevis = async (userId: string, devisId: string) => {
   await prisma.devis.update({
     where: { id: devisId },
     data: { status: "REFUSE" },
+  });
+
+  const frontendUrl = process.env.FRONTEND_URL || "https://tasky.fr";
+  const ref = devis.demande.reference
+    ? `TSK-${String(devis.demande.reference).padStart(6, "0")}`
+    : devisId;
+
+  await addEmailJob({
+    type: "devis-refuse",
+    to: devis.prestataire.user.email,
+    userId: devis.prestataire.userId,
+    payload: {
+      firstName: devis.prestataire.user.firstName,
+      demandeReference: ref,
+      demandeTitre: devis.demande.titre,
+      demandesUrl: `${frontendUrl}/prestataire/requests`,
+    },
+  });
+};
+
+// =============================================================================
+// MES DEVIS REFUSÉS (pour prestataire — dashboard)
+// =============================================================================
+export const getMesDevisRefuses = async (userId: string) => {
+  const prestataire = await prisma.prestataire.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  if (!prestataire) throw new Error("PRESTATAIRE_NOT_FOUND");
+
+  const depuis30j = new Date();
+  depuis30j.setDate(depuis30j.getDate() - 30);
+
+  return prisma.devis.findMany({
+    where: {
+      prestataireId: prestataire.id,
+      status: "REFUSE",
+      dismissedByPrestataire: false,
+      updatedAt: { gte: depuis30j },
+    },
+    select: {
+      id: true,
+      updatedAt: true,
+      demande: { select: { id: true, titre: true, reference: true } },
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 5,
+  });
+};
+
+// =============================================================================
+// DISMISSER UN DEVIS REFUSE (prestataire)
+// =============================================================================
+export const dismisserDevis = async (userId: string, devisId: string) => {
+  const prestataire = await prisma.prestataire.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  if (!prestataire) throw new Error("PRESTATAIRE_NOT_FOUND");
+
+  const devis = await prisma.devis.findUnique({
+    where: { id: devisId },
+    select: { id: true, prestataireId: true, status: true },
+  });
+  if (!devis) throw new Error("DEVIS_NOT_FOUND");
+  if (devis.prestataireId !== prestataire.id) throw new Error("FORBIDDEN");
+  if (devis.status !== "REFUSE") throw new Error("DEVIS_NON_REFUSE");
+
+  await prisma.devis.update({
+    where: { id: devisId },
+    data: { dismissedByPrestataire: true },
   });
 };

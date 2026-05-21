@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { messageService } from "@/services/message.service";
 import { useAuthStore } from "@/stores/auth-store";
-import type { MessagesData } from "@/services/message.service";
+import type { Message, MessagesData } from "@/services/message.service";
 
 const MESSAGES_KEY = (prestationId: string) => ["messages", prestationId];
 
@@ -11,7 +11,7 @@ export const useUnreadMessageCount = () => {
     queryFn: () =>
       messageService.getUnreadCount().then((r) => r.data.data.count),
     staleTime: 0,
-    refetchInterval: 15_000,
+    refetchInterval: 5_000,
   });
 };
 
@@ -21,15 +21,21 @@ export const useUnreadByPrestation = () => {
     queryFn: () =>
       messageService.getUnreadByPrestation().then((r) => r.data.data),
     staleTime: 0,
-    refetchInterval: 15_000,
+    refetchInterval: 5_000,
   });
 };
 
 export const useMessages = (prestationId: string | undefined) => {
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: MESSAGES_KEY(prestationId ?? ""),
-    queryFn: () =>
-      messageService.getMessages(prestationId!).then((r) => r.data.data),
+    queryFn: async () => {
+      const result = await messageService.getMessages(prestationId!).then((r) => r.data.data);
+      // Les messages viennent d'être marqués comme lus côté backend — invalider les compteurs
+      queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
+      queryClient.invalidateQueries({ queryKey: ["messages-unread-by-prestation"] });
+      return result;
+    },
     enabled: !!prestationId,
     staleTime: 0,
     refetchInterval: 2_000,
@@ -40,7 +46,8 @@ export const useSendMessage = (prestationId: string) => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
 
-  return useMutation({
+  type MutationContext = { previous: MessagesData | undefined };
+  return useMutation<Message, unknown, string, MutationContext>({
     mutationFn: (contenu: string) =>
       messageService.sendMessage(prestationId, contenu).then((r) => r.data.data),
 
@@ -60,6 +67,7 @@ export const useSendMessage = (prestationId: string) => {
               auteurId: user?.id ?? "",
               contenu,
               lu: false,
+              isSystem: false,
               createdAt: new Date().toISOString(),
             },
           ],
@@ -69,7 +77,7 @@ export const useSendMessage = (prestationId: string) => {
       return { previous };
     },
 
-    onError: (_err: unknown, _vars: unknown, context: { previous: MessagesData | undefined } | undefined) => {
+    onError: (_err: unknown, _vars: string, context: MutationContext | undefined) => {
       if (context?.previous) {
         queryClient.setQueryData(MESSAGES_KEY(prestationId), context.previous);
       }
@@ -77,6 +85,8 @@ export const useSendMessage = (prestationId: string) => {
 
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: MESSAGES_KEY(prestationId) });
+      queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
+      queryClient.invalidateQueries({ queryKey: ["messages-unread-by-prestation"] });
     },
   });
 };

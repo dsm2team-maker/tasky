@@ -10,12 +10,13 @@ export interface CreateDemandePayload {
   budget?: number;
   ville?: string;
   photos?: string[];
-  dateEcheance?: string;
+  delaiJours: number;
   urgence: "NORMAL" | "URGENT" | "TRES_URGENT";
 }
 
 export interface Demande {
   id: string;
+  reference: number;
   titre: string;
   description: string;
   typePrestation: "MODIFICATION" | "CREATION" | "FORMATION";
@@ -27,7 +28,7 @@ export interface Demande {
   budget?: number;
   ville?: string;
   photos: string[];
-  dateEcheance?: string;
+  delaiJours: number;
   urgence: "NORMAL" | "URGENT" | "TRES_URGENT";
   status:
     | "PUBLIEE"

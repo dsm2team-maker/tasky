@@ -114,6 +114,20 @@ export const useVerifyEmailOtp = () => {
   });
 };
 
+// ─── Mutations suppression de compte ─────────────────────────────────────────
+export const useRequestDeleteAccount = () => {
+  return useMutation({
+    mutationFn: () => userService.requestDeleteAccount().then((r) => r.data),
+  });
+};
+
+export const useConfirmDeleteAccount = () => {
+  return useMutation({
+    mutationFn: (otp: string) =>
+      userService.confirmDeleteAccount(otp).then((r) => r.data),
+  });
+};
+
 // ─── Mutation mise à jour profil prestataire ─────────────────────────────────
 export const useUpdatePrestataireProfile = () => {
   const queryClient = useQueryClient();

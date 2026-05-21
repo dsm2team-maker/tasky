@@ -10,7 +10,7 @@ export interface CreateDemandeData {
   budget?: number;
   ville?: string;
   photos?: string[];
-  dateEcheance?: string;
+  delaiJours: number;
   urgence?: "NORMAL" | "URGENT" | "TRES_URGENT";
 }
 
@@ -48,7 +48,7 @@ export const createDemande = async (
       budget: data.budget || null,
       ville: data.ville || null,
       photos: data.photos || [],
-      dateEcheance: data.dateEcheance ? new Date(data.dateEcheance) : null,
+      delaiJours: data.delaiJours,
       urgence: data.urgence || "NORMAL",
       status: "PUBLIEE",
     },

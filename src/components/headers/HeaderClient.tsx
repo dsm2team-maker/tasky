@@ -31,6 +31,7 @@ export default function HeaderClient() {
     { href: routes.client.requests.list, label: "Mes demandes" },
     { href: routes.client.messages.list, label: "Messages", badge: unreadCount },
     { href: routes.client.profile.view, label: "Mon profil" },
+    { href: routes.public.contact, label: "Contact" },
   ];
 
   return (

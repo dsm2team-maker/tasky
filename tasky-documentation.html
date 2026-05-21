@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="Generator" content="Microsoft Word compatible">
+  <style>
+    body {
+      font-family: Calibri, Arial, sans-serif;
+      font-size: 11pt;
+      color: #1a1a1a;
+      margin: 2.5cm 3cm;
+      line-height: 1.5;
+    }
+
+    /* Titre principal */
+    h1 {
+      font-size: 26pt;
+      font-weight: bold;
+      color: #7c3aed;
+      text-align: center;
+      border-bottom: 3px solid #7c3aed;
+      padding-bottom: 10px;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 11pt;
+      color: #6b7280;
+      margin-top: 0;
+      margin-bottom: 30px;
+    }
+
+    /* Épics */
+    h2 {
+      font-size: 15pt;
+      font-weight: bold;
+      color: #ffffff;
+      background-color: #7c3aed;
+      padding: 8px 14px;
+      margin-top: 28px;
+      margin-bottom: 10px;
+    }
+
+    /* Sous-sections */
+    h3 {
+      font-size: 12pt;
+      font-weight: bold;
+      color: #5b21b6;
+      border-left: 4px solid #7c3aed;
+      padding-left: 10px;
+      margin-top: 16px;
+      margin-bottom: 6px;
+    }
+
+    h4 {
+      font-size: 11pt;
+      font-weight: bold;
+      color: #374151;
+      margin-top: 12px;
+      margin-bottom: 4px;
+    }
+
+    p {
+      margin: 4px 0 8px 0;
+    }
+
+    ul {
+      margin: 4px 0 10px 20px;
+      padding: 0;
+    }
+
+    ul li {
+      margin-bottom: 4px;
+    }
+
+    /* Tableaux */
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 10px 0 16px 0;
+      font-size: 10.5pt;
+    }
+
+    table thead tr {
+      background-color: #ede9fe;
+      color: #4c1d95;
+    }
+
+    th {
+      border: 1px solid #c4b5fd;
+      padding: 7px 10px;
+      font-weight: bold;
+      text-align: left;
+    }
+
+    td {
+      border: 1px solid #ddd6fe;
+      padding: 6px 10px;
+      vertical-align: top;
+    }
+
+    tr:nth-child(even) td {
+      background-color: #faf5ff;
+    }
+
+    /* Blocs de code / cycle */
+    pre {
+      background-color: #f3f4f6;
+      border-left: 4px solid #7c3aed;
+      padding: 12px 16px;
+      font-family: Consolas, 'Courier New', monospace;
+      font-size: 10pt;
+      color: #111827;
+      white-space: pre;
+      margin: 10px 0 14px 0;
+    }
+
+    /* Badge statut */
+    .badge {
+      display: inline-block;
+      font-size: 9.5pt;
+      font-weight: bold;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background-color: #ede9fe;
+      color: #5b21b6;
+    }
+
+    /* Note de bas de section */
+    .note {
+      background-color: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      padding: 8px 12px;
+      font-size: 10.5pt;
+      color: #78350f;
+      margin: 10px 0;
+    }
+
+    /* Séparateur */
+    hr {
+      border: none;
+      border-top: 2px solid #e5e7eb;
+      margin: 24px 0;
+    }
+
+    /* En-tête de page info */
+    .page-info {
+      text-align: right;
+      font-size: 9pt;
+      color: #9ca3af;
+      margin-bottom: 20px;
+    }
+
+    .checkmark { color: #16a34a; font-weight: bold; }
+    .cross     { color: #dc2626; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<p class="page-info">Tasky — Documentation fonctionnelle &nbsp;|&nbsp; Version 1.0 &nbsp;|&nbsp; Mai 2026</p>
+
+<h1>TASKY</h1>
+<p class="subtitle">Documentation fonctionnelle complète — Épics, fonctionnalités, cycle de vie des demandes</p>
+
+<hr>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2>EPIC 1 — Authentification &amp; Comptes</h2>
+
+<h3>Commun (Client + Prestataire)</h3>
+<ul>
+  <li>Inscription avec vérification email obligatoire avant accès</li>
+  <li>Connexion / déconnexion (JWT access token + refresh token)</li>
+  <li>Vérification temps réel de la disponibilité d'email et de téléphone à la saisie</li>
+  <li>Mot de passe oublié → lien de réinitialisation par email</li>
+  <li>Récupération d'email perdu via OTP envoyé sur le téléphone</li>
+  <li>Changement de téléphone : OTP envoyé par email pour confirmer</li>
+  <li>Changement d'email : alerte de sécurité envoyée sur l'ancienne adresse</li>
+  <li>Upload photo de profil (avatar) à l'inscription ou depuis le profil</li>
+  <li>Indicateur de force du mot de passe en temps réel</li>
+</ul>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2>EPIC 2 — Profil</h2>
+
+<h3>Côté Client</h3>
+<ul>
+  <li>Modifier prénom, nom, ville, téléphone, email, avatar</li>
+  <li>Voir ses statistiques (nombre de demandes, prestations actives)</li>
+</ul>
+
+<h3>Côté Prestataire</h3>
+<ul>
+  <li>Modifier bio, disponibilité (<em>ACTIF / OCCUPE / ABSENT</em>), avatar</li>
+  <li>Configurer le point de dépôt : adresse, ville, code postal, coordonnées GPS, instructions spéciales</li>
+  <li>Renseigner IBAN / BIC / nom de banque pour les virements</li>
+  <li>Gérer ses compétences : catégories → sous-catégories → interventions</li>
+  <li>Voir ses statistiques personnelles : taux de réussite, délai moyen, temps de réponse, note moyenne</li>
+  <li>Portfolio d'images (galerie de réalisations)</li>
+</ul>
+
+<h3>Page publique prestataire (visible par tous)</h3>
+<ul>
+  <li>Bio, note moyenne, nombre d'avis, compétences, portfolio, disponibilité</li>
+  <li>Accessible sans connexion</li>
+</ul>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2>EPIC 3 — Découverte des prestataires</h2>
+<ul>
+  <li>Page de recherche publique : liste de tous les prestataires actifs</li>
+  <li>Filtres et accès au profil public de chaque prestataire</li>
+  <li>Accessible sans connexion</li>
+</ul>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2>EPIC 4 — Demandes</h2>
+
+<h3>Côté Client — Créer une demande</h3>
+<table>
+  <thead>
+    <tr><th>Champ</th><th>Détail</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Titre</td><td>Intitulé court de la demande</td></tr>
+    <tr><td>Description</td><td>Détail complet du besoin</td></tr>
+    <tr><td>Type de prestation</td><td>MODIFICATION / CREATION / FORMATION</td></tr>
+    <tr><td>Catégorie</td><td>Ex : Électronique, Vêtements, Mobilier…</td></tr>
+    <tr><td>Sous-catégorie</td><td>Affinement de la catégorie principale</td></tr>
+    <tr><td>Interventions</td><td>Liste des opérations précises souhaitées</td></tr>
+    <tr><td>Budget</td><td>Montant indicatif (optionnel)</td></tr>
+    <tr><td>Ville</td><td>Localisation du client</td></tr>
+    <tr><td>Photos</td><td>Upload de photos de l'objet ou du besoin</td></tr>
+    <tr><td>Date d'échéance</td><td>Date limite souhaitée (optionnel)</td></tr>
+    <tr><td>Urgence</td><td>NORMAL / URGENT / TRES_URGENT</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <strong>Référence automatique :</strong> chaque demande reçoit un identifiant unique <strong>TSK-XXXXXX</strong> affiché dans la messagerie, le dashboard et les listes.
+</div>
+
+<h3>Côté Client — Gérer ses demandes</h3>
+<ul>
+  <li>Liste de toutes ses demandes avec statut visuel coloré</li>
+  <li>Voir le détail d'une demande (devis reçus, statut, prestation associée)</li>
+  <li>Supprimer une demande au statut PUBLIEE</li>
+</ul>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2>CYCLE DE VIE D'UNE DEMANDE — Statuts</h2>
+
+<pre>
+PUBLIEE
+  ↓  (devis accepté — type MODIFICATION)
+EN_ATTENTE_INSPECTION
+  ↓  (état des lieux validé OU conformité confirmée)
+EN_ATTENTE_PAIEMENT  ←─────────────────────────────────────┐
+  ↓  (paiement confirmé)                  (type CREATION / FORMATION)
+EN_COURS
+  ↓  (prestataire marque terminé)
+A_VALIDER
+  ↓  (client valide)        ↘  (client conteste → retour EN_COURS)
+TERMINEE
+</pre>
+
+<table>
+  <thead>
+    <tr><th>Statut</th><th>Qui agit</th><th>Ce qui se passe</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>PUBLIEE</strong></td><td>—</td><td>Visible par les prestataires compatibles, peut recevoir des devis</td></tr>
+    <tr><td><strong>EN_ATTENTE_INSPECTION</strong></td><td>Prestataire</td><td>Prestataire inspecte l'objet et soumet un état des lieux (MODIFICATION uniquement)</td></tr>
+    <tr><td><strong>EN_ATTENTE_PAIEMENT</strong></td><td>Client</td><td>Client doit effectuer le paiement pour débloquer la prestation</td></tr>
+    <tr><td><strong>EN_COURS</strong></td><td>Prestataire</td><td>Prestation active, le travail est en cours</td></tr>
+    <tr><td><strong>A_VALIDER</strong></td><td>Client</td><td>Prestataire a terminé, client a 3 jours pour valider (auto-validation à J+3)</td></tr>
+    <tr><td><strong>TERMINEE</strong></td><td>—</td><td>Prestation terminée et validée, client peut laisser un avis</td></tr>
+    <tr><td><strong>ANNULEE</strong></td><td>—</td><td>État des lieux refusé ou litige non résolu</td></tr>
+    <tr><td><strong>SUPPRIMEE</strong></td><td>Client</td><td>Demande retirée manuellement par le client</td></tr>
+  </tbody>
+</table>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2>EPIC 5 — Devis</h2>
+
+<h3>Côté Prestataire</h3>
+<ul>
+  <li>Voir la liste des demandes compatibles avec un <strong>score de matching</strong> (catégorie, ville, compétences)</li>
+  <li>Voir le détail d'une demande avant d'envoyer un devis</li>
+  <li>Envoyer un devis : montant, délai en jours, description / proposition</li>
+  <li>Un seul devis par prestataire par demande</li>
+  <li>Voir ses stats : devis envoyés, acceptés, taux de réussite</li>
+  <li>Voir les devis refusés des 30 derniers jours dans le dashboard</li>
+  <li>Ignorer (dismiss) un devis refusé pour ne plus l'afficher</li>
+</ul>
+
+<h3>Côté Client</h3>
+<ul>
+  <li>Voir tous les devis reçus sur sa demande (triés par date d'envoi)</li>
+  <li>Accepter un devis → crée la prestation et fait avancer le statut de la demande</li>
+  <li>Refuser un devis → email automatique de notification au prestataire</li>
+</ul>
+
+<h3>Statuts des devis</h3>
+<table>
+  <thead>
+    <tr><th>Statut</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>ENVOYE</strong></td><td>Devis en attente de décision du client</td></tr>
+    <tr><td><strong>ACCEPTE</strong></td><td>Devis retenu, prestation créée</td></tr>
+    <tr><td><strong>REFUSE</strong></td><td>Non retenu par le client</td></tr>
+    <tr><td><strong>EXPIRE</strong></td><td>Délai de validité dépassé (7 jours)</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <strong>Logique estSelectionnable / aVerifier :</strong> seuls les devis <em>estSelectionnable = true</em> peuvent être acceptés. Quand un état des lieux est refusé, le devis accepté passe <em>aVerifier = true</em> et les autres devis ENVOYE redeviennent sélectionnables.
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2>EPIC 6 — Cycle de prestation</h2>
+
+<h3>Type MODIFICATION (objet physique apporté)</h3>
+<pre>
+EN_ATTENTE_INSPECTION
+  ├── Prestataire : "Objet conforme" → EN_ATTENTE_PAIEMENT directement
+  └── Prestataire : État des lieux (description + photos + montant révisé optionnel)
+        ├── Client accepte → EN_ATTENTE_PAIEMENT
+        └── Client refuse  → Prestation ANNULEE + demande remise PUBLIEE
+
+EN_ATTENTE_PAIEMENT
+  └── Client paie → EN_COURS
+
+EN_COURS
+  └── Prestataire marque terminé → A_VALIDER (autoValidateAt = J+3)
+
+A_VALIDER
+  ├── Client valide    → TERMINEE
+  └── Client conteste → retour EN_COURS
+
+TERMINEE
+  └── Client peut noter le prestataire (1 à 5 étoiles + commentaire)
+</pre>
+
+<h3>Type CREATION / FORMATION (sans inspection)</h3>
+<pre>
+EN_ATTENTE_PAIEMENT → EN_COURS → A_VALIDER → TERMINEE
+</pre>
+<p>Même logique à partir du paiement, sans étape d'état des lieux.</p>
+
+<h3>Actions Prestataire sur la prestation</h3>
+<ul>
+  <li>Soumettre un état des lieux : description, photos, montant révisé (optionnel)</li>
+  <li>Confirmer la conformité : objet OK, pas de révision de tarif → passe directement à EN_ATTENTE_PAIEMENT</li>
+  <li>Marquer terminé : EN_COURS → A_VALIDER</li>
+</ul>
+
+<h3>Actions Client sur la prestation</h3>
+<ul>
+  <li>Valider l'état des lieux (accepter ou refuser)</li>
+  <li>Payer (actuel : stub — sera remplacé par Stripe)</li>
+  <li>Valider la prestation : A_VALIDER → TERMINEE</li>
+  <li>Contester : A_VALIDER → retour EN_COURS</li>
+  <li>Laisser un avis après TERMINEE</li>
+</ul>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2>EPIC 7 — Messagerie</h2>
+
+<p>Pour chaque prestation active, un canal de chat dédié <strong>client ↔ prestataire</strong>.</p>
+
+<h3>Onglet Messages (chat)</h3>
+<ul>
+  <li>Échanges libres entre client et prestataire</li>
+  <li>Fond rose clair côté Messages</li>
+  <li>Blocage automatique des coordonnées personnelles (email, téléphone)</li>
+  <li>Envoi par Entrée ou bouton</li>
+</ul>
+
+<h3>Onglet Tasky-Infos (notifications système)</h3>
+<ul>
+  <li>Fond violet clair côté Tasky-Infos</li>
+  <li>Les plus récentes affichées <strong>en haut</strong></li>
+  <li>Avatar = logo Tasky dans un cercle violet</li>
+  <li>Badge avec le nombre total de notifications</li>
+</ul>
+
+<h3>Fonctionnalités transversales</h3>
+<ul>
+  <li>Badge de compteur messages non lus dans le header (toutes conversations)</li>
+  <li>Notification email automatique si le destinataire n'a pas lu ses messages</li>
+  <li>Référence TSK-XXXXXX affichée dans la liste des conversations</li>
+</ul>
+
+<h3>Messages Tasky-Infos automatiques</h3>
+<table>
+  <thead>
+    <tr><th>Événement déclencheur</th><th>Message envoyé</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Devis accepté (CREATION/FORMATION)</td><td>Devis accepté. La prestation démarrera dès que le paiement sera confirmé.</td></tr>
+    <tr><td>Devis accepté (MODIFICATION)</td><td>Devis accepté. La prochaine étape est l'inspection de l'objet par le prestataire.</td></tr>
+    <tr><td>État des lieux soumis</td><td>Le prestataire a soumis un état des lieux. Le client doit l'examiner.</td></tr>
+    <tr><td>État des lieux accepté</td><td>État des lieux accepté. En attente du paiement pour démarrer la prestation.</td></tr>
+    <tr><td>État des lieux refusé</td><td>État des lieux refusé. La prestation est annulée, la demande est à nouveau disponible.</td></tr>
+    <tr><td>Conformité confirmée</td><td>Objet conforme. En attente du paiement pour démarrer la prestation.</td></tr>
+    <tr><td>Paiement confirmé</td><td>Paiement confirmé par le client. La prestation est maintenant en cours !</td></tr>
+    <tr><td>Prestation terminée</td><td>Prestation marquée comme terminée. Convenez d'un rendez-vous pour la remise de l'objet.</td></tr>
+    <tr><td>Prestation validée</td><td>Prestation validée par le client ! Le paiement sera libéré sous 1 à 2 jours ouvrés.</td></tr>
+  </tbody>
+</table>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2>EPIC 8 — Avis &amp; Notation</h2>
+<ul>
+  <li>Client laisse un avis sur le prestataire une fois la prestation TERMINEE</li>
+  <li>Note de 1 à 5 étoiles + commentaire libre</li>
+  <li>Note moyenne et nombre d'avis visibles sur le profil public du prestataire</li>
+  <li>Un seul avis autorisé par prestation</li>
+</ul>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2>EPIC 9 — Dashboards</h2>
+
+<h3>Dashboard Client</h3>
+<ul>
+  <li>Aperçu des demandes actives et de leur statut en cours</li>
+  <li>Accès rapide aux actions en attente (payer, valider…)</li>
+  <li>Statistiques générales (nombre de demandes, prestations actives)</li>
+</ul>
+
+<h3>Dashboard Prestataire</h3>
+<ul>
+  <li>Courbe de revenus sur 6 mois glissants (avec commission Tasky 15%)</li>
+  <li>Anneau SVG du taux d'acceptation de devis (vert ≥ 50%, orange ≥ 25%, rouge sinon)</li>
+  <li>Objectif mensuel et barre de progression</li>
+  <li>Devis refusés récents (30 jours) — dismissable individuellement</li>
+  <li>Demandes compatibles en temps réel (algorithme de matching) avec référence TSK-XXXXXX</li>
+  <li>Alertes : bio trop courte, IBAN manquant</li>
+</ul>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2>EPIC 10 — Notifications Email</h2>
+
+<p><strong>Infrastructure :</strong> Resend + BullMQ + Redis (queue avec retry exponentiel, 3 tentatives max, 5 emails en parallèle)</p>
+
+<table>
+  <thead>
+    <tr><th>Email</th><th>Destinataire</th><th>Déclencheur</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Vérification email</td><td>Client / Prestataire</td><td>Inscription</td></tr>
+    <tr><td>Réinitialisation mot de passe</td><td>Client / Prestataire</td><td>Demande de reset</td></tr>
+    <tr><td>Nouveau message non lu</td><td>Client / Prestataire</td><td>Message reçu non consulté</td></tr>
+    <tr><td>Devis refusé</td><td>Prestataire</td><td>Client refuse un devis</td></tr>
+    <tr><td>OTP changement téléphone</td><td>Client / Prestataire</td><td>Demande de changement de téléphone</td></tr>
+    <tr><td>Alerte sécurité changement email</td><td>Client / Prestataire</td><td>Email modifié sur le compte</td></tr>
+  </tbody>
+</table>
+
+<p>Chaque email est enregistré en base de données : destinataire, type, statut d'envoi, identifiant Resend.</p>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2>EPIC 11 — Références &amp; Identification</h2>
+<ul>
+  <li>Chaque demande reçoit un numéro unique auto-incrémenté affiché sous la forme <strong>TSK-XXXXXX</strong></li>
+  <li>Badge TSK affiché dans la liste des conversations (côté client et prestataire)</li>
+  <li>Badge TSK affiché dans les demandes compatibles du dashboard prestataire</li>
+</ul>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2>EPIC 12 — Pages légales &amp; Contact</h2>
+<ul>
+  <li>CGU Client</li>
+  <li>CGU Prestataire</li>
+  <li>Mentions légales</li>
+  <li>Politique de confidentialité</li>
+  <li>Formulaire de contact</li>
+</ul>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2>FONCTIONNALITÉS MODÉLISÉES — À développer</h2>
+
+<table>
+  <thead>
+    <tr><th>Fonctionnalité</th><th>Modèle en base</th><th>Interface</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Paiement Stripe</strong></td>
+      <td><span class="checkmark">✔</span> Stub passerEnCours</td>
+      <td><span class="cross">✘</span> À intégrer</td>
+    </tr>
+    <tr>
+      <td><strong>Auto-validation J+3</strong></td>
+      <td><span class="checkmark">✔</span> Champ autoValidateAt</td>
+      <td><span class="cross">✘</span> Cron à créer</td>
+    </tr>
+    <tr>
+      <td><strong>Signalements</strong></td>
+      <td><span class="checkmark">✔</span> Modèle Signalement</td>
+      <td><span class="cross">✘</span> UI à créer</td>
+    </tr>
+    <tr>
+      <td><strong>Panel Admin</strong></td>
+      <td>—</td>
+      <td><span class="cross">✘</span> À créer de zéro</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr>
+<p style="text-align:center; color:#9ca3af; font-size:9.5pt; margin-top:20px;">
+  Tasky — Documentation générée le 14 mai 2026
+</p>
+
+</body>
+</html>

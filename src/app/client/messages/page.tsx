@@ -44,8 +44,15 @@ function ConversationCard({ prestation, unread }: { prestation: Prestation; unre
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className={`font-semibold ${colors.text.primary} truncate`}>
-            {other?.firstName} {other?.lastName}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className={`font-semibold ${colors.text.primary} truncate`}>
+              {other?.firstName} {other?.lastName}
+            </div>
+            {prestation.demande.reference && (
+              <span className="text-[10px] font-mono font-bold bg-pink-50 text-pink-600 border border-pink-200 px-1.5 py-0.5 rounded flex-shrink-0">
+                TSK-{String(prestation.demande.reference).padStart(6, "0")}
+              </span>
+            )}
           </div>
           <div className={`text-sm ${colors.text.secondary} truncate`}>
             {prestation.demande.titre}

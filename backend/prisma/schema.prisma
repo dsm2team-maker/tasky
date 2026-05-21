@@ -23,9 +23,10 @@ model User {
   city          String?
   avatar        String?
   emailVerified Boolean  @default(false)
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  isActive      Boolean   @default(true)
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   client        Client?
   prestataire   Prestataire?
@@ -138,6 +139,7 @@ model Intervention {
 
 model Demande {
   id              String         @id @default(cuid())
+  reference       Int            @unique @default(autoincrement())
   clientId        String
   client          Client         @relation(fields: [clientId], references: [id])
   titre           String
@@ -151,7 +153,7 @@ model Demande {
   budget          Float?
   ville           String?
   photos          String[]
-  dateEcheance    DateTime?
+  delaiJours      Int            @default(7)
   urgence         UrgenceDemande @default(NORMAL)
   status          StatusDemande  @default(PUBLIEE)
   createdAt       DateTime       @default(now())
@@ -195,12 +197,13 @@ model Devis {
   montant          Float
   delai            Int
   description      String
-  status           StatusDevis @default(ENVOYE)
-  estSelectionnable Boolean    @default(true)
-  aVerifier        Boolean     @default(false)
-  expiresAt        DateTime
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  status                  StatusDevis @default(ENVOYE)
+  estSelectionnable       Boolean     @default(true)
+  aVerifier               Boolean     @default(false)
+  dismissedByPrestataire  Boolean     @default(false)
+  expiresAt               DateTime
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
 
   @@map("devis")
 }
@@ -220,13 +223,15 @@ model Prestation {
   prestataire    Prestataire      @relation(fields: [prestataireId], references: [id])
   subCategoryId  String?
   subCategory    SubCategory?     @relation(fields: [subCategoryId], references: [id])
-  montant        Float
-  montantFinal   Float?
-  status         StatusPrestation @default(EN_ATTENTE_INSPECTION)
-  createdAt      DateTime         @default(now())
-  completedAt    DateTime?
-  validatedAt    DateTime?
-  autoValidateAt DateTime?
+  montant                Float
+  montantFinal           Float?
+  stripePaymentIntentId  String?
+  status                 StatusPrestation @default(EN_ATTENTE_INSPECTION)
+  createdAt         DateTime         @default(now())
+  completedAt       DateTime?
+  validatedAt       DateTime?
+  autoValidateAt    DateTime?
+  dateEcheanceFinal DateTime?
   review         Review?
   etatDesLieux   EtatDesLieux?
   messages       Message[]
@@ -266,9 +271,10 @@ model Message {
   id           String     @id @default(cuid())
   prestationId String
   prestation   Prestation @relation(fields: [prestationId], references: [id])
-  auteurId     String
+  auteurId     String?
   contenu      String
   lu           Boolean    @default(false)
+  isSystem     Boolean    @default(false)
   createdAt    DateTime   @default(now())
 
   @@map("messages")
