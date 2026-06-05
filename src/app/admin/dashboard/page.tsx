@@ -1,8 +1,9 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { adminService } from "@/services/admin.service";
 import Link from "next/link";
+import { useState } from "react";
 
 function KpiCard({ icon, label, value, sub, color }: { icon: string; label: string; value: string | number; sub?: string; color: string }) {
   return (
@@ -16,10 +17,20 @@ function KpiCard({ icon, label, value, sub, color }: { icon: string; label: stri
 }
 
 export default function AdminDashboardPage() {
+  const [jobResult, setJobResult] = useState<string | null>(null);
+
   const { data, isLoading } = useQuery({
     queryKey: ["admin-dashboard"],
     queryFn: () => adminService.getDashboard().then((r) => r.data.data),
     refetchInterval: 30_000,
+  });
+
+  const autoValidate = useMutation({
+    mutationFn: () => adminService.runAutoValidate(),
+    onSuccess: (res) => {
+      setJobResult(res.data.message);
+      setTimeout(() => setJobResult(null), 4000);
+    },
   });
 
   if (isLoading) return (
@@ -32,9 +43,23 @@ export default function AdminDashboardPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">📊 Dashboard</h1>
-        <p className="text-gray-400 text-sm mt-1">Vue globale de la plateforme Tasky</p>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-white">📊 Dashboard</h1>
+          <p className="text-gray-400 text-sm mt-1">Vue globale de la plateforme Tasky</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {jobResult && (
+            <span className="text-xs text-emerald-400 bg-emerald-900/30 px-3 py-1 rounded-lg">{jobResult}</span>
+          )}
+          <button
+            onClick={() => autoValidate.mutate()}
+            disabled={autoValidate.isPending}
+            className="text-xs bg-gray-700 hover:bg-gray-600 disabled:opacity-50 border border-gray-600 px-4 py-2 rounded-xl transition-colors"
+          >
+            {autoValidate.isPending ? "En cours…" : "⏰ Lancer auto-validation"}
+          </button>
+        </div>
       </div>
 
       {/* KPIs */}

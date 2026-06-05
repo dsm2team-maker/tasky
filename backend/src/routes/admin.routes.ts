@@ -10,6 +10,7 @@ import {
   getSignalementsHandler,
   resolveSignalementHandler,
   getPaiementsHandler,
+  runAutoValidateHandler,
 } from "../controllers/admin.controller";
 
 const router = Router();
@@ -25,5 +26,6 @@ router.get("/prestations/:id", getPrestationDetailHandler);
 router.get("/signalements", getSignalementsHandler);
 router.patch("/signalements/:id/resolve", resolveSignalementHandler);
 router.get("/paiements", getPaiementsHandler);
+router.post("/jobs/auto-validate", runAutoValidateHandler);
 
 export default router;

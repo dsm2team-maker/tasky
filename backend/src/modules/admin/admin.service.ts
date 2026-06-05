@@ -73,7 +73,6 @@ export const getUsers = async (page = 1, search = "") => {
         emailVerified: true,
         createdAt: true,
         deletedAt: true,
-        _count: { select: { client: false } },
         client: { select: { _count: { select: { demandes: true } } } },
         prestataire: { select: { _count: { select: { prestations: true } }, rating: true } },
       },
@@ -175,10 +174,37 @@ export const getSignalements = async (page = 1) => {
 };
 
 export const resolveSignalement = async (id: string, note: string) => {
+  const signalement = await prisma.signalement.findUnique({
+    where: { id },
+    include: { demande: { include: { prestation: { select: { id: true } } } } },
+  });
+
+  if (!signalement) throw new Error("SIGNALEMENT_NOT_FOUND");
+
+  const messageAdmin = note
+    ? `${signalement.message}\n\n[Admin] ${note}`
+    : signalement.message;
+
   await prisma.signalement.update({
     where: { id },
-    data: { statut: "RESOLU", message: note ? `${(await prisma.signalement.findUnique({ where: { id } }))?.message}\n\n[Admin] ${note}` : undefined },
+    data: { statut: "RESOLU", message: messageAdmin },
   });
+
+  // Notifier le client via Tasky-Infos si une prestation est liée
+  const prestationId = signalement.demande?.prestation?.id;
+  if (prestationId) {
+    const notifMessage = note
+      ? `🔔 Tasky-Infos — Votre signalement a été traité par l'équipe Tasky.\n\nRéponse de l'admin : ${note}`
+      : `🔔 Tasky-Infos — Votre signalement a été traité et marqué comme résolu par l'équipe Tasky.`;
+
+    await prisma.message.create({
+      data: {
+        prestationId,
+        contenu: notifMessage,
+        isSystem: true,
+      },
+    });
+  }
 };
 
 // ─── Paiements ────────────────────────────────────────────────────────────────

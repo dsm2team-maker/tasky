@@ -11,10 +11,12 @@ import messageRoutes from "./routes/message.routes";
 import contactRoutes from "./routes/contact.routes";
 import paymentRoutes, { stripeWebhookHandler } from "./routes/payment.routes";
 import adminRoutes from "./routes/admin.routes";
+import signalementRoutes from "./routes/signalement.routes";
 
 dotenv.config();
 
 import "./workers/email.worker";
+import { startAutoValidateJob } from "./jobs/autoValidate.job";
 
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
@@ -81,6 +83,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/signalements", signalementRoutes);
 
 app.use("*", (req, res) => {
   res.status(404).json({
@@ -91,6 +94,7 @@ app.use("*", (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  startAutoValidateJob();
 });
 
 export default app;

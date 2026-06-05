@@ -80,8 +80,8 @@ export default function AdminUsersPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  {u.deletedAt ? (
-                    <span className="text-xs text-gray-500">🗑️ Supprimé</span>
+                  {u.email.startsWith("DEL_") ? (
+                    <span className="text-xs text-gray-500">🗑️ Anonymisé</span>
                   ) : u.isActive ? (
                     <span className="text-xs text-emerald-400">● Actif</span>
                   ) : (
@@ -96,7 +96,7 @@ export default function AdminUsersPage() {
                   {u.role === "PRESTATAIRE" && `${u.prestataire?._count?.prestations ?? 0} prestation(s) · ⭐ ${u.prestataire?.rating?.toFixed(1) ?? "—"}`}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  {!u.deletedAt && u.role !== "ADMIN" && (
+                  {!u.email.startsWith("DEL_") && u.role !== "ADMIN" && (
                     u.isActive ? (
                       <button
                         onClick={() => suspend.mutate(u.id)}

@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
 import * as adminService from "../modules/admin/admin.service";
+import { runAutoValidationNow } from "../jobs/autoValidate.job";
 
 const isAdmin = (req: AuthRequest, res: Response): boolean => {
   if (req.user?.role !== "ADMIN") {
@@ -87,5 +88,13 @@ export const getPaiementsHandler = async (req: AuthRequest, res: Response) => {
     const page = parseInt(req.query.page as string) || 1;
     const data = await adminService.getPaiements(page);
     res.json({ success: true, data });
+  } catch { res.status(500).json({ success: false, message: "Erreur serveur" }); }
+};
+
+export const runAutoValidateHandler = async (req: AuthRequest, res: Response) => {
+  if (!isAdmin(req, res)) return;
+  try {
+    const count = await runAutoValidationNow();
+    res.json({ success: true, message: `${count} prestation(s) auto-validée(s)` });
   } catch { res.status(500).json({ success: false, message: "Erreur serveur" }); }
 };

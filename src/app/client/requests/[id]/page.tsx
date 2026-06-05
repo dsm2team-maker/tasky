@@ -719,6 +719,11 @@ export default function ClientRequestDetailPage() {
 
   const [isHydrated, setIsHydrated] = useState(false);
   const [showAcceptModal, setShowAcceptModal] = useState(false);
+  const [showSignalModal, setShowSignalModal] = useState(false);
+  const [signalMessage, setSignalMessage] = useState("");
+  const [signalError, setSignalError] = useState("");
+  const [signalSent, setSignalSent] = useState(false);
+  const [signalPending, setSignalPending] = useState(false);
   const { data, isLoading } = useDevisDemande(id);
   const { data: prestations } = useMesPrestationsClient();
   const { data: profile } = useProfile();
@@ -844,6 +849,24 @@ export default function ClientRequestDetailPage() {
         {/* Validation prestation */}
         {prestation && <SectionValidation prestation={prestation} />}
 
+        {/* Bouton signalement — visible si prestation active */}
+        {prestation && ["EN_COURS", "A_VALIDER", "EN_ATTENTE_PAIEMENT", "EN_ATTENTE_INSPECTION"].includes(prestation.status) && !signalSent && (
+          <div className="mb-6">
+            <button
+              onClick={() => setShowSignalModal(true)}
+              className="w-full flex items-center justify-center gap-2 text-sm text-red-500 hover:text-red-600 border border-red-200 hover:border-red-300 bg-red-50 hover:bg-red-100 rounded-2xl py-3 transition-colors"
+            >
+              ⚠️ Signaler un problème à Tasky
+            </button>
+          </div>
+        )}
+        {signalSent && (
+          <div className="mb-6 bg-orange-50 border border-orange-200 rounded-2xl px-4 py-3 flex items-center gap-2">
+            <span className="text-orange-500">✅</span>
+            <p className="text-sm text-orange-700 font-medium">Votre signalement a bien été transmis à l'équipe Tasky. Nous reviendrons vers vous rapidement.</p>
+          </div>
+        )}
+
         {/* Prestation terminée */}
         {prestation && prestation.status === "TERMINEE" && (
           <div
@@ -906,6 +929,55 @@ export default function ClientRequestDetailPage() {
           )}
         </div>
       </main>
+
+      {/* Modal signalement */}
+      {showSignalModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-1">⚠️ Signaler un problème</h2>
+            <p className="text-xs text-gray-500 mb-4">Décrivez précisément le problème. L'équipe Tasky examinera votre signalement et vous contactera.</p>
+            <textarea
+              value={signalMessage}
+              onChange={(e) => { setSignalMessage(e.target.value); setSignalError(""); }}
+              placeholder="Ex : Le prestataire ne répond plus depuis 3 jours, le travail n'a pas été effectué…"
+              rows={5}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-red-300 resize-none"
+            />
+            {signalError && <p className="text-xs text-red-500 mt-1">{signalError}</p>}
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => { setShowSignalModal(false); setSignalMessage(""); setSignalError(""); }}
+                className="flex-1 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                disabled={signalPending}
+                onClick={async () => {
+                  if (signalMessage.trim().length < 10) {
+                    setSignalError("Veuillez décrire le problème (minimum 10 caractères).");
+                    return;
+                  }
+                  setSignalPending(true);
+                  try {
+                    await apiClient.post("/api/signalements", { demandeId: id, message: signalMessage.trim() });
+                    setSignalSent(true);
+                    setShowSignalModal(false);
+                    setSignalMessage("");
+                  } catch (e: any) {
+                    setSignalError(e.response?.data?.message ?? "Erreur lors de l'envoi.");
+                  } finally {
+                    setSignalPending(false);
+                  }
+                }}
+                className="flex-1 py-2 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-sm font-semibold transition-colors"
+              >
+                {signalPending ? "Envoi…" : "Envoyer le signalement"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Modal
         isOpen={showAcceptModal}

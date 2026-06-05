@@ -13,4 +13,5 @@ export const adminService = {
   resolveSignalement: (id: string, note: string) =>
     apiClient.patch(`/api/admin/signalements/${id}/resolve`, { note }),
   getPaiements: (page = 1) => apiClient.get(`/api/admin/paiements?page=${page}`),
+  runAutoValidate: () => apiClient.post("/api/admin/jobs/auto-validate", {}),
 };

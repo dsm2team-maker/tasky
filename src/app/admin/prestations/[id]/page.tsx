@@ -14,10 +14,11 @@ const statusLabel: Record<string, { label: string; color: string }> = {
   ANNULEE: { label: "Annulée", color: "bg-gray-700 text-gray-400" },
 };
 
-const devisStatus: Record<string, string> = {
-  EN_ATTENTE: "En attente",
-  ACCEPTE: "Accepté",
-  REFUSE: "Refusé",
+const devisStatus: Record<string, { label: string; color: string }> = {
+  ENVOYE:  { label: "Envoyé",   color: "bg-gray-700 text-gray-400" },
+  ACCEPTE: { label: "Accepté",  color: "bg-emerald-900 text-emerald-300" },
+  REFUSE:  { label: "Refusé",   color: "bg-red-900 text-red-300" },
+  EXPIRE:  { label: "Expiré",   color: "bg-gray-700 text-gray-500" },
 };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -125,7 +126,7 @@ export default function AdminPrestationDetailPage() {
 
         {/* Demande */}
         <Section title="Détail de la demande">
-          <Row label="Catégorie" value={p.demande.category?.name ?? "—"} />
+          <Row label="Catégorie" value={p.demande.category?.nom ?? "—"} />
           <Row label="Description" value={<span className="text-gray-300 max-w-xs text-right">{p.demande.description ?? "—"}</span>} />
 <Row label="Délai" value={p.demande.delaiJours ? `${p.demande.delaiJours} jour(s)` : "—"} />
           <Row label="Créée le" value={new Date(p.demande.createdAt).toLocaleDateString("fr-FR")} />
@@ -144,18 +145,10 @@ export default function AdminPrestationDetailPage() {
                     <div className="text-xs font-medium text-white">
                       {d.prestataire.user.firstName} {d.prestataire.user.lastName}
                     </div>
-                    <div className="text-xs text-gray-400">{d.prix.toFixed(2)} €</div>
+                    <div className="text-xs text-gray-400">{(d.montant ?? 0).toFixed(2)} €</div>
                   </div>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${
-                      d.status === "ACCEPTE"
-                        ? "bg-emerald-900 text-emerald-300"
-                        : d.status === "REFUSE"
-                        ? "bg-red-900 text-red-300"
-                        : "bg-gray-700 text-gray-400"
-                    }`}
-                  >
-                    {devisStatus[d.status] ?? d.status}
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${(devisStatus[d.status] ?? devisStatus.ENVOYE).color}`}>
+                    {(devisStatus[d.status] ?? { label: d.status }).label}
                   </span>
                 </div>
               ))}
