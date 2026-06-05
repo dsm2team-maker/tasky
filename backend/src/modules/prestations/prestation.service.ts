@@ -1,5 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import { sendSystemMessage } from "../messages/message.service";
+import { addEmailJob } from "../../queues/email.queue";
 
 // =============================================================================
 // GET MES PRESTATIONS (Prestataire)
@@ -384,7 +385,10 @@ export const validerPrestation = async (
 
   const prestation = await prisma.prestation.findUnique({
     where: { id: prestationId },
-    include: { demande: true },
+    include: {
+      demande: { include: { client: { include: { user: true } } } },
+      prestataire: { include: { user: true } },
+    },
   });
   if (!prestation) throw new Error("PRESTATION_NOT_FOUND");
   if (prestation.demande.clientId !== client.id) throw new Error("FORBIDDEN");
@@ -406,6 +410,23 @@ export const validerPrestation = async (
     prestationId,
     "🎉 Tasky-Infos — Prestation validée par le client ! Le paiement sera libéré sous 1 à 2 jours ouvrés.",
   ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+
+  // Emails order-completed
+  const frontendUrl = process.env.FRONTEND_URL || "https://tasky.fr";
+  const ref = `TSK-${String(prestation.demande.reference).padStart(6, "0")}`;
+  const titre = prestation.demande.titre;
+  const montant = prestation.montantFinal ?? prestation.montant;
+  const emailPayload = { demandeReference: ref, demandeTitre: titre, montant, isAutoValidated: false };
+
+  addEmailJob({ type: "order-completed", to: prestation.demande.client.user.email, payload: {
+    ...emailPayload, firstName: prestation.demande.client.user.firstName, role: "client",
+    prestationUrl: `${frontendUrl}/client/requests/${prestation.demandeId}`,
+  }}).catch(() => {});
+
+  addEmailJob({ type: "order-completed", to: prestation.prestataire.user.email, payload: {
+    ...emailPayload, firstName: prestation.prestataire.user.firstName, role: "prestataire",
+    prestationUrl: `${frontendUrl}/prestataire/requests`,
+  }}).catch(() => {});
 };
 
 // =============================================================================

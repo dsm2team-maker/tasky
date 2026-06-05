@@ -159,18 +159,32 @@ export const envoyerDevis = async (
           id: true,
           rating: true,
           reviewCount: true,
-          user: {
-            select: {
-              firstName: true,
-              lastName: true,
-              avatar: true,
-              city: true,
-            },
-          },
+          user: { select: { firstName: true, lastName: true, avatar: true, city: true } },
         },
       },
     },
   });
+
+  // Email au client — nouveau devis reçu
+  const clientUser = await prisma.user.findFirst({
+    where: { client: { demandes: { some: { id: demandeId } } } },
+    select: { email: true, firstName: true },
+  });
+  const frontendUrl = process.env.FRONTEND_URL || "https://tasky.fr";
+  if (clientUser) {
+    addEmailJob({
+      type: "quote-received",
+      to: clientUser.email,
+      payload: {
+        firstName: clientUser.firstName,
+        demandeReference: `TSK-${String(demande.reference).padStart(6, "0")}`,
+        demandeTitre: demande.titre,
+        prestataireNom: `${devis.prestataire.user.firstName} ${devis.prestataire.user.lastName}`,
+        montant: data.montant,
+        devisUrl: `${frontendUrl}/client/requests/${demandeId}`,
+      },
+    }).catch(() => {});
+  }
 
   return devis;
 };

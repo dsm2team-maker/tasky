@@ -9,6 +9,9 @@ import { phoneChangeOtpTemplate } from "../emails/phone-change-otp.template";
 import { emailChangeAlertTemplate } from "../emails/email-change-alert.template";
 import { devisRefuseTemplate } from "../emails/devis-refuse.template";
 import { deleteAccountOtpTemplate } from "../emails/delete-account-otp.template";
+import { quoteReceivedTemplate } from "../emails/quote-received.template";
+import { orderConfirmedTemplate } from "../emails/order-confirmed.template";
+import { orderCompletedTemplate } from "../emails/order-completed.template";
 import { prisma } from "../lib/prisma";
 
 const processEmailJob = async (job: Job<EmailJobData>) => {
@@ -85,6 +88,43 @@ const processEmailJob = async (job: Job<EmailJobData>) => {
       html = deleteAccountOtpTemplate({
         firstName: payload.firstName,
         otp: payload.otp,
+      });
+      break;
+
+    case "quote-received":
+      subject = `Nouveau devis reçu — ${payload.demandeReference} — Tasky`;
+      html = quoteReceivedTemplate({
+        firstName: payload.firstName,
+        demandeReference: payload.demandeReference,
+        demandeTitre: payload.demandeTitre,
+        prestataireNom: payload.prestataireNom,
+        montant: payload.montant,
+        devisUrl: payload.devisUrl,
+      });
+      break;
+
+    case "order-confirmed":
+      subject = `Prestation confirmée — ${payload.demandeReference} — Tasky`;
+      html = orderConfirmedTemplate({
+        firstName: payload.firstName,
+        demandeReference: payload.demandeReference,
+        demandeTitre: payload.demandeTitre,
+        montant: payload.montant,
+        role: payload.role,
+        prestationUrl: payload.prestationUrl,
+      });
+      break;
+
+    case "order-completed":
+      subject = `Prestation terminée — ${payload.demandeReference} — Tasky`;
+      html = orderCompletedTemplate({
+        firstName: payload.firstName,
+        demandeReference: payload.demandeReference,
+        demandeTitre: payload.demandeTitre,
+        montant: payload.montant,
+        role: payload.role,
+        isAutoValidated: payload.isAutoValidated ?? false,
+        prestationUrl: payload.prestationUrl,
       });
       break;
 

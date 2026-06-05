@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { getStripe } from "../config/stripe.config";
 import env from "../config/env.config";
 import { prisma } from "../lib/prisma";
+import { addEmailJob } from "../queues/email.queue";
 
 // POST /api/payment/create-intent
 export async function createPaymentIntentHandler(req: Request, res: Response) {
@@ -122,6 +123,12 @@ export async function confirmPaymentHandler(req: Request, res: Response) {
       return res.json({ success: true, message: "Déjà en cours" });
     }
 
+    // Charger prestataire pour l'email
+    const prestataireUser = await prisma.user.findFirst({
+      where: { prestataire: { id: prestation.prestataireId } },
+      select: { email: true, firstName: true },
+    });
+
     await prisma.$transaction([
       prisma.prestation.update({
         where: { id: prestationId },
@@ -139,6 +146,34 @@ export async function confirmPaymentHandler(req: Request, res: Response) {
         },
       }),
     ]);
+
+    const frontendUrl = process.env.FRONTEND_URL || "https://tasky.fr";
+    const ref = `TSK-${String(prestation.demande.reference).padStart(6, "0")}`;
+    const titre = prestation.demande.titre;
+    const montant = prestation.montantFinal ?? prestation.montant;
+
+    // Email client
+    const clientUser = prestation.demande.client.user as any;
+    addEmailJob({ type: "order-confirmed", to: clientUser.email, payload: {
+      firstName: clientUser.firstName,
+      demandeReference: ref,
+      demandeTitre: titre,
+      montant,
+      role: "client",
+      prestationUrl: `${frontendUrl}/client/requests/${prestation.demandeId}`,
+    }}).catch(() => {});
+
+    // Email prestataire
+    if (prestataireUser) {
+      addEmailJob({ type: "order-confirmed", to: prestataireUser.email, payload: {
+        firstName: prestataireUser.firstName,
+        demandeReference: ref,
+        demandeTitre: titre,
+        montant,
+        role: "prestataire",
+        prestationUrl: `${frontendUrl}/prestataire/requests`,
+      }}).catch(() => {});
+    }
 
     return res.json({ success: true });
   } catch (err: any) {

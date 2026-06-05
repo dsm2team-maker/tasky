@@ -1,5 +1,6 @@
 import cron from "node-cron";
 import { prisma } from "../lib/prisma";
+import { addEmailJob } from "../queues/email.queue";
 
 export async function runAutoValidationNow(): Promise<number> {
   return runAutoValidation();
@@ -12,7 +13,11 @@ async function runAutoValidation(): Promise<number> {
   // ── Étape 1 : prestations A_VALIDER dont le délai est expiré ──────────────
   const expired = await prisma.prestation.findMany({
     where: { status: "A_VALIDER", autoValidateAt: { lte: now } },
-    select: { id: true, demandeId: true, demande: { select: { titre: true } } },
+    select: {
+      id: true, demandeId: true, montant: true, montantFinal: true,
+      demande: { select: { titre: true, reference: true, client: { include: { user: true } } } },
+      prestataire: { include: { user: true } },
+    },
   });
 
   for (const p of expired) {
@@ -29,6 +34,23 @@ async function runAutoValidation(): Promise<number> {
         },
       });
       console.log(`✅ Prestation ${p.id} → TERMINEE`);
+
+      // Emails order-completed (auto-validation)
+      const frontendUrl = process.env.FRONTEND_URL || "https://tasky.fr";
+      const ref = `TSK-${String(p.demande.reference).padStart(6, "0")}`;
+      const montant = p.montantFinal ?? p.montant;
+      const basePayload = { demandeReference: ref, demandeTitre: p.demande.titre, montant, isAutoValidated: true };
+
+      addEmailJob({ type: "order-completed", to: p.demande.client.user.email, payload: {
+        ...basePayload, firstName: p.demande.client.user.firstName, role: "client",
+        prestationUrl: `${frontendUrl}/client/requests/${p.demandeId}`,
+      }}).catch(() => {});
+
+      addEmailJob({ type: "order-completed", to: p.prestataire.user.email, payload: {
+        ...basePayload, firstName: p.prestataire.user.firstName, role: "prestataire",
+        prestationUrl: `${frontendUrl}/prestataire/requests`,
+      }}).catch(() => {});
+
       count++;
     } catch (err) {
       console.error(`❌ Erreur prestation ${p.id}:`, err);
