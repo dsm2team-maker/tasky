@@ -12,6 +12,7 @@ import { colors } from "@/config/colors";
 import { spacing } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 import type { Demande } from "@/services/demande.service";
+import { DemandCardCategory, DemandCardMeta } from "@/components/shared/DemandCardParts";
 
 // ─── Config statuts ───────────────────────────────────────────────────────────
 
@@ -178,53 +179,23 @@ function CardDemande({
         )}
       </div>
 
-      {/* Catégorie */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        <div
-          className={`flex items-center gap-1.5 text-xs ${colors.text.secondary}`}
-        >
-          <span>{demande.category.icon}</span>
-          <span>{demande.category.nom}</span>
-        </div>
-        {demande.subCategory && (
-          <div
-            className={`flex items-center gap-1.5 text-xs ${colors.text.secondary}`}
-          >
-            <span>›</span>
-            <span>{demande.subCategory.nom}</span>
-          </div>
-        )}
-        {demande.interventionIds && demande.interventionIds.length > 0 && (
-          <div
-            className={`flex items-center gap-1.5 text-xs ${colors.text.secondary}`}
-          >
-            <span>›</span>
-            <span>{demande.interventionIds.length} intervention(s)</span>
-          </div>
-        )}
-      </div>
+      <DemandCardCategory
+        category={demande.category}
+        subCategory={demande.subCategory}
+        interventionIds={demande.interventionIds}
+      />
 
-      {/* Infos */}
-      <div className="flex flex-wrap gap-4 mb-4">
-        {demande.ville && (
-          <span className={`text-xs ${colors.text.secondary}`}>
-            📍 {demande.ville}
-          </span>
-        )}
-        {demande.budget && (
-          <span className={`text-xs ${colors.text.secondary}`}>
-            💶 {demande.budget} €
-          </span>
-        )}
-        {demande.delaiJours && (
-          <span className={`text-xs ${colors.text.secondary}`}>
-            ⏱️ {demande.delaiJours} jour{demande.delaiJours > 1 ? "s" : ""}
-          </span>
-        )}
+      <DemandCardMeta
+        ville={demande.ville}
+        budget={demande.budget}
+        delaiJours={demande.delaiJours}
+        createdAt={demande.createdAt}
+      />
+
+      {/* Devis + montant révisé */}
+      <div className="flex flex-wrap gap-2 mb-4">
         {nbDevis > 0 ? (
-          <span
-            className={`text-xs font-bold px-2.5 py-1 rounded-full ${colors.primary.light} ${colors.primary.text} border border-pink-200`}
-          >
+          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${colors.primary.light} ${colors.primary.text} border border-pink-200`}>
             💬 {nbDevis} devis reçu{nbDevis > 1 ? "s" : ""} ✨
           </span>
         ) : (
@@ -235,10 +206,6 @@ function CardDemande({
             💰 Nouveau montant proposé : {montantRevise} €
           </span>
         )}
-      </div>
-
-      <div className={`text-xs ${colors.text.muted} mb-4`}>
-        Publiée le {new Date(demande.createdAt).toLocaleDateString("fr-FR")}
       </div>
 
       {/* Actions */}

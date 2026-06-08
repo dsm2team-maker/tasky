@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { adminService } from "@/services/admin.service";
+import { queryKeys } from "@/config/query-keys";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -20,7 +21,7 @@ export default function AdminDashboardPage() {
   const [jobResult, setJobResult] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-dashboard"],
+    queryKey: queryKeys.adminDashboard,
     queryFn: () => adminService.getDashboard().then((r) => r.data.data),
     refetchInterval: 30_000,
   });

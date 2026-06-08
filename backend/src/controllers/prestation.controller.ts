@@ -1,5 +1,6 @@
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { handleError } from "../utils/errorHandler";
 import {
   getMesPrestations,
   getPrestationDetail,
@@ -14,276 +15,117 @@ import {
   creerReview,
 } from "../modules/prestations/prestation.service";
 
-const handleError = (res: Response, error: any) => {
-  const errorMap: Record<string, [number, string]> = {
-    PRESTATAIRE_NOT_FOUND: [404, "Prestataire introuvable"],
-    CLIENT_NOT_FOUND: [404, "Client introuvable"],
-    PRESTATION_NOT_FOUND: [404, "Prestation introuvable"],
-    FORBIDDEN: [403, "Accès refusé"],
-    PRESTATION_NOT_EN_COURS: [400, "La prestation n'est pas en cours"],
-    PRESTATION_NOT_A_VALIDER: [400, "La prestation n'est pas à valider"],
-    ETAT_DES_LIEUX_REQUIRED: [
-      400,
-      "L'état des lieux est requis avant de marquer comme terminé",
-    ],
-    ETAT_DES_LIEUX_NOT_VALIDATED: [
-      400,
-      "L'état des lieux doit être validé par le client",
-    ],
-    ETAT_DES_LIEUX_ALREADY_EXISTS: [409, "Un état des lieux existe déjà"],
-    ETAT_DES_LIEUX_NOT_FOUND: [404, "État des lieux introuvable"],
-    ETAT_DES_LIEUX_ALREADY_PROCESSED: [
-      400,
-      "L'état des lieux a déjà été traité",
-    ],
-    NOT_MODIFICATION: [
-      400,
-      "L'état des lieux n'est disponible que pour les modifications",
-    ],
-    PRESTATION_NOT_EN_ATTENTE_INSPECTION: [
-      400,
-      "La prestation n'est pas en attente d'inspection",
-    ],
-    PRESTATION_NOT_EN_ATTENTE_PAIEMENT: [
-      400,
-      "La prestation n'est pas en attente de paiement",
-    ],
-    PRESTATION_NOT_TERMINEE: [400, "La prestation n'est pas terminée"],
-    REVIEW_ALREADY_EXISTS: [409, "Un avis existe déjà pour cette prestation"],
-    RATING_INVALID: [400, "La note doit être entre 1 et 5"],
-  };
-
-  const [status, message] = errorMap[error.message] || [500, "Erreur serveur"];
-  if (status === 500) console.error("Erreur prestation:", error);
-  return res.status(status).json({ success: false, message });
-};
-
-// GET /api/prestations — Prestataire
-export const getMesPrestationsHandler = async (
-  req: AuthRequest,
-  res: Response,
-) => {
+export const getMesPrestationsHandler = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
-    if (!userId)
-      return res
-        .status(401)
-        .json({ success: false, message: "Non authentifié" });
-    const prestations = await getMesPrestations(userId);
+    const prestations = await getMesPrestations(req.user!.userId);
     return res.json({ success: true, data: prestations });
-  } catch (error: any) {
-    return handleError(res, error);
+  } catch (error) {
+    return handleError(error, res);
   }
 };
 
-// GET /api/prestations/:id — Prestataire
-export const getPrestationDetailHandler = async (
-  req: AuthRequest,
-  res: Response,
-) => {
+export const getPrestationDetailHandler = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
-    if (!userId)
-      return res
-        .status(401)
-        .json({ success: false, message: "Non authentifié" });
-    const prestation = await getPrestationDetail(userId, req.params.id);
+    const prestation = await getPrestationDetail(req.user!.userId, req.params.id);
     return res.json({ success: true, data: prestation });
-  } catch (error: any) {
-    return handleError(res, error);
+  } catch (error) {
+    return handleError(error, res);
   }
 };
 
-// POST /api/prestations/:id/etat-des-lieux — Prestataire
-export const creerEtatDesLieuxHandler = async (
-  req: AuthRequest,
-  res: Response,
-) => {
+export const creerEtatDesLieuxHandler = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
-    if (!userId)
-      return res
-        .status(401)
-        .json({ success: false, message: "Non authentifié" });
-
     const { description, photos, montantRevise } = req.body;
     if (!description || description.trim().length < 10)
-      return res.status(400).json({
-        success: false,
-        message: "Description trop courte (min 10 caractères)",
-      });
+      return res.status(400).json({ success: false, message: "Description trop courte (min 10 caractères)" });
 
-    const etat = await creerEtatDesLieux(userId, req.params.id, {
+    const etat = await creerEtatDesLieux(req.user!.userId, req.params.id, {
       description: description.trim(),
       photos: photos || [],
       montantRevise: montantRevise ? parseFloat(montantRevise) : undefined,
     });
-    return res
-      .status(201)
-      .json({ success: true, message: "État des lieux créé", data: etat });
-  } catch (error: any) {
-    return handleError(res, error);
+    return res.status(201).json({ success: true, message: "État des lieux créé", data: etat });
+  } catch (error) {
+    return handleError(error, res);
   }
 };
 
-// PATCH /api/prestations/:id/etat-des-lieux/valider — Client
-export const validerEtatDesLieuxHandler = async (
-  req: AuthRequest,
-  res: Response,
-) => {
+export const validerEtatDesLieuxHandler = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
-    if (!userId)
-      return res
-        .status(401)
-        .json({ success: false, message: "Non authentifié" });
     const { accepte } = req.body;
     if (typeof accepte !== "boolean")
-      return res
-        .status(400)
-        .json({ success: false, message: "accepte (boolean) requis" });
-    await validerEtatDesLieux(userId, req.params.id, accepte);
-    return res.json({
-      success: true,
-      message: accepte
-        ? "État des lieux accepté"
-        : "État des lieux refusé — demande republiée",
-    });
-  } catch (error: any) {
-    return handleError(res, error);
+      return res.status(400).json({ success: false, message: "accepte (boolean) requis" });
+
+    await validerEtatDesLieux(req.user!.userId, req.params.id, accepte);
+    return res.json({ success: true, message: accepte ? "État des lieux accepté" : "État des lieux refusé — demande republiée" });
+  } catch (error) {
+    return handleError(error, res);
   }
 };
 
-// PATCH /api/prestations/:id/confirmer-conformite — Prestataire
-export const confirmerConformiteHandler = async (
-  req: AuthRequest,
-  res: Response,
-) => {
+export const confirmerConformiteHandler = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
-    if (!userId)
-      return res.status(401).json({ success: false, message: "Non authentifié" });
-    await confirmerConformite(userId, req.params.id);
-    return res.json({
-      success: true,
-      message: "Objet confirmé conforme — en attente du paiement client",
-    });
-  } catch (error: any) {
-    return handleError(res, error);
+    await confirmerConformite(req.user!.userId, req.params.id);
+    return res.json({ success: true, message: "Objet confirmé conforme — en attente du paiement client" });
+  } catch (error) {
+    return handleError(error, res);
   }
 };
 
-// PATCH /api/prestations/:id/payer — Client (stub Stripe)
 export const passerEnCoursHandler = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
-    if (!userId)
-      return res
-        .status(401)
-        .json({ success: false, message: "Non authentifié" });
-    await passerEnCours(userId, req.params.id);
+    await passerEnCours(req.user!.userId, req.params.id);
     return res.json({ success: true, message: "Paiement confirmé — prestation démarrée" });
-  } catch (error: any) {
-    return handleError(res, error);
+  } catch (error) {
+    return handleError(error, res);
   }
 };
 
-// PATCH /api/prestations/:id/terminer — Prestataire
-export const marquerTermineHandler = async (
-  req: AuthRequest,
-  res: Response,
-) => {
+export const marquerTermineHandler = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
-    if (!userId)
-      return res
-        .status(401)
-        .json({ success: false, message: "Non authentifié" });
-    await marquerTermine(userId, req.params.id);
-    return res.json({
-      success: true,
-      message:
-        "Prestation marquée comme terminée — en attente de validation client",
-    });
-  } catch (error: any) {
-    return handleError(res, error);
+    await marquerTermine(req.user!.userId, req.params.id);
+    return res.json({ success: true, message: "Prestation marquée comme terminée — en attente de validation client" });
+  } catch (error) {
+    return handleError(error, res);
   }
 };
 
-// PATCH /api/prestations/:id/valider — Client
-export const validerPrestationHandler = async (
-  req: AuthRequest,
-  res: Response,
-) => {
+export const validerPrestationHandler = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
-    if (!userId)
-      return res
-        .status(401)
-        .json({ success: false, message: "Non authentifié" });
-    await validerPrestation(userId, req.params.id);
+    await validerPrestation(req.user!.userId, req.params.id);
     return res.json({ success: true, message: "Prestation validée — merci !" });
-  } catch (error: any) {
-    return handleError(res, error);
+  } catch (error) {
+    return handleError(error, res);
   }
 };
 
-// PATCH /api/prestations/:id/contester — Client
-export const contesterPrestationHandler = async (
-  req: AuthRequest,
-  res: Response,
-) => {
+export const contesterPrestationHandler = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
-    if (!userId)
-      return res
-        .status(401)
-        .json({ success: false, message: "Non authentifié" });
-    const { motif } = req.body;
-    await contesterPrestation(userId, req.params.id, motif);
-    return res.json({
-      success: true,
-      message: "Contestation enregistrée — prestation remise en cours",
-    });
-  } catch (error: any) {
-    if (error.message === "MOTIF_TROP_COURT")
-      return res.status(400).json({ success: false, message: "Le motif doit faire au moins 10 caractères" });
-    return handleError(res, error);
+    await contesterPrestation(req.user!.userId, req.params.id, req.body.motif);
+    return res.json({ success: true, message: "Contestation enregistrée — prestation remise en cours" });
+  } catch (error) {
+    return handleError(error, res);
   }
 };
 
-// POST /api/prestations/:id/review — Client
 export const creerReviewHandler = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
-    if (!userId)
-      return res.status(401).json({ success: false, message: "Non authentifié" });
-
     const { rating, comment } = req.body;
     if (!rating || typeof rating !== "number")
       return res.status(400).json({ success: false, message: "Note (1-5) requise" });
 
-    const review = await creerReview(userId, req.params.id, { rating, comment });
+    const review = await creerReview(req.user!.userId, req.params.id, { rating, comment });
     return res.status(201).json({ success: true, message: "Avis enregistré", data: review });
-  } catch (error: any) {
-    return handleError(res, error);
+  } catch (error) {
+    return handleError(error, res);
   }
 };
 
-// GET /api/prestations/client — Client
-export const getMesPrestationsClientHandler = async (
-  req: AuthRequest,
-  res: Response,
-) => {
+export const getMesPrestationsClientHandler = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
-    if (!userId)
-      return res
-        .status(401)
-        .json({ success: false, message: "Non authentifié" });
-    const prestations = await getMesPrestationsClient(userId);
+    const prestations = await getMesPrestationsClient(req.user!.userId);
     return res.json({ success: true, data: prestations });
-  } catch (error: any) {
-    return handleError(res, error);
+  } catch (error) {
+    return handleError(error, res);
   }
 };

@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useToast } from "@/components/ui/Toast";
+import { ProfileProgress } from "@/components/prestataire/ProfileProgress";
+import { DisponibiliteBadge } from "@/components/prestataire/DisponibiliteBadge";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -66,144 +69,13 @@ const profileSchema = z.object({
 });
 type ProfileFormData = z.infer<typeof profileSchema>;
 
-// ─── Barre de progression 5/5 ────────────────────────────────────────────────
-const ProfileProgress: React.FC<{
-  emailVerified: boolean;
-  hasBio: boolean;
-  hasCompetences: boolean;
-  hasPointDepot: boolean;
-  hasIban: boolean;
-  onActionBio: () => void;
-  onActionCompetences: () => void;
-  onActionPointDepot: () => void;
-  onActionIban: () => void;
-}> = ({
-  emailVerified,
-  hasBio,
-  hasCompetences,
-  hasPointDepot,
-  hasIban,
-  onActionBio,
-  onActionCompetences,
-  onActionPointDepot,
-  onActionIban,
-}) => {
-  const steps = [
-    { label: "Email vérifié", done: emailVerified, icon: "✉️", action: null },
-    { label: "Bio complétée", done: hasBio, icon: "✍️", action: onActionBio },
-    {
-      label: "Compétences ajoutées",
-      done: hasCompetences,
-      icon: "🛠️",
-      action: onActionCompetences,
-    },
-    {
-      label: "Point de dépôt défini",
-      done: hasPointDepot,
-      icon: "📍",
-      action: onActionPointDepot,
-    },
-    {
-      label: "IBAN renseigné",
-      done: hasIban,
-      icon: "🏦",
-      action: onActionIban,
-    },
-  ];
-  const doneCount = steps.filter((s) => s.done).length;
-  if (doneCount === 5) return null;
 
-  return (
-    <div className="mb-6 p-5 rounded-2xl border-2 border-amber-300 bg-amber-50">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h3 className="font-bold text-amber-800">
-            ⚠️ Activez votre profil — {doneCount}/5
-          </h3>
-          <p className="text-sm text-amber-700 mt-0.5">
-            Vous ne recevrez pas de demandes tant que votre profil n'est pas
-            complet
-          </p>
-        </div>
-        <span
-          className={`text-2xl font-bold ${doneCount === 5 ? "text-green-600" : "text-amber-700"}`}
-        >
-          {doneCount}/5
-        </span>
-      </div>
-      <div className="flex gap-1 mb-4">
-        {steps.map((step, i) => (
-          <div
-            key={i}
-            className={`h-2 flex-1 rounded-full transition-all ${step.done ? "bg-emerald-500" : "bg-amber-200"}`}
-          />
-        ))}
-      </div>
-      <div className="space-y-2">
-        {steps.map((step, i) => (
-          <div key={i} className="flex items-center justify-between">
-            <span
-              className={`text-sm font-medium ${step.done ? "text-emerald-700 font-semibold" : "text-amber-800"}`}
-            >
-              {step.done ? "✅" : "⬜"} {step.icon} {i + 1}. {step.label}
-            </span>
-            {!step.done && step.action && (
-              <button
-                onClick={step.action}
-                className={`text-xs font-semibold ${colors.secondary.text} hover:underline`}
-              >
-                Compléter →
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// ─── Badge disponibilité ──────────────────────────────────────────────────────
-const DisponibiliteBadge: React.FC<{
-  disponibilite: "ACTIF" | "OCCUPE" | "ABSENT";
-}> = ({ disponibilite }) => {
-  const config = {
-    ACTIF: {
-      icon: "🟢",
-      label: "Disponible",
-      bg: "bg-green-100",
-      text: "text-green-700",
-      border: "border-green-300",
-    },
-    OCCUPE: {
-      icon: "🟡",
-      label: "Occupé",
-      bg: "bg-yellow-100",
-      text: "text-yellow-700",
-      border: "border-yellow-300",
-    },
-    ABSENT: {
-      icon: "🔴",
-      label: "Absent",
-      bg: "bg-red-100",
-      text: "text-red-700",
-      border: "border-red-300",
-    },
-  };
-  const c = config[disponibilite];
-  return (
-    <span
-      className={`text-xs px-2 py-1 rounded-full font-semibold ${c.bg} ${c.text} border ${c.border}`}
-    >
-      {c.icon} {c.label}
-    </span>
-  );
-};
 
 // ─── Page principale ──────────────────────────────────────────────────────────
 export default function PrestataireProfilePage() {
   const { isHydrated, isReady } = useAuthGuard({ requireEmailVerified: false });
 
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { success: toastSuccess, error: toastError } = useToast();
   const [localPhoto, setLocalPhoto] = useState<string | null>(null);
 
   const [isEditingInfo, setIsEditingInfo] = useState(false);
@@ -322,11 +194,11 @@ export default function PrestataireProfilePage() {
       },
       {
         onSuccess: () => {
-          setSuccessMessage("Profil mis à jour !");
+          toastSuccess("Profil mis à jour !");
           setIsEditingInfo(false);
         },
         onError: (err: any) =>
-          setSuccessMessage(err.response?.data?.message || "Erreur"),
+          toastError(err.response?.data?.message || "Erreur"),
       },
     );
   };
@@ -341,7 +213,7 @@ export default function PrestataireProfilePage() {
       { bio: bioValue.trim() },
       {
         onSuccess: () => {
-          setSuccessMessage("Bio mise à jour !");
+          toastSuccess("Bio mise à jour !");
           setIsEditingBio(false);
         },
         onError: (err: any) =>
@@ -364,7 +236,7 @@ export default function PrestataireProfilePage() {
       },
       {
         onSuccess: () => {
-          setSuccessMessage("Point de dépôt mis à jour !");
+          toastSuccess("Point de dépôt mis à jour !");
           setIsEditingPointDepot(false);
           setPointDepotError(null);
         },
@@ -387,7 +259,7 @@ export default function PrestataireProfilePage() {
       { iban: cleaned },
       {
         onSuccess: () => {
-          setSuccessMessage("IBAN enregistré !");
+          toastSuccess("IBAN enregistré !");
           setIbanStep("success");
           setIbanValue("");
         },
@@ -401,7 +273,7 @@ export default function PrestataireProfilePage() {
     if (!profileComplete) return;
     updatePrestataireProfile.mutate(
       { disponibilite: value },
-      { onSuccess: () => setSuccessMessage("Statut mis à jour !") },
+      { onSuccess: () => toastSuccess("Statut mis à jour !") },
     );
   };
 
@@ -409,8 +281,8 @@ export default function PrestataireProfilePage() {
     setLocalPhoto(photoData);
     if (photoData) {
       uploadAvatar.mutate(photoData, {
-        onSuccess: () => setSuccessMessage("Photo mise à jour !"),
-        onError: () => setSuccessMessage("Erreur lors de l'upload"),
+        onSuccess: () => toastSuccess("Photo mise à jour !"),
+        onError: () => toastError("Erreur lors de l'upload"),
       });
     }
   };
@@ -521,7 +393,7 @@ export default function PrestataireProfilePage() {
     }
     updateCompetences.mutate(competencesInput, {
       onSuccess: () => {
-        setSuccessMessage("Compétences mises à jour !");
+        toastSuccess("Compétences mises à jour !");
         setShowCompetences(false);
       },
       onError: (err: any) =>
@@ -562,25 +434,6 @@ export default function PrestataireProfilePage() {
       <HeaderPrestataire />
 
       <main className={`${spacing.container} py-8`}>
-        {successMessage && (
-          <div
-            className={`mb-6 p-4 rounded-xl flex items-center gap-3 ${colors.success.bg} border ${colors.success.borderLight}`}
-          >
-            <span>✅</span>
-            <p
-              className={`text-sm font-medium ${colors.success.textDark} flex-1`}
-            >
-              {successMessage}
-            </p>
-            <button
-              onClick={() => setSuccessMessage(null)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-
         {/* Barre de progression 5/5 */}
         <ProfileProgress
           emailVerified={emailVerified}
@@ -683,7 +536,7 @@ export default function PrestataireProfilePage() {
               <ProfilePhotoUpload
                 photo={localPhoto || profile?.avatar || null}
                 onPhotoChange={onPhotoChange}
-                onError={(msg) => setSuccessMessage(msg)}
+                onError={(msg) => toastError(msg)}
               />
               <p className={`mt-2 text-xs text-center ${colors.text.tertiary}`}>
                 Format JPG, PNG ou WEBP · Max 5 Mo

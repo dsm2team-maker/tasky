@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import { sendSystemMessage } from "../messages/message.service";
-import { addEmailJob } from "../../queues/email.queue";
+import { notifyOrderCompleted } from "../../services/notifications.service";
 
 // =============================================================================
 // GET MES PRESTATIONS (Prestataire)
@@ -411,22 +411,17 @@ export const validerPrestation = async (
     "🎉 Tasky-Infos — Prestation validée par le client ! Le paiement sera libéré sous 1 à 2 jours ouvrés.",
   ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
 
-  // Emails order-completed
-  const frontendUrl = process.env.FRONTEND_URL || "https://tasky.fr";
-  const ref = `TSK-${String(prestation.demande.reference).padStart(6, "0")}`;
-  const titre = prestation.demande.titre;
-  const montant = prestation.montantFinal ?? prestation.montant;
-  const emailPayload = { demandeReference: ref, demandeTitre: titre, montant, isAutoValidated: false };
-
-  addEmailJob({ type: "order-completed", to: prestation.demande.client.user.email, payload: {
-    ...emailPayload, firstName: prestation.demande.client.user.firstName, role: "client",
-    prestationUrl: `${frontendUrl}/client/requests/${prestation.demandeId}`,
-  }}).catch(() => {});
-
-  addEmailJob({ type: "order-completed", to: prestation.prestataire.user.email, payload: {
-    ...emailPayload, firstName: prestation.prestataire.user.firstName, role: "prestataire",
-    prestationUrl: `${frontendUrl}/prestataire/requests`,
-  }}).catch(() => {});
+  notifyOrderCompleted({
+    clientEmail:            prestation.demande.client.user.email,
+    clientFirstName:        prestation.demande.client.user.firstName,
+    prestataireEmail:       prestation.prestataire.user.email,
+    prestataireFirstName:   prestation.prestataire.user.firstName,
+    demandeReference:       prestation.demande.reference,
+    demandeTitre:           prestation.demande.titre,
+    montant:                prestation.montantFinal ?? prestation.montant,
+    demandeId:              prestation.demandeId,
+    isAutoValidated:        false,
+  });
 };
 
 // =============================================================================

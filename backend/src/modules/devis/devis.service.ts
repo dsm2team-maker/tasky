@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import { calculerScore } from "./matching.service";
-import { addEmailJob } from "../../queues/email.queue";
+import { notifyQuoteReceived, notifyDevisRefuse } from "../../services/notifications.service";
 import { sendSystemMessage } from "../messages/message.service";
 
 // =============================================================================
@@ -170,20 +170,16 @@ export const envoyerDevis = async (
     where: { client: { demandes: { some: { id: demandeId } } } },
     select: { email: true, firstName: true },
   });
-  const frontendUrl = process.env.FRONTEND_URL || "https://tasky.fr";
   if (clientUser) {
-    addEmailJob({
-      type: "quote-received",
-      to: clientUser.email,
-      payload: {
-        firstName: clientUser.firstName,
-        demandeReference: `TSK-${String(demande.reference).padStart(6, "0")}`,
-        demandeTitre: demande.titre,
-        prestataireNom: `${devis.prestataire.user.firstName} ${devis.prestataire.user.lastName}`,
-        montant: data.montant,
-        devisUrl: `${frontendUrl}/client/requests/${demandeId}`,
-      },
-    }).catch(() => {});
+    notifyQuoteReceived(
+      clientUser.email,
+      clientUser.firstName,
+      demande.reference,
+      demande.titre,
+      `${devis.prestataire.user.firstName} ${devis.prestataire.user.lastName}`,
+      data.montant,
+      demandeId,
+    );
   }
 
   return devis;
@@ -358,22 +354,14 @@ export const refuserDevis = async (userId: string, devisId: string) => {
     data: { status: "REFUSE" },
   });
 
-  const frontendUrl = process.env.FRONTEND_URL || "https://tasky.fr";
-  const ref = devis.demande.reference
-    ? `TSK-${String(devis.demande.reference).padStart(6, "0")}`
-    : devisId;
-
-  await addEmailJob({
-    type: "devis-refuse",
-    to: devis.prestataire.user.email,
-    userId: devis.prestataire.userId,
-    payload: {
-      firstName: devis.prestataire.user.firstName,
-      demandeReference: ref,
-      demandeTitre: devis.demande.titre,
-      demandesUrl: `${frontendUrl}/prestataire/requests`,
-    },
-  });
+  if (devis.demande.reference) {
+    notifyDevisRefuse(
+      devis.prestataire.user.email,
+      devis.prestataire.user.firstName,
+      devis.demande.reference,
+      devis.demande.titre,
+    );
+  }
 };
 
 // =============================================================================

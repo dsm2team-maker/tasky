@@ -10,6 +10,7 @@ import { colors } from "@/config/colors";
 import { spacing } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 import type { DemandeDisponible, MatchLabel } from "@/services/devis.service";
+import { DemandCardCategory, DemandCardMeta } from "@/components/shared/DemandCardParts";
 
 // ─── Utilitaires ──────────────────────────────────────────────────────────────
 
@@ -152,44 +153,21 @@ function CardDemande({ demande }: { demande: DemandeDisponible }) {
           {demande.description}
         </p>
 
-        {/* Catégorie */}
-        <div className="flex flex-wrap gap-2 mb-3">
-          <span
-            className={`text-xs px-2.5 py-1 rounded-lg ${colors.background.gray} ${colors.text.secondary}`}
-          >
-            {demande.category.icon} {demande.category.nom}
-          </span>
-          {demande.subCategory && (
-            <span
-              className={`text-xs px-2.5 py-1 rounded-lg ${colors.background.gray} ${colors.text.secondary}`}
-            >
-              › {demande.subCategory.nom}
-            </span>
-          )}
-        </div>
+        <DemandCardCategory
+          category={demande.category}
+          subCategory={demande.subCategory}
+        />
 
-        {/* Infos */}
-        <div className="flex flex-wrap gap-3 mb-3">
-          {demande.ville && (
-            <span className={`text-xs ${colors.text.secondary}`}>
-              📍 {demande.ville}
-            </span>
-          )}
-          {demande.budget && (
-            <span className={`text-xs ${colors.text.secondary}`}>
-              💶 {demande.budget} €
-            </span>
-          )}
-          {demande.delaiJours && (
-            <span className={`text-xs ${colors.text.secondary}`}>
-              ⏱️ {demande.delaiJours} jour{demande.delaiJours > 1 ? "s" : ""}
-            </span>
-          )}
-          <span className={`text-xs ${colors.text.muted}`}>
-            💬 {demande._count.devis} devis reçu
-            {demande._count.devis > 1 ? "s" : ""}
-          </span>
-        </div>
+        <DemandCardMeta
+          ville={demande.ville}
+          budget={demande.budget}
+          delaiJours={demande.delaiJours}
+          createdAt={demande.createdAt}
+        />
+
+        <span className={`text-xs ${colors.text.muted} mb-3 block`}>
+          💬 {demande._count.devis} devis reçu{demande._count.devis > 1 ? "s" : ""}
+        </span>
 
         {/* Détail du score — toggle */}
         <button

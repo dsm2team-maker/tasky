@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { devisService, EnvoyerDevisPayload } from "@/services/devis.service";
+import { queryKeys } from "@/config/query-keys";
 
 export const useMesDevisRefuses = () =>
   useQuery({
-    queryKey: ["mes-devis-refuses"],
+    queryKey: queryKeys.devisRefuses,
     queryFn: () => devisService.getMesDevisRefuses().then((r) => r.data.data),
     staleTime: 30_000,
   });
@@ -11,75 +12,60 @@ export const useMesDevisRefuses = () =>
 export const useDismisserDevis = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (devisId: string) =>
-      devisService.dismisserDevis(devisId).then((r) => r.data),
+    mutationFn: (devisId: string) => devisService.dismisserDevis(devisId).then((r) => r.data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["mes-devis-refuses"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.devisRefuses });
     },
   });
 };
 
 export const useMesStatsDevis = () =>
   useQuery({
-    queryKey: ["mes-stats-devis"],
+    queryKey: queryKeys.devisStats,
     queryFn: () => devisService.getMesStats().then((r) => r.data.data),
     staleTime: 60_000,
   });
 
-const DISPONIBLES_KEY = ["demandes-disponibles"];
-const DEVIS_KEY = (id: string) => ["devis", id];
-
-export const useDemandesDisponibles = () => {
-  return useQuery({
-    queryKey: DISPONIBLES_KEY,
-    queryFn: () =>
-      devisService.getDemandesDisponibles().then((r) => r.data.data),
+export const useDemandesDisponibles = () =>
+  useQuery({
+    queryKey: queryKeys.devisDisponibles,
+    queryFn: () => devisService.getDemandesDisponibles().then((r) => r.data.data),
     staleTime: 0,
   });
-};
 
-export const useDemandeDetail = (id: string) => {
-  return useQuery({
-    queryKey: ["demande-detail", id],
+export const useDemandeDetail = (id: string) =>
+  useQuery({
+    queryKey: queryKeys.demandeDetail(id),
     queryFn: () => devisService.getDemandeDetail(id).then((r) => r.data.data),
     enabled: !!id,
   });
-};
 
 export const useEnvoyerDevis = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      demandeId,
-      data,
-    }: {
-      demandeId: string;
-      data: EnvoyerDevisPayload;
-    }) => devisService.envoyerDevis(demandeId, data).then((r) => r.data.data),
+    mutationFn: ({ demandeId, data }: { demandeId: string; data: EnvoyerDevisPayload }) =>
+      devisService.envoyerDevis(demandeId, data).then((r) => r.data.data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: DISPONIBLES_KEY });
+      queryClient.invalidateQueries({ queryKey: queryKeys.devisDisponibles });
     },
   });
 };
 
-export const useDevisDemande = (demandeId: string) => {
-  return useQuery({
-    queryKey: DEVIS_KEY(demandeId),
-    queryFn: () =>
-      devisService.getDevisDemande(demandeId).then((r) => r.data.data),
+export const useDevisDemande = (demandeId: string) =>
+  useQuery({
+    queryKey: queryKeys.devis(demandeId),
+    queryFn: () => devisService.getDevisDemande(demandeId).then((r) => r.data.data),
     enabled: !!demandeId,
     staleTime: 0,
   });
-};
 
 export const useAccepterDevis = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (devisId: string) =>
-      devisService.accepterDevis(devisId).then((r) => r.data),
-    onSuccess: (_, __, context: any) => {
-      queryClient.invalidateQueries({ queryKey: ["devis"] });
-      queryClient.invalidateQueries({ queryKey: ["demandes"] });
+    mutationFn: (devisId: string) => devisService.accepterDevis(devisId).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.demandes });
+      queryClient.invalidateQueries({ queryKey: queryKeys.prestationsClient });
     },
   });
 };
@@ -87,10 +73,9 @@ export const useAccepterDevis = () => {
 export const useRefuserDevis = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (devisId: string) =>
-      devisService.refuserDevis(devisId).then((r) => r.data),
+    mutationFn: (devisId: string) => devisService.refuserDevis(devisId).then((r) => r.data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["devis"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.demandes });
     },
   });
 };

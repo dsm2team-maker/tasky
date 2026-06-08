@@ -1,20 +1,7 @@
 import { Router } from "express";
-import {
-  registerClient,
-  registerPrestataire,
-  login,
-  logout,
-  refreshToken,
-  getMe,
-  verifyEmail,
-  resendVerificationEmail,
-  forgotPassword,
-  resetPassword,
-  checkEmail,
-  checkPhone,
-  recoverEmailSendOtpHandler,
-  recoverEmailVerifyOtpHandler,
-} from "../controllers/auth.controller";
+import { registerClient, registerPrestataire, login, logout, refreshToken, getMe, checkEmail, checkPhone } from "../controllers/auth.controller";
+import { verifyEmail, resendVerificationEmail } from "../controllers/auth.verify.controller";
+import { forgotPassword, resetPassword, recoverEmailSendOtpHandler, recoverEmailVerifyOtpHandler } from "../controllers/auth.recovery.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();

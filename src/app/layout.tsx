@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
+import { ToastProvider } from "@/components/ui/Toast";
 
 export const metadata: Metadata = {
   title: "Tasky - Marketplace de services à la demande",
@@ -20,7 +21,9 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
       <body style={{ fontFamily: "'Inter', sans-serif" }}>
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </QueryProvider>
       </body>
     </html>
   );

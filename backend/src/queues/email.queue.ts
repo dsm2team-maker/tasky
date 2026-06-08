@@ -14,12 +14,38 @@ export type EmailJobType =
   | "devis-refuse" // Notification prestataire — devis non retenu
   | "delete-account-otp"; // OTP suppression de compte
 
-export interface EmailJobData {
-  type: EmailJobType;
+// ─── Payloads typés par type d'email ─────────────────────────────────────────
+
+interface VerifyEmailPayload      { firstName: string; verificationUrl: string; variant: string }
+interface ResetPasswordPayload    { firstName: string; resetUrl: string }
+interface NewMessagePayload       { firstName: string; senderName: string; messageCount: number; conversationUrl: string; variant: string }
+interface QuoteReceivedPayload    { firstName: string; demandeReference: string; demandeTitre: string; prestataireNom: string; montant: number; devisUrl: string }
+interface OrderConfirmedPayload   { firstName: string; demandeReference: string; demandeTitre: string; montant: number; role: "client" | "prestataire"; prestationUrl: string }
+interface OrderCompletedPayload   { firstName: string; demandeReference: string; demandeTitre: string; montant: number; role: "client" | "prestataire"; isAutoValidated: boolean; prestationUrl: string }
+interface PhoneChangeOtpPayload   { firstName: string; otp: string; newPhone: string; isAlert: boolean }
+interface EmailChangeAlertPayload { firstName: string; newEmail: string }
+interface DevisRefusePayload      { firstName: string; demandeReference: string; demandeTitre: string; demandesUrl: string }
+interface DeleteAccountOtpPayload { firstName: string; otp: string }
+
+type EmailPayloadMap = {
+  "verify-email":       VerifyEmailPayload;
+  "reset-password":     ResetPasswordPayload;
+  "new-message":        NewMessagePayload;
+  "quote-received":     QuoteReceivedPayload;
+  "order-confirmed":    OrderConfirmedPayload;
+  "order-completed":    OrderCompletedPayload;
+  "phone-change-otp":   PhoneChangeOtpPayload;
+  "email-change-alert": EmailChangeAlertPayload;
+  "devis-refuse":       DevisRefusePayload;
+  "delete-account-otp": DeleteAccountOtpPayload;
+};
+
+export type EmailJobData<T extends EmailJobType = EmailJobType> = {
+  type: T;
   to: string;
   userId?: string;
-  payload: Record<string, any>;
-}
+  payload: EmailPayloadMap[T];
+};
 
 // Priorités
 export const EMAIL_PRIORITY = {
