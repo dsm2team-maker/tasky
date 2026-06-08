@@ -104,7 +104,7 @@ export async function confirmPaymentHandler(req: Request, res: Response) {
 
     const prestation = await prisma.prestation.findUnique({
       where: { id: prestationId },
-      include: { demande: { include: { client: true } } },
+      include: { demande: { include: { client: { include: { user: true } } } } },
     });
 
     if (!prestation || prestation.demande.client.userId !== userId) {

@@ -15,7 +15,8 @@ import { orderCompletedTemplate } from "../emails/order-completed.template";
 import { prisma } from "../lib/prisma";
 
 const processEmailJob = async (job: Job<EmailJobData>) => {
-  const { type, to, payload } = job.data;
+  const { type, to } = job.data;
+  const payload = job.data.payload as any;
   console.log(`📧 Traitement job: ${type} → ${to}`);
 
   let subject = "";

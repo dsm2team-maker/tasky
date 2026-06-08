@@ -213,6 +213,7 @@ export const verifyPhoneOtp = async (userId: string, otp: string) => {
         userId,
         payload: {
           firstName: user.firstName,
+          otp: "",
           isAlert: true,
           newPhone: maskPhone(metadata.newPhone),
         },
