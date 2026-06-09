@@ -1,11 +1,15 @@
-// On passe juste les options de connexion, pas une instance ioredis
-// BullMQ utilise sa propre version d'ioredis en interne
+function parseRedisUrl(url: string) {
+  const parsed = new URL(url);
+  return {
+    host: parsed.hostname,
+    port: parseInt(parsed.port || "6379"),
+    password: parsed.password || undefined,
+    tls: parsed.protocol === "rediss:" ? {} : undefined,
+  };
+}
 
-export const redisConnection = {
-  host: process.env.REDIS_HOST || "localhost",
-  port: parseInt(process.env.REDIS_PORT || "6379"),
-};
-
-console.log("✅ Redis config chargée:", redisConnection);
+export const redisConnection = parseRedisUrl(
+  process.env.REDIS_URL || "redis://localhost:6379"
+);
 
 export default redisConnection;
