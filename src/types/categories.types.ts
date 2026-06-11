@@ -5,7 +5,7 @@
 /**
  * Prestation individuelle
  */
-export interface Prestation {
+export interface PrestationCategorie {
   id: string;
   nom: string;
 }
@@ -16,7 +16,7 @@ export interface Prestation {
 export interface SousCategorie {
   id: string;
   nom: string;
-  prestations: Prestation[];
+  prestations: PrestationCategorie[];
 }
 
 /**
