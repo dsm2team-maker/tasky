@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import React from "react";
 import { useParams, useRouter } from "next/navigation";
 import { usePublicPrestataire } from "@/hooks/usePrestataire";
