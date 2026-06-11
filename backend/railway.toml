@@ -1,0 +1,7 @@
+[build]
+buildCommand = "npm install --include=dev && npm run build && npx prisma generate"
+
+[deploy]
+startCommand = "npm start"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
