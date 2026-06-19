@@ -169,7 +169,8 @@ export const emailWorker = new Worker<EmailJobData>(
   processEmailJob,
   {
     connection: redisConnection,
-    concurrency: 5, // 5 emails en parallèle max
+    concurrency: 5,
+    drainDelay: 5000,
   },
 );
 
