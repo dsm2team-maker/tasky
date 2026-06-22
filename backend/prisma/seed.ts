@@ -2,12 +2,14 @@ import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
 
-const categoriesData = JSON.parse(
-  fs.readFileSync(
-    path.resolve(__dirname, "../../src/data/categories.json"),
-    "utf-8",
-  ),
-) as {
+const categoriesPath = [
+  path.resolve(__dirname, "../src/data/categories.json"),
+  path.resolve(__dirname, "../../src/data/categories.json"),
+].find((p) => fs.existsSync(p));
+
+if (!categoriesPath) throw new Error("categories.json introuvable");
+
+const categoriesData = JSON.parse(fs.readFileSync(categoriesPath, "utf-8")) as {
   categories: Array<{
     id: string;
     nom: string;
