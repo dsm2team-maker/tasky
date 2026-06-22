@@ -60,7 +60,9 @@ export const registerClient = async (req: Request, res: Response) => {
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
     await prisma.refreshToken.create({ data: { token: refreshToken, userId: user.id, expiresAt: getRefreshTokenExpiry() } });
-    await authService.sendVerificationEmail(user.id, user.email, user.firstName, "client");
+    authService.sendVerificationEmail(user.id, user.email, user.firstName, "client").catch((e) =>
+      console.error("Erreur envoi email vérification client:", e)
+    );
 
     return res.status(201).json({
       success: true, message: "Compte client créé avec succès",
@@ -106,7 +108,9 @@ export const registerPrestataire = async (req: Request, res: Response) => {
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
     await prisma.refreshToken.create({ data: { token: refreshToken, userId: user.id, expiresAt: getRefreshTokenExpiry() } });
-    await authService.sendVerificationEmail(user.id, user.email, user.firstName, "prestataire");
+    authService.sendVerificationEmail(user.id, user.email, user.firstName, "prestataire").catch((e) =>
+      console.error("Erreur envoi email vérification prestataire:", e)
+    );
 
     return res.status(201).json({
       success: true, message: "Compte prestataire créé avec succès",
