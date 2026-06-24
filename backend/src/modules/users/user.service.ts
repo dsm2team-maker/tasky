@@ -206,7 +206,7 @@ export const verifyPhoneOtp = async (userId: string, otp: string) => {
   });
 
   if (user && !env.isDev) {
-    await addEmailJob(
+    addEmailJob(
       {
         type: "phone-change-otp",
         to: user.email,
@@ -219,7 +219,7 @@ export const verifyPhoneOtp = async (userId: string, otp: string) => {
         },
       },
       EMAIL_PRIORITY.CRITICAL,
-    );
+    ).catch((e) => console.warn("[email] phone-change alert:", e?.message));
   }
 };
 
@@ -275,7 +275,7 @@ export const requestEmailChange = async (userId: string, newEmail: string) => {
       `🔐 [DEV] OTP changement email → envoyé sur ${newEmail} : ${otp}`,
     );
   } else {
-    await addEmailJob(
+    addEmailJob(
       {
         type: "phone-change-otp",
         to: newEmail.toLowerCase(),
@@ -287,7 +287,7 @@ export const requestEmailChange = async (userId: string, newEmail: string) => {
         },
       },
       EMAIL_PRIORITY.CRITICAL,
-    );
+    ).catch((e) => console.warn("[email] phone-change otp:", e?.message));
   }
 };
 
@@ -344,7 +344,7 @@ export const verifyEmailOtp = async (userId: string, otp: string) => {
   ]);
 
   if (user && !env.isDev) {
-    await addEmailJob(
+    addEmailJob(
       {
         type: "email-change-alert",
         to: user.email,
@@ -352,7 +352,7 @@ export const verifyEmailOtp = async (userId: string, otp: string) => {
         payload: { firstName: user.firstName, newEmail: metadata.newEmail },
       },
       EMAIL_PRIORITY.CRITICAL,
-    );
+    ).catch((e) => console.warn("[email] email-change alert:", e?.message));
   } else {
     console.log(
       `🔐 [DEV] Email mis à jour : ${user?.email} → ${metadata.newEmail}`,
@@ -433,7 +433,7 @@ export const requestDeleteAccount = async (userId: string) => {
   if (env.isDev) {
     console.log(`🔐 [DEV] OTP suppression compte → ${user.email} : ${otp}`);
   } else {
-    await addEmailJob(
+    addEmailJob(
       {
         type: "delete-account-otp",
         to: user.email,
@@ -441,7 +441,7 @@ export const requestDeleteAccount = async (userId: string) => {
         payload: { firstName: user.firstName, otp },
       },
       EMAIL_PRIORITY.CRITICAL,
-    );
+    ).catch((e) => console.warn("[email] delete-account otp:", e?.message));
   }
 };
 
@@ -674,7 +674,7 @@ export const recoverEmailVerifyOtp = async (
     }),
   ]);
 
-  await addEmailJob(
+  addEmailJob(
     {
       type: "reset-password",
       to: newEmail.toLowerCase(),
@@ -682,7 +682,7 @@ export const recoverEmailVerifyOtp = async (
       payload: { firstName: user.firstName, resetUrl },
     },
     EMAIL_PRIORITY.CRITICAL,
-  );
+  ).catch((e) => console.warn("[email] reset-password:", e?.message));
 
   if (env.isDev) {
     console.log(`🔐 [DEV] Email récupéré : ${user.email} → ${newEmail}`);
