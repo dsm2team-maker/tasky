@@ -8,6 +8,7 @@ export const env = {
   resendApiKey: process.env.RESEND_API_KEY || "",
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || "",
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
+  encryptionKey: process.env.ENCRYPTION_KEY || "",
   isDev: process.env.NODE_ENV === "development",
   isProd: process.env.NODE_ENV === "production",
 };

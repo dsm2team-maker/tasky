@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { decryptNullable } from "../../lib/crypto";
 
 // ─── Dashboard KPIs ───────────────────────────────────────────────────────────
 
@@ -124,7 +125,7 @@ export const getPrestations = async (page = 1, status = "") => {
 };
 
 export const getPrestationDetail = async (id: string) => {
-  return prisma.prestation.findUnique({
+  const prestation = await prisma.prestation.findUnique({
     where: { id },
     include: {
       demande: {
@@ -144,6 +145,18 @@ export const getPrestationDetail = async (id: string) => {
       review: true,
     },
   });
+
+  if (!prestation) return prestation;
+
+  return {
+    ...prestation,
+    prestataire: {
+      ...prestation.prestataire,
+      iban: decryptNullable(prestation.prestataire.iban) ?? null,
+      bic: decryptNullable(prestation.prestataire.bic) ?? null,
+      bankName: decryptNullable(prestation.prestataire.bankName) ?? null,
+    },
+  };
 };
 
 // ─── Signalements ─────────────────────────────────────────────────────────────
@@ -238,5 +251,13 @@ export const getPaiements = async (page = 1) => {
     prisma.prestation.count({ where: { stripePaymentIntentId: { not: null } } }),
   ]);
 
-  return { paiements, total, pages: Math.ceil(total / take) };
+  const paiementsDecrypted = paiements.map((p) => ({
+    ...p,
+    prestataire: {
+      ...p.prestataire,
+      iban: decryptNullable(p.prestataire.iban) ?? null,
+    },
+  }));
+
+  return { paiements: paiementsDecrypted, total, pages: Math.ceil(total / take) };
 };

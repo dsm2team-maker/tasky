@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { getStripe } from "../config/stripe.config";
 import env from "../config/env.config";
 import { prisma } from "../lib/prisma";
+import { decryptNullable } from "../lib/crypto";
 import { notifyOrderConfirmed } from "../services/notifications.service";
 
 // POST /api/payment/create-intent
@@ -67,7 +68,7 @@ export async function createPaymentIntentHandler(req: Request, res: Response) {
         clientEmail: client.email,
         prestataireNom: `${prestataire.firstName} ${prestataire.lastName}`,
         prestataireEmail: prestataire.email,
-        prestataireIban: prestation.prestataire.iban ?? "non renseigné",
+        prestataireIban: decryptNullable(prestation.prestataire.iban) ?? "non renseigné",
         montantPrestataire: (montant * 0.85).toFixed(2),
         commissionTasky: (montant * 0.15).toFixed(2),
       },

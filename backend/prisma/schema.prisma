@@ -81,6 +81,7 @@ model Prestataire {
   tauxReussite  Float @default(0)
   delaiMoyen    Int   @default(0)
   tempsReponse  Int   @default(0)
+  // Chiffrés au niveau applicatif (AES-256-GCM, voir src/lib/crypto.ts) avant écriture
   iban         String?
   bic          String?
   bankName     String?

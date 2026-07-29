@@ -2,6 +2,7 @@ import { prisma } from "../../lib/prisma";
 import { addEmailJob, EMAIL_PRIORITY } from "../../queues/email.queue";
 import { generateOtp, generateResetToken } from "../../utils/token.utils";
 import { env } from "../../config/env.config";
+import { encryptNullable, decryptNullable } from "../../lib/crypto";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 const OTP_COOLDOWN_MS = 2 * 60 * 1000;
@@ -52,6 +53,8 @@ export const getProfile = async (userId: string) => {
           tempsReponse: true,
           // ✅ IBAN ajouté
           iban: true,
+          bic: true,
+          bankName: true,
           ibanVerified: true,
         },
       },
@@ -64,6 +67,14 @@ export const getProfile = async (userId: string) => {
 
   return {
     ...user,
+    prestataire: user.prestataire
+      ? {
+          ...user.prestataire,
+          iban: decryptNullable(user.prestataire.iban) ?? null,
+          bic: decryptNullable(user.prestataire.bic) ?? null,
+          bankName: decryptNullable(user.prestataire.bankName) ?? null,
+        }
+      : user.prestataire,
     phone: undefined,
     phoneMasked,
   };
@@ -705,6 +716,8 @@ interface UpdatePrestataireData {
   pointDepotLng?: number;
   pointDepotInstructions?: string;
   iban?: string;
+  bic?: string;
+  bankName?: string;
 }
 
 export const updatePrestataireProfile = async (
@@ -753,7 +766,12 @@ export const updatePrestataireProfile = async (
       ...(data.pointDepotInstructions !== undefined && {
         pointDepotInstructions: data.pointDepotInstructions,
       }),
-      ...(data.iban !== undefined && { iban: data.iban, ibanVerified: false }),
+      ...(data.iban !== undefined && {
+        iban: encryptNullable(data.iban),
+        ibanVerified: false,
+      }),
+      ...(data.bic !== undefined && { bic: encryptNullable(data.bic) }),
+      ...(data.bankName !== undefined && { bankName: encryptNullable(data.bankName) }),
     },
     select: {
       id: true,
@@ -768,11 +786,18 @@ export const updatePrestataireProfile = async (
       pointDepotLng: true,
       pointDepotInstructions: true,
       iban: true,
+      bic: true,
+      bankName: true,
       ibanVerified: true,
     },
   });
 
-  return updated;
+  return {
+    ...updated,
+    iban: decryptNullable(updated.iban) ?? null,
+    bic: decryptNullable(updated.bic) ?? null,
+    bankName: decryptNullable(updated.bankName) ?? null,
+  };
 };
 
 // =============================================================================
