@@ -52,7 +52,7 @@ export default function ClientDashboard() {
           <Link href={routes.client.requests.new}>
             <Button
               size="lg"
-              className={`bg-white ${colors.primary.text} ${colors.primary.bgHover}`}
+              className={`bg-white bg-none ${colors.primary.text} ${colors.primary.bgHover}`}
             >
               + Créer une nouvelle demande
             </Button>
