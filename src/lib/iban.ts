@@ -22,6 +22,11 @@ export const validateIban = (iban: string): boolean => {
   return remainder === 1;
 };
 
+export const validateBic = (bic: string): boolean => {
+  const cleaned = bic.replace(/\s/g, "").toUpperCase();
+  return /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(cleaned);
+};
+
 export const maskIban = (iban: string): string => {
   const cleaned = iban.replace(/\s/g, "");
   if (cleaned.length < 8) return iban;

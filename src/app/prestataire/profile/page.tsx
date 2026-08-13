@@ -22,7 +22,7 @@ import {
   usePrestataireStats,
 } from "@/hooks/useProfile";
 import { PhoneModal, EmailModal, DeleteAccountModal } from "@/components/shared/OtpModals";
-import { validateIban, formatIban, maskIban } from "@/lib/iban";
+import { validateIban, formatIban, maskIban, validateBic } from "@/lib/iban";
 import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -87,6 +87,7 @@ export default function PrestataireProfilePage() {
 
   const [ibanValue, setIbanValue] = useState("");
   const [ibanError, setIbanError] = useState<string | null>(null);
+  const [bicValue, setBicValue] = useState("");
   const [localAdresse, setLocalAdresse] = useState("");
   const [localCodePostal, setLocalCodePostal] = useState("");
   const [localVille, setLocalVille] = useState("");
@@ -254,14 +255,20 @@ export default function PrestataireProfilePage() {
       setIbanError("Format IBAN invalide");
       return;
     }
+    const cleanedBic = bicValue.replace(/\s/g, "");
+    if (!validateBic(cleanedBic)) {
+      setIbanError("Format BIC invalide");
+      return;
+    }
     // Envoyer OTP email pour confirmer
     updatePrestataireProfile.mutate(
-      { iban: cleaned },
+      { iban: cleaned, bic: cleanedBic },
       {
         onSuccess: () => {
-          toastSuccess("IBAN enregistré !");
+          toastSuccess("IBAN et BIC enregistrés !");
           setIbanStep("success");
           setIbanValue("");
+          setBicValue("");
         },
         onError: (err: any) =>
           setIbanError(err.response?.data?.message || "Erreur"),
@@ -428,6 +435,7 @@ export default function PrestataireProfilePage() {
   const bioLength = bioValue.length;
   const bioOk = bioLength >= BIO_MIN && bioLength <= BIO_MAX;
   const ibanValid = validateIban(ibanValue.replace(/\s/g, ""));
+  const bicValid = validateBic(bicValue.replace(/\s/g, ""));
 
   return (
     <div className={`min-h-screen ${colors.background.gray}`}>
@@ -713,6 +721,11 @@ export default function PrestataireProfilePage() {
                       ? maskIban(profile.prestataire.iban)
                       : "Non renseigné"}
                   </p>
+                  {profile?.prestataire?.bic && (
+                    <p className={`text-xs ${colors.text.tertiary} mb-1 font-mono`}>
+                      BIC : {profile.prestataire.bic}
+                    </p>
+                  )}
                   {profile?.prestataire?.bankName && (
                     <p className={`text-xs ${colors.text.tertiary} mb-3`}>
                       🏦 {profile.prestataire.bankName}
@@ -725,6 +738,7 @@ export default function PrestataireProfilePage() {
                     onClick={() => {
                       setIbanError(null);
                       setIbanValue("");
+                      setBicValue(profile?.prestataire?.bic || "");
                       setIbanStep("form");
                     }}
                   >
@@ -1166,9 +1180,12 @@ export default function PrestataireProfilePage() {
           setIbanStep(null);
           setIbanError(null);
           setIbanValue("");
+          setBicValue("");
         }}
         title={
-          ibanStep === "success" ? "IBAN enregistré !" : "Renseigner mon IBAN"
+          ibanStep === "success"
+            ? "IBAN et BIC enregistrés !"
+            : "Renseigner mon IBAN et mon BIC"
         }
         icon={ibanStep === "success" ? "✅" : "🏦"}
         headerVariant="secondary"
@@ -1218,6 +1235,37 @@ export default function PrestataireProfilePage() {
                 </p>
               )}
             </div>
+            <div>
+              <label
+                className={`block text-sm font-medium ${colors.text.primary} mb-1.5`}
+              >
+                BIC
+              </label>
+              <input
+                type="text"
+                placeholder="AGRIFRPP"
+                value={bicValue}
+                onChange={(e) => {
+                  setBicValue(e.target.value.toUpperCase());
+                  setIbanError(null);
+                }}
+                maxLength={11}
+                className={`w-full px-3 py-2.5 rounded-xl border text-sm font-mono focus:outline-none focus:ring-2 transition-all ${
+                  bicValue.length > 4
+                    ? bicValid
+                      ? "border-emerald-300 focus:ring-emerald-200"
+                      : "border-red-300 focus:ring-red-200"
+                    : `${colors.border.default} focus:ring-gray-200`
+                }`}
+              />
+              {bicValue.length > 4 && (
+                <p
+                  className={`text-xs mt-1 font-medium ${bicValid ? colors.secondary.text : colors.error.text}`}
+                >
+                  {bicValid ? "✓ Format BIC valide" : "✗ Format BIC invalide"}
+                </p>
+              )}
+            </div>
             {ibanError && (
               <p className={`text-sm ${colors.error.text}`}>{ibanError}</p>
             )}
@@ -1230,6 +1278,7 @@ export default function PrestataireProfilePage() {
                   setIbanStep(null);
                   setIbanError(null);
                   setIbanValue("");
+                  setBicValue("");
                 }}
               >
                 Annuler
@@ -1239,7 +1288,7 @@ export default function PrestataireProfilePage() {
                 variant="secondary"
                 fullWidth
                 isLoading={updatePrestataireProfile.isPending}
-                disabled={!ibanValid}
+                disabled={!ibanValid || !bicValid}
                 onClick={onSubmitIban}
               >
                 Enregistrer
@@ -1250,8 +1299,9 @@ export default function PrestataireProfilePage() {
         {ibanStep === "success" && (
           <div className="space-y-4 text-center py-2">
             <p className={`text-sm ${colors.text.secondary}`}>
-              Votre IBAN a été enregistré avec succès. Vous recevrez vos
-              paiements sur ce compte après chaque prestation terminée.
+              Votre IBAN et votre BIC ont été enregistrés avec succès. Vous
+              recevrez vos paiements sur ce compte après chaque prestation
+              terminée.
             </p>
             <Button
               variant="secondary"
