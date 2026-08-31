@@ -17,6 +17,7 @@ export default function Header() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
   const [isHydrated, setIsHydrated] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -24,11 +25,13 @@ export default function Header() {
 
   const handleLogout = () => {
     logout();
+    setMobileOpen(false);
     router.push(routes.public.home);
   };
 
   const scrollTo = (id: string) => (e: React.MouseEvent) => {
     e.preventDefault();
+    setMobileOpen(false);
     const element = document.getElementById(id);
     if (element) {
       const offsetPosition =
@@ -36,6 +39,13 @@ export default function Header() {
       window.scrollTo({ top: offsetPosition, behavior: "smooth" });
     }
   };
+
+  const navItems = [
+    { id: "comment-ca-marche", label: "Comment ça marche" },
+    { id: "pourquoi-nous-choisir", label: "Avantages" },
+    { id: "categories", label: "Prestations" },
+    { id: "temoignages", label: "Témoignages" },
+  ];
 
   const dashboardRoute =
     user?.role === "CLIENT"
@@ -49,33 +59,18 @@ export default function Header() {
           <Logo />
 
           <nav className="hidden md:flex items-center gap-6">
-            <a
-              onClick={scrollTo("comment-ca-marche")}
-              className={`${colors.text.secondary} hover:text-purple-600 transition cursor-pointer`}
-            >
-              Comment ça marche
-            </a>
-            <a
-              onClick={scrollTo("pourquoi-nous-choisir")}
-              className={`${colors.text.secondary} hover:text-purple-600 transition cursor-pointer`}
-            >
-              Avantages
-            </a>
-            <a
-              onClick={scrollTo("categories")}
-              className={`${colors.text.secondary} hover:text-purple-600 transition cursor-pointer`}
-            >
-              Prestations
-            </a>
-            <a
-              onClick={scrollTo("temoignages")}
-              className={`${colors.text.secondary} hover:text-purple-600 transition cursor-pointer`}
-            >
-              Témoignages
-            </a>
+            {navItems.map((item) => (
+              <a
+                key={item.id}
+                onClick={scrollTo(item.id)}
+                className={`${colors.text.secondary} hover:text-purple-600 transition cursor-pointer`}
+              >
+                {item.label}
+              </a>
+            ))}
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3">
             {!isHydrated ? null : isAuthenticated ? (
               <>
                 <Link href={dashboardRoute}>
@@ -107,7 +102,70 @@ export default function Header() {
               </Link>
             )}
           </div>
+
+          <button
+            type="button"
+            onClick={() => setMobileOpen((v) => !v)}
+            className="md:hidden p-2 -mr-2 text-gray-600 hover:text-purple-600 transition"
+            aria-label={mobileOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            aria-expanded={mobileOpen}
+          >
+            {mobileOpen ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
         </div>
+
+        {mobileOpen && (
+          <div className="md:hidden mt-4 pb-2 border-t border-gray-200 pt-4 flex flex-col gap-4">
+            {navItems.map((item) => (
+              <a
+                key={item.id}
+                onClick={scrollTo(item.id)}
+                className={`${colors.text.secondary} hover:text-purple-600 transition cursor-pointer`}
+              >
+                {item.label}
+              </a>
+            ))}
+            {!isHydrated ? null : isAuthenticated ? (
+              <>
+                <Link href={dashboardRoute} onClick={() => setMobileOpen(false)}>
+                  <Button
+                    variant="outline"
+                    className={`w-full ${
+                      user?.role === "CLIENT"
+                        ? `${colors.primary.border} ${colors.primary.text} ${colors.primary.bgHover}`
+                        : `${colors.secondary.border} ${colors.secondary.text} ${colors.secondary.bgHover}`
+                    }`}
+                  >
+                    Mon dashboard
+                  </Button>
+                </Link>
+                <Button
+                  onClick={handleLogout}
+                  variant="ghost"
+                  className={`w-full ${colors.text.secondary}`}
+                >
+                  Déconnexion
+                </Button>
+              </>
+            ) : (
+              <Link
+                href={routes.auth.login}
+                onClick={() => setMobileOpen(false)}
+                className={`px-4 py-2 font-medium ${colors.text.secondary} hover:text-purple-600 transition`}
+              >
+                Se connecter
+              </Link>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );

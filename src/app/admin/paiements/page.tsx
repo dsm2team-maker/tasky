@@ -33,7 +33,8 @@ export default function AdminPaiementsPage() {
     setTimeout(() => setCopiedId(null), 1500);
   };
 
-  const totalMontant = data?.paiements.reduce((s: number, p: any) => s + (p.montantFinal ?? p.montant), 0) ?? 0;
+  const paiementsTermines = data?.paiements.filter((p: any) => p.status === "TERMINEE") ?? [];
+  const totalMontant = paiementsTermines.reduce((s: number, p: any) => s + (p.montantFinal ?? p.montant), 0);
   const totalCommission = totalMontant * 0.15;
   const totalNet = totalMontant - totalCommission;
 
@@ -50,15 +51,15 @@ export default function AdminPaiementsPage() {
       {data && data.paiements.length > 0 && (
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-gray-800 rounded-xl border border-gray-700 p-4 text-center">
-            <div className="text-2xl font-bold text-white">{totalMontant.toFixed(0)} €</div>
-            <div className="text-xs text-gray-400 mt-1">Volume brut (page)</div>
+            <div className="text-2xl font-bold text-white">{totalMontant.toFixed(2)} €</div>
+            <div className="text-xs text-gray-400 mt-1">Volume brut (page, terminés)</div>
           </div>
           <div className="bg-gray-800 rounded-xl border border-yellow-800 p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-300">{totalCommission.toFixed(0)} €</div>
+            <div className="text-2xl font-bold text-yellow-300">{totalCommission.toFixed(2)} €</div>
             <div className="text-xs text-gray-400 mt-1">Commission Tasky 15%</div>
           </div>
           <div className="bg-gray-800 rounded-xl border border-emerald-800 p-4 text-center">
-            <div className="text-2xl font-bold text-emerald-300">{totalNet.toFixed(0)} €</div>
+            <div className="text-2xl font-bold text-emerald-300">{totalNet.toFixed(2)} €</div>
             <div className="text-xs text-gray-400 mt-1">Net à reverser prestataires</div>
           </div>
         </div>

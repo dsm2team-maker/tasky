@@ -22,7 +22,7 @@ export const getDashboardStats = async () => {
     prisma.prestation.count({ where: { status: "TERMINEE" } }),
     prisma.signalement.count({ where: { statut: "EN_ATTENTE" } }),
     prisma.prestation.findMany({
-      where: { stripePaymentIntentId: { not: null } },
+      where: { stripePaymentIntentId: { not: null }, status: "TERMINEE" },
       select: { montantFinal: true, montant: true },
     }),
   ]);

@@ -6,7 +6,8 @@ export const useMesDevisRefuses = () =>
   useQuery({
     queryKey: queryKeys.devisRefuses,
     queryFn: () => devisService.getMesDevisRefuses().then((r) => r.data.data),
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchInterval: 15_000,
   });
 
 export const useDismisserDevis = () => {
@@ -23,7 +24,8 @@ export const useMesStatsDevis = () =>
   useQuery({
     queryKey: queryKeys.devisStats,
     queryFn: () => devisService.getMesStats().then((r) => r.data.data),
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchInterval: 15_000,
   });
 
 export const useDemandesDisponibles = () =>
@@ -31,6 +33,7 @@ export const useDemandesDisponibles = () =>
     queryKey: queryKeys.devisDisponibles,
     queryFn: () => devisService.getDemandesDisponibles().then((r) => r.data.data),
     staleTime: 0,
+    refetchInterval: 15_000,
   });
 
 export const useDemandeDetail = (id: string) =>
@@ -64,6 +67,7 @@ export const useAccepterDevis = () => {
   return useMutation({
     mutationFn: (devisId: string) => devisService.accepterDevis(devisId).then((r) => r.data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["devis"] });
       queryClient.invalidateQueries({ queryKey: queryKeys.demandes });
       queryClient.invalidateQueries({ queryKey: queryKeys.prestationsClient });
     },
@@ -75,6 +79,7 @@ export const useRefuserDevis = () => {
   return useMutation({
     mutationFn: (devisId: string) => devisService.refuserDevis(devisId).then((r) => r.data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["devis"] });
       queryClient.invalidateQueries({ queryKey: queryKeys.demandes });
     },
   });

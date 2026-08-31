@@ -283,6 +283,19 @@ export default function PrestatairePrestationsPage() {
     filter === "TOUTES" ? true : p.status === filter,
   );
 
+  const counts: Record<FilterValue, number> = {
+    TOUTES: prestations?.length ?? 0,
+    EN_ATTENTE_INSPECTION: 0,
+    EN_ATTENTE_PAIEMENT: 0,
+    EN_COURS: 0,
+    A_VALIDER: 0,
+    TERMINEE: 0,
+    ANNULEE: 0,
+  };
+  prestations?.forEach((p) => {
+    if (p.status in counts) counts[p.status as FilterValue]++;
+  });
+
   return (
     <div className={`min-h-screen ${colors.background.gray}`}>
       <HeaderPrestataire />
@@ -303,13 +316,22 @@ export default function PrestatairePrestationsPage() {
             <span key={f.value} className="relative group">
               <button
                 onClick={() => setFilter(f.value)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border inline-flex items-center gap-1.5 ${
                   filter === f.value
                     ? `${colors.secondary.gradient} text-white border-transparent`
                     : `bg-white ${colors.text.secondary} ${colors.border.light} hover:border-gray-300`
                 }`}
               >
                 {f.label}
+                <span
+                  className={`text-[10px] font-bold min-w-[18px] px-1.5 py-0.5 rounded-full text-center ${
+                    filter === f.value
+                      ? "bg-white/25 text-white"
+                      : "bg-gray-100 text-gray-500"
+                  }`}
+                >
+                  {counts[f.value]}
+                </span>
               </button>
               <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-30 w-44 bg-gray-800 text-white text-xs p-2 rounded-xl shadow-xl text-center pointer-events-none">
                 {f.tooltip}

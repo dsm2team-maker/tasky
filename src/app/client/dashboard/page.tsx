@@ -9,11 +9,21 @@ import HeaderClient from "@/components/headers/HeaderClient";
 import { colors } from "@/config/colors";
 import { spacing, transitions } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
+import { useMyDemandes } from "@/hooks/useDemande";
+import { useUnreadMessageCount } from "@/hooks/useMessages";
+
+const STATUTS_ACTIFS = ["PUBLIEE", "EN_ATTENTE_INSPECTION", "EN_ATTENTE_PAIEMENT", "EN_COURS", "A_VALIDER"];
 
 export default function ClientDashboard() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
   const [isHydrated, setIsHydrated] = useState(false);
+  const { data: demandes } = useMyDemandes();
+  const { data: unreadCount } = useUnreadMessageCount();
+
+  const demandesActives = demandes?.filter((d: any) => STATUTS_ACTIFS.includes(d.status)).length ?? 0;
+  const demandesEnCours = demandes?.filter((d: any) => d.status === "EN_COURS").length ?? 0;
+  const demandesTerminees = demandes?.filter((d: any) => d.status === "TERMINEE").length ?? 0;
 
   useEffect(() => {
     setIsHydrated(true);
@@ -62,11 +72,11 @@ export default function ClientDashboard() {
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {[
-            { label: "Demandes actives", icon: "📋", color: colors.neutral },
-            { label: "En cours", icon: "⏱️", color: colors.warning },
-            { label: "Terminées", icon: "✅", color: colors.success },
-            { label: "Nouveaux messages", icon: "💬", color: colors.primary },
-          ].map(({ label, icon, color }) => (
+            { label: "Demandes actives", icon: "📋", color: colors.neutral, value: demandesActives },
+            { label: "En cours", icon: "⏱️", color: colors.warning, value: demandesEnCours },
+            { label: "Terminées", icon: "✅", color: colors.success, value: demandesTerminees },
+            { label: "Nouveaux messages", icon: "💬", color: colors.primary, value: unreadCount ?? 0 },
+          ].map(({ label, icon, color, value }) => (
             <div
               key={label}
               className={`${colors.background.white} rounded-xl p-6 shadow-sm border ${colors.border.light}`}
@@ -77,7 +87,7 @@ export default function ClientDashboard() {
                 {icon}
               </div>
               <h3 className={`text-2xl font-bold ${colors.text.primary} mb-1`}>
-                0
+                {value}
               </h3>
               <p className={`text-sm ${colors.text.secondary}`}>{label}</p>
             </div>
@@ -160,6 +170,7 @@ export default function ClientDashboard() {
         </div>
 
         {/* Empty State */}
+        {demandes && demandes.length === 0 && (
         <div
           className={`${colors.background.white} rounded-xl p-12 text-center shadow-sm border ${colors.border.light}`}
         >
@@ -203,6 +214,7 @@ export default function ClientDashboard() {
             </Link>
           </div>
         </div>
+        )}
       </main>
     </div>
   );

@@ -267,9 +267,10 @@ export default function PrestataireRequestDetailPage() {
                   label="Délai (jours) *"
                   type="number"
                   min="1"
+                  step="1"
                   placeholder="Ex: 5"
                   value={delai}
-                  onChange={(e) => setDelai(e.target.value)}
+                  onChange={(e) => setDelai(e.target.value.replace(/[^0-9]/g, ""))}
                 />
               </div>
 

@@ -189,6 +189,10 @@ export default function SectionChat({ prestationId }: Props) {
                         {msg.contenu}
                       </div>
                       <span className={`text-xs ${colors.text.muted} px-1`}>
+                        {new Date(msg.createdAt).toLocaleDateString("fr-FR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                        })}{" "}
                         {new Date(msg.createdAt).toLocaleTimeString("fr-FR", {
                           hour: "2-digit",
                           minute: "2-digit",

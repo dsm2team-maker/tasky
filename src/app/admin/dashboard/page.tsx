@@ -67,7 +67,7 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <KpiCard icon="👥" label="Utilisateurs actifs" value={s?.totalUsers ?? 0} sub={`${s?.totalClients ?? 0} clients · ${s?.totalPrestataires ?? 0} prestataires`} color="border-blue-800" />
         <KpiCard icon="⚡" label="Prestations actives" value={s?.prestationsActives ?? 0} sub={`${s?.prestationsTerminees ?? 0} terminées`} color="border-emerald-800" />
-        <KpiCard icon="💶" label="CA total" value={`${(s?.caTotal ?? 0).toFixed(0)} €`} sub={`Commission : ${(s?.commissionTotal ?? 0).toFixed(0)} €`} color="border-yellow-800" />
+        <KpiCard icon="💶" label="CA total" value={`${(s?.caTotal ?? 0).toFixed(2)} €`} sub={`Commission : ${(s?.commissionTotal ?? 0).toFixed(2)} € · prestations terminées`} color="border-yellow-800" />
         <KpiCard icon="⚠️" label="Litiges ouverts" value={s?.signalentsOuverts ?? 0} sub="Signalements en attente" color={(s?.signalentsOuverts ?? 0) > 0 ? "border-red-600" : "border-gray-700"} />
       </div>
 

@@ -37,8 +37,8 @@ export const envoyerDevisHandler = async (req: AuthRequest, res: Response) => {
 
     if (!montant || isNaN(parseFloat(montant)) || parseFloat(montant) <= 0)
       return res.status(400).json({ success: false, message: "Montant invalide" });
-    if (!delai || isNaN(parseInt(delai)) || parseInt(delai) <= 0)
-      return res.status(400).json({ success: false, message: "Délai invalide" });
+    if (!delai || !Number.isInteger(Number(delai)) || parseInt(delai) <= 0)
+      return res.status(400).json({ success: false, message: "Délai invalide (nombre entier de jours requis)" });
     if (!description || description.trim().length < 20)
       return res.status(400).json({ success: false, message: "Description trop courte (min 20 caractères)" });
 
