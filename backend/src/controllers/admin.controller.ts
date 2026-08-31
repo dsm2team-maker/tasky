@@ -23,8 +23,10 @@ export const getUsersHandler = async (req: AuthRequest, res: Response) => {
   if (!isAdmin(req, res)) return;
   try {
     const page = parseInt(req.query.page as string) || 1;
-    const search = (req.query.search as string) || "";
-    const data = await adminService.getUsers(page, search);
+    const nom = (req.query.nom as string) || "";
+    const prenom = (req.query.prenom as string) || "";
+    const email = (req.query.email as string) || "";
+    const data = await adminService.getUsers(page, { nom, prenom, email });
     res.json({ success: true, data });
   } catch { res.status(500).json({ success: false, message: "Erreur serveur" }); }
 };

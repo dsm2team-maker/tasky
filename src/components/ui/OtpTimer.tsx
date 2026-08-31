@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { colors } from "@/config/colors";
 
 interface OtpTimerProps {
@@ -10,20 +10,28 @@ interface OtpTimerProps {
 
 export const OtpTimer: React.FC<OtpTimerProps> = ({ seconds, onExpire }) => {
   const [remaining, setRemaining] = useState(seconds);
+  const expiredRef = useRef(false);
 
   useEffect(() => {
+    const expiresAt = Date.now() + seconds * 1000;
+    expiredRef.current = false;
     setRemaining(seconds);
-    const interval = setInterval(() => {
-      setRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          onExpire();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
+
+    const tick = () => {
+      const left = Math.max(0, Math.round((expiresAt - Date.now()) / 1000));
+      setRemaining(left);
+      if (left <= 0 && !expiredRef.current) {
+        expiredRef.current = true;
+        onExpire();
+      }
+    };
+
+    const interval = setInterval(tick, 1000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", tick);
+    };
   }, [seconds]);
 
   const mins = Math.floor(remaining / 60);

@@ -45,18 +45,18 @@ export const getDashboardStats = async () => {
 
 // ─── Utilisateurs ─────────────────────────────────────────────────────────────
 
-export const getUsers = async (page = 1, search = "") => {
+export const getUsers = async (
+  page = 1,
+  filters: { nom?: string; prenom?: string; email?: string } = {},
+) => {
   const take = 20;
   const skip = (page - 1) * take;
-  const where = search
-    ? {
-        OR: [
-          { email: { contains: search, mode: "insensitive" as const } },
-          { firstName: { contains: search, mode: "insensitive" as const } },
-          { lastName: { contains: search, mode: "insensitive" as const } },
-        ],
-      }
-    : {};
+  const { nom, prenom, email } = filters;
+  const AND: Record<string, unknown>[] = [];
+  if (nom) AND.push({ lastName: { contains: nom, mode: "insensitive" as const } });
+  if (prenom) AND.push({ firstName: { contains: prenom, mode: "insensitive" as const } });
+  if (email) AND.push({ email: { contains: email, mode: "insensitive" as const } });
+  const where = AND.length ? { AND } : {};
 
   const [users, total] = await Promise.all([
     prisma.user.findMany({

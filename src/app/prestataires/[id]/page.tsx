@@ -3,11 +3,15 @@
 export const dynamic = "force-dynamic";
 
 import React from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { usePublicPrestataire } from "@/hooks/usePrestataire";
+import { useAuthStore } from "@/stores/auth-store";
+import { Button } from "@/components/ui/Button";
 import HeaderClient from "@/components/headers/HeaderClient";
 import { colors } from "@/config/colors";
 import { spacing } from "@/config/design-tokens";
+import { routes } from "@/config/routes";
 import type { PublicReview } from "@/services/prestataire.service";
 
 // ─── Étoiles ──────────────────────────────────────────────────────────────────
@@ -61,6 +65,7 @@ export default function PrestataireProfil() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { data: prestataire, isLoading } = usePublicPrestataire(id);
+  const { isAuthenticated } = useAuthStore();
 
   if (isLoading) {
     return (
@@ -135,6 +140,29 @@ export default function PrestataireProfil() {
             <p className={`text-sm ${colors.text.secondary} leading-relaxed mt-4 pt-4 border-t ${colors.border.light}`}>
               {prestataire.bio}
             </p>
+          )}
+        </div>
+
+        {/* Contact */}
+        <div className={`bg-white rounded-2xl border ${colors.border.light} shadow-sm p-5 mb-6`}>
+          <p className={`text-sm ${colors.text.secondary} mb-3`}>
+            Vous ne pouvez pas envoyer de message directement à {prestataire.firstName}. Publiez une
+            demande décrivant votre besoin : {prestataire.firstName} et les autres prestataires
+            qualifiés pourront vous envoyer un devis, et la messagerie s'ouvrira dès qu'un devis est
+            accepté.
+          </p>
+          {isAuthenticated ? (
+            <Link href={routes.client.requests.new}>
+              <Button variant="primary" fullWidth size="lg">
+                📋 Créer une demande
+              </Button>
+            </Link>
+          ) : (
+            <Link href={routes.auth.login}>
+              <Button variant="primary" fullWidth size="lg">
+                Se connecter pour faire une demande
+              </Button>
+            </Link>
           )}
         </div>
 

@@ -6,13 +6,13 @@ import { adminService } from "@/services/admin.service";
 
 export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [searchInput, setSearchInput] = useState("");
+  const [filters, setFilters] = useState({ nom: "", prenom: "", email: "" });
+  const [filtersInput, setFiltersInput] = useState({ nom: "", prenom: "", email: "" });
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-users", page, search],
-    queryFn: () => adminService.getUsers(page, search).then((r) => r.data.data),
+    queryKey: ["admin-users", page, filters],
+    queryFn: () => adminService.getUsers(page, filters).then((r) => r.data.data),
   });
 
   const suspend = useMutation({
@@ -38,12 +38,31 @@ export default function AdminUsersPage() {
           <h1 className="text-2xl font-bold text-white">👥 Utilisateurs</h1>
           <p className="text-gray-400 text-sm mt-1">{data?.total ?? 0} utilisateurs au total</p>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); setSearch(searchInput); setPage(1); }} className="flex gap-2">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setFilters(filtersInput);
+            setPage(1);
+          }}
+          className="flex gap-2"
+        >
           <input
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Rechercher nom, email…"
-            className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-500 w-64"
+            value={filtersInput.nom}
+            onChange={(e) => setFiltersInput((f) => ({ ...f, nom: e.target.value }))}
+            placeholder="Nom"
+            className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-500 w-36"
+          />
+          <input
+            value={filtersInput.prenom}
+            onChange={(e) => setFiltersInput((f) => ({ ...f, prenom: e.target.value }))}
+            placeholder="Prénom"
+            className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-500 w-36"
+          />
+          <input
+            value={filtersInput.email}
+            onChange={(e) => setFiltersInput((f) => ({ ...f, email: e.target.value }))}
+            placeholder="Email"
+            className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-500 w-48"
           />
           <button type="submit" className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-xl text-sm transition-colors">
             Rechercher

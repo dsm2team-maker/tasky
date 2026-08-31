@@ -2,8 +2,13 @@ import { apiClient } from "@/lib/api-client";
 
 export const adminService = {
   getDashboard: () => apiClient.get("/api/admin/dashboard"),
-  getUsers: (page = 1, search = "") =>
-    apiClient.get(`/api/admin/users?page=${page}&search=${encodeURIComponent(search)}`),
+  getUsers: (page = 1, filters: { nom?: string; prenom?: string; email?: string } = {}) => {
+    const params = new URLSearchParams({ page: String(page) });
+    if (filters.nom) params.set("nom", filters.nom);
+    if (filters.prenom) params.set("prenom", filters.prenom);
+    if (filters.email) params.set("email", filters.email);
+    return apiClient.get(`/api/admin/users?${params.toString()}`);
+  },
   suspendUser: (id: string) => apiClient.patch(`/api/admin/users/${id}/suspend`, {}),
   reactivateUser: (id: string) => apiClient.patch(`/api/admin/users/${id}/reactivate`, {}),
   getPrestations: (page = 1, status = "") =>
