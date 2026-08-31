@@ -20,6 +20,35 @@ function parseSystemMessage(contenu: string): { emoji: string; text: string } {
   return { emoji: "ℹ️", text: contenu };
 }
 
+function dateKey(iso: string) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function dateLabel(iso: string) {
+  const d = new Date(iso);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  if (dateKey(iso) === dateKey(today.toISOString())) return "Aujourd'hui";
+  if (dateKey(iso) === dateKey(yesterday.toISOString())) return "Hier";
+  return `Le ${d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })}`;
+}
+
+function groupByDate<T extends { createdAt: string }>(messages: T[]) {
+  const groups: { key: string; label: string; messages: T[] }[] = [];
+  for (const msg of messages) {
+    const key = dateKey(msg.createdAt);
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) {
+      last.messages.push(msg);
+    } else {
+      groups.push({ key, label: dateLabel(msg.createdAt), messages: [msg] });
+    }
+  }
+  return groups;
+}
+
 function TaskyAvatar() {
   return (
     <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-sm ring-2 ring-purple-100">
@@ -51,6 +80,16 @@ export default function SectionChat({ prestationId }: Props) {
 
   const chatMessages = data?.messages.filter((m) => !m.isSystem) ?? [];
   const systemMessages = data?.messages.filter((m) => m.isSystem) ?? [];
+  const messageGroups = groupByDate(chatMessages);
+  const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
+  const toggleDate = (key: string) => {
+    setCollapsedDates((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (activeTab === "chat") {
@@ -156,49 +195,71 @@ export default function SectionChat({ prestationId }: Props) {
                 </p>
               </div>
             ) : (
-              chatMessages.map((msg) => {
-                const isMe = msg.auteurId === user?.id;
-                const sender = isMe
-                  ? null
-                  : msg.auteurId === data?.participants.client.id
-                    ? data?.participants.client
-                    : data?.participants.prestataire;
-
+              messageGroups.map((group) => {
+                const isCollapsed = collapsedDates.has(group.key);
                 return (
-                  <div
-                    key={msg.id}
-                    className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}
-                  >
-                    {!isMe && (
-                      <div className="w-7 h-7 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 mb-0.5">
-                        {sender?.avatar ? (
-                          <img src={sender.avatar} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xs">👤</div>
-                        )}
+                  <div key={group.key}>
+                    <button
+                      type="button"
+                      onClick={() => toggleDate(group.key)}
+                      className="w-full flex items-center justify-center gap-1.5 py-1.5 group"
+                    >
+                      <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full bg-gray-100 ${colors.text.muted} group-hover:bg-gray-200 transition-colors flex items-center gap-1`}>
+                        {group.label}
+                        <svg
+                          className={`w-3 h-3 transition-transform ${isCollapsed ? "-rotate-90" : ""}`}
+                          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </span>
+                    </button>
+                    {!isCollapsed && (
+                      <div className="space-y-3">
+                        {group.messages.map((msg) => {
+                          const isMe = msg.auteurId === user?.id;
+                          const sender = isMe
+                            ? null
+                            : msg.auteurId === data?.participants.client.id
+                              ? data?.participants.client
+                              : data?.participants.prestataire;
+
+                          return (
+                            <div
+                              key={msg.id}
+                              className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}
+                            >
+                              {!isMe && (
+                                <div className="w-7 h-7 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 mb-0.5">
+                                  {sender?.avatar ? (
+                                    <img src={sender.avatar} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-xs">👤</div>
+                                  )}
+                                </div>
+                              )}
+                              <div className={`max-w-[70%] ${isMe ? "items-end" : "items-start"} flex flex-col gap-0.5`}>
+                                <div
+                                  className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                                    isMe
+                                      ? "bg-pink-500 text-white rounded-br-sm"
+                                      : "bg-gray-100 text-gray-800 rounded-bl-sm"
+                                  }`}
+                                >
+                                  {msg.contenu}
+                                </div>
+                                <span className={`text-xs ${colors.text.muted} px-1`}>
+                                  {new Date(msg.createdAt).toLocaleTimeString("fr-FR", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
-                    <div className={`max-w-[70%] ${isMe ? "items-end" : "items-start"} flex flex-col gap-0.5`}>
-                      <div
-                        className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                          isMe
-                            ? "bg-pink-500 text-white rounded-br-sm"
-                            : "bg-gray-100 text-gray-800 rounded-bl-sm"
-                        }`}
-                      >
-                        {msg.contenu}
-                      </div>
-                      <span className={`text-xs ${colors.text.muted} px-1`}>
-                        {new Date(msg.createdAt).toLocaleDateString("fr-FR", {
-                          day: "2-digit",
-                          month: "2-digit",
-                        })}{" "}
-                        {new Date(msg.createdAt).toLocaleTimeString("fr-FR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
                   </div>
                 );
               })
