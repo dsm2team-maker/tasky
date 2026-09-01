@@ -7,6 +7,8 @@ export const useMyDemandes = () =>
     queryKey: queryKeys.demandes,
     queryFn: () => demandeService.getMyDemandes().then((r) => r.data.data),
     staleTime: 0,
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: true,
   });
 
 export const useDemande = (id: string) =>
@@ -14,6 +16,9 @@ export const useDemande = (id: string) =>
     queryKey: queryKeys.demande(id),
     queryFn: () => demandeService.getDemande(id).then((r) => r.data.data),
     enabled: !!id,
+    staleTime: 0,
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: true,
   });
 
 export const useCreateDemande = () => {

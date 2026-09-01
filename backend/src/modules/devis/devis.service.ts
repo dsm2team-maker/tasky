@@ -320,7 +320,7 @@ export const accepterDevis = async (userId: string, devisId: string) => {
         devis.demande.reference,
         devis.demande.titre,
       );
-      sendSystemMessageConversation(
+      await sendSystemMessageConversation(
         client.id,
         autre.prestataireId,
         `❌ Tasky-Infos — Votre devis pour la demande "${devis.demande.titre}" (TSK-${String(devis.demande.reference).padStart(6, "0")}) n'a pas été retenu.`,
@@ -391,7 +391,7 @@ export const refuserDevis = async (userId: string, devisId: string) => {
       devis.demande.reference,
       devis.demande.titre,
     );
-    sendSystemMessageConversation(
+    await sendSystemMessageConversation(
       client.id,
       devis.prestataireId,
       `❌ Tasky-Infos — Votre devis pour la demande "${devis.demande.titre}" (TSK-${String(devis.demande.reference).padStart(6, "0")}) n'a pas été retenu.`,

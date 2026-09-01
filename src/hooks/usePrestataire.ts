@@ -7,6 +7,8 @@ export const usePublicPrestataire = (id: string) => {
     queryFn: () => prestataireService.getProfil(id).then((r) => r.data.data),
     enabled: !!id,
     staleTime: 0,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -14,6 +16,8 @@ export const useListPrestataires = (filters?: { city?: string; categoryId?: stri
   return useQuery({
     queryKey: ["prestataires", filters],
     queryFn: () => prestataireService.list(filters).then((r) => r.data.data),
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchInterval: 20_000,
+    refetchOnWindowFocus: true,
   });
 };

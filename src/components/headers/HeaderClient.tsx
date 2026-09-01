@@ -17,7 +17,7 @@ import { useUnreadMessageCount } from "@/hooks/useMessages";
 export default function HeaderClient() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, logout } = useAuthStore();
+  const { logout } = useAuthStore();
   const { data: unread } = useUnreadMessageCount();
   const unreadCount = unread ?? 0;
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -75,11 +75,6 @@ export default function HeaderClient() {
 
           {/* User actions */}
           <div className="flex items-center gap-4">
-            <span
-              className={`hidden md:block text-sm font-medium ${colors.text.secondary}`}
-            >
-              👤 {user?.firstName || user?.email?.split("@")[0]}
-            </span>
             <button
               onClick={handleLogout}
               className={`hidden md:block text-sm font-medium ${colors.premium.text} hover:${colors.primary.text} transition-colors`}
@@ -130,9 +125,6 @@ export default function HeaderClient() {
                 </Link>
               );
             })}
-            <span className={`text-sm font-medium ${colors.text.secondary}`}>
-              👤 {user?.firstName || user?.email?.split("@")[0]}
-            </span>
             <button
               onClick={handleLogout}
               className={`text-left text-sm font-medium ${colors.premium.text} hover:${colors.primary.text} transition-colors`}
