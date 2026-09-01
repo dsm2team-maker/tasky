@@ -13,23 +13,23 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
+  id            String    @id @default(cuid())
+  email         String    @unique
   password      String
-  role          Role     @default(CLIENT)
+  role          Role      @default(CLIENT)
   firstName     String
   lastName      String
-  phone         String   @unique
+  phone         String    @unique
   city          String?
   avatar        String?
-  emailVerified Boolean  @default(false)
+  emailVerified Boolean   @default(false)
   isActive      Boolean   @default(true)
   deletedAt     DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  client        Client?
-  prestataire   Prestataire?
+  client             Client?
+  prestataire        Prestataire?
   refreshTokens      RefreshToken[]
   verificationTokens VerificationToken[]
   emailLogs          EmailLog[]
@@ -55,44 +55,59 @@ model RefreshToken {
 }
 
 model Client {
-  id       String    @id @default(cuid())
-  userId   String    @unique
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  demandes Demande[]
-  reviews  Review[]
+  id            String         @id @default(cuid())
+  userId        String         @unique
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  demandes      Demande[]
+  reviews       Review[]
+  conversations Conversation[]
 
   @@map("clients")
 }
 
 model Prestataire {
-  id            String        @id @default(cuid())
-  userId        String        @unique
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bio           String?
-  rating        Float         @default(0)
-  reviewCount   Int           @default(0)
-  disponibilite Disponibilite @default(ACTIF)
+  id                     String           @id @default(cuid())
+  userId                 String           @unique
+  user                   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio                    String?
+  rating                 Float            @default(0)
+  reviewCount            Int              @default(0)
+  disponibilite          Disponibilite    @default(ACTIF)
   pointDepotAdresse      String?
   pointDepotVille        String?
   pointDepotCodePostal   String?
   pointDepotLat          Float?
   pointDepotLng          Float?
   pointDepotInstructions String?
-  tauxReussite  Float @default(0)
-  delaiMoyen    Int   @default(0)
-  tempsReponse  Int   @default(0)
+  tauxReussite           Float            @default(0)
+  delaiMoyen             Int              @default(0)
+  tempsReponse           Int              @default(0)
   // Chiffrés au niveau applicatif (AES-256-GCM, voir src/lib/crypto.ts) avant écriture
-  iban         String?
-  bic          String?
-  bankName     String?
-  ibanVerified Boolean @default(false)
-  competences  Competence[]
-  devis        Devis[]
-  prestations  Prestation[]
-  reviews      Review[]
-  portfolio    PortfolioImage[]
+  iban                   String?
+  bic                    String?
+  bankName               String?
+  ibanVerified           Boolean          @default(false)
+  competences            Competence[]
+  devis                  Devis[]
+  prestations            Prestation[]
+  reviews                Review[]
+  portfolio              PortfolioImage[]
+  conversations          Conversation[]
 
   @@map("prestataires")
+}
+
+model Conversation {
+  id            String      @id @default(cuid())
+  clientId      String
+  client        Client      @relation(fields: [clientId], references: [id])
+  prestataireId String
+  prestataire   Prestataire @relation(fields: [prestataireId], references: [id])
+  messages      Message[]
+  createdAt     DateTime    @default(now())
+
+  @@unique([clientId, prestataireId])
+  @@map("conversations")
 }
 
 enum Disponibilite {
@@ -129,10 +144,10 @@ model SubCategory {
 }
 
 model Intervention {
-  id            String      @id
+  id            String       @id
   nom           String
   subCategoryId String
-  subCategory   SubCategory @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+  subCategory   SubCategory  @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
   competences   Competence[]
 
   @@map("interventions")
@@ -190,21 +205,21 @@ enum StatusDemande {
 }
 
 model Devis {
-  id               String      @id @default(cuid())
-  demandeId        String
-  demande          Demande     @relation(fields: [demandeId], references: [id])
-  prestataireId    String
-  prestataire      Prestataire @relation(fields: [prestataireId], references: [id])
-  montant          Float
-  delai            Int
-  description      String
-  status                  StatusDevis @default(ENVOYE)
-  estSelectionnable       Boolean     @default(true)
-  aVerifier               Boolean     @default(false)
-  dismissedByPrestataire  Boolean     @default(false)
-  expiresAt               DateTime
-  createdAt               DateTime    @default(now())
-  updatedAt               DateTime    @updatedAt
+  id                     String      @id @default(cuid())
+  demandeId              String
+  demande                Demande     @relation(fields: [demandeId], references: [id])
+  prestataireId          String
+  prestataire            Prestataire @relation(fields: [prestataireId], references: [id])
+  montant                Float
+  delai                  Int
+  description            String
+  status                 StatusDevis @default(ENVOYE)
+  estSelectionnable      Boolean     @default(true)
+  aVerifier              Boolean     @default(false)
+  dismissedByPrestataire Boolean     @default(false)
+  expiresAt              DateTime
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
 
   @@map("devis")
 }
@@ -217,25 +232,25 @@ enum StatusDevis {
 }
 
 model Prestation {
-  id             String           @id @default(cuid())
-  demandeId      String           @unique
-  demande        Demande          @relation(fields: [demandeId], references: [id])
-  prestataireId  String
-  prestataire    Prestataire      @relation(fields: [prestataireId], references: [id])
-  subCategoryId  String?
-  subCategory    SubCategory?     @relation(fields: [subCategoryId], references: [id])
-  montant                Float
-  montantFinal           Float?
-  stripePaymentIntentId  String?
-  status                 StatusPrestation @default(EN_ATTENTE_INSPECTION)
-  createdAt         DateTime         @default(now())
-  completedAt       DateTime?
-  validatedAt       DateTime?
-  autoValidateAt    DateTime?
-  dateEcheanceFinal DateTime?
-  review         Review?
-  etatDesLieux   EtatDesLieux?
-  messages       Message[]
+  id                    String           @id @default(cuid())
+  demandeId             String           @unique
+  demande               Demande          @relation(fields: [demandeId], references: [id])
+  prestataireId         String
+  prestataire           Prestataire      @relation(fields: [prestataireId], references: [id])
+  subCategoryId         String?
+  subCategory           SubCategory?     @relation(fields: [subCategoryId], references: [id])
+  montant               Float
+  montantFinal          Float?
+  stripePaymentIntentId String?
+  status                StatusPrestation @default(EN_ATTENTE_INSPECTION)
+  createdAt             DateTime         @default(now())
+  completedAt           DateTime?
+  validatedAt           DateTime?
+  autoValidateAt        DateTime?
+  dateEcheanceFinal     DateTime?
+  review                Review?
+  etatDesLieux          EtatDesLieux?
+  messages              Message[]
 
   @@map("prestations")
 }
@@ -250,14 +265,14 @@ enum StatusPrestation {
 }
 
 model EtatDesLieux {
-  id            String            @id @default(cuid())
-  prestationId  String            @unique
-  prestation    Prestation        @relation(fields: [prestationId], references: [id])
+  id            String             @id @default(cuid())
+  prestationId  String             @unique
+  prestation    Prestation         @relation(fields: [prestationId], references: [id])
   description   String
   photos        String[]
   montantRevise Float?
   status        StatusEtatDesLieux @default(EN_ATTENTE)
-  createdAt     DateTime          @default(now())
+  createdAt     DateTime           @default(now())
 
   @@map("etats_des_lieux")
 }
@@ -269,14 +284,16 @@ enum StatusEtatDesLieux {
 }
 
 model Message {
-  id           String     @id @default(cuid())
-  prestationId String
-  prestation   Prestation @relation(fields: [prestationId], references: [id])
-  auteurId     String?
-  contenu      String
-  lu           Boolean    @default(false)
-  isSystem     Boolean    @default(false)
-  createdAt    DateTime   @default(now())
+  id             String        @id @default(cuid())
+  prestationId   String?
+  prestation     Prestation?   @relation(fields: [prestationId], references: [id])
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+  auteurId       String?
+  contenu        String
+  lu             Boolean       @default(false)
+  isSystem       Boolean       @default(false)
+  createdAt      DateTime      @default(now())
 
   @@map("messages")
 }

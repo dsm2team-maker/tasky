@@ -1,6 +1,94 @@
 import { prisma } from "../../lib/prisma";
-import { sendSystemMessage } from "../messages/message.service";
+import { sendSystemMessage, sendSystemMessageConversation } from "../messages/message.service";
 import { notifyOrderCompleted } from "../../services/notifications.service";
+
+// =============================================================================
+// REFUSER LES DEVIS CONCURRENTS (demandes MODIFICATION) — appelé au moment où
+// le devis gagnant est définitivement confirmé (validation état des lieux ou
+// conformité). Les autres devis ENVOYE de la même demande passent à REFUSE et
+// leur prestataire reçoit un message Tasky-Infos dans sa conversation client.
+// =============================================================================
+const refuserDevisConcurrents = async (
+  demandeId: string,
+  clientId: string,
+  prestataireGagnantId: string,
+  demandeTitre: string,
+  demandeReference: number,
+) => {
+  const autresDevis = await prisma.devis.findMany({
+    where: { demandeId, prestataireId: { not: prestataireGagnantId }, status: "ENVOYE" },
+    select: { id: true, prestataireId: true },
+  });
+  if (autresDevis.length === 0) return;
+
+  await prisma.devis.updateMany({
+    where: { id: { in: autresDevis.map((d) => d.id) } },
+    data: { status: "REFUSE", estSelectionnable: false },
+  });
+
+  for (const d of autresDevis) {
+    await sendSystemMessageConversation(
+      clientId,
+      d.prestataireId,
+      `❌ Tasky-Infos — Votre devis pour la demande "${demandeTitre}" (TSK-${String(demandeReference).padStart(6, "0")}) n'a pas été retenu.`,
+    ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+  }
+};
+
+// =============================================================================
+// RECALCUL STATS PRESTATAIRE (tauxReussite, delaiMoyen, tempsReponse)
+// À appeler après chaque transition TERMINEE / ANNULEE d'une prestation
+// =============================================================================
+export const recalculerStatsPrestataire = async (prestataireId: string) => {
+  const [terminees, annuleesCount, devisPrestataire] = await Promise.all([
+    prisma.prestation.findMany({
+      where: { prestataireId, status: "TERMINEE" },
+      select: { createdAt: true, completedAt: true, validatedAt: true },
+    }),
+    prisma.prestation.count({
+      where: { prestataireId, status: "ANNULEE" },
+    }),
+    prisma.devis.findMany({
+      where: { prestataireId },
+      select: { createdAt: true, demande: { select: { createdAt: true } } },
+    }),
+  ]);
+
+  const totalFinalise = terminees.length + annuleesCount;
+  const tauxReussite =
+    totalFinalise > 0
+      ? Math.round((terminees.length / totalFinalise) * 1000) / 10
+      : 0;
+
+  const delais = terminees
+    .map((p) => {
+      const fin = p.completedAt ?? p.validatedAt;
+      if (!fin) return null;
+      return (fin.getTime() - p.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+    })
+    .filter((d): d is number => d !== null);
+  const delaiMoyen =
+    delais.length > 0
+      ? Math.round(delais.reduce((sum, d) => sum + d, 0) / delais.length)
+      : 0;
+
+  const tempsReponses = devisPrestataire.map(
+    (d) =>
+      (d.createdAt.getTime() - d.demande.createdAt.getTime()) /
+      (1000 * 60 * 60),
+  );
+  const tempsReponse =
+    tempsReponses.length > 0
+      ? Math.round(
+          tempsReponses.reduce((sum, t) => sum + t, 0) / tempsReponses.length,
+        )
+      : 0;
+
+  await prisma.prestataire.update({
+    where: { id: prestataireId },
+    data: { tauxReussite, delaiMoyen, tempsReponse },
+  });
+};
 
 // =============================================================================
 // GET MES PRESTATIONS (Prestataire)
@@ -184,6 +272,14 @@ export const validerEtatDesLieux = async (
       prestationId,
       "✅ Tasky-Infos — État des lieux accepté. En attente du paiement pour démarrer la prestation.",
     ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+
+    await refuserDevisConcurrents(
+      prestation.demandeId,
+      prestation.demande.clientId,
+      prestation.prestataireId,
+      prestation.demande.titre,
+      prestation.demande.reference,
+    ).catch((e: any) => console.error("[refuserDevisConcurrents]", e.message));
   } else {
     // Client refuse → prestation ANNULEE, demande PUBLIEE
     // Devis accepté → REFUSE + aVerifier=true, autres ENVOYE → estSelectionnable=true
@@ -229,6 +325,10 @@ export const validerEtatDesLieux = async (
       prestationId,
       "❌ Tasky-Infos — État des lieux refusé. La prestation est annulée, la demande est à nouveau disponible.",
     ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+
+    await recalculerStatsPrestataire(prestation.prestataireId).catch((e: any) =>
+      console.error("[Stats prestataire]", e.message),
+    );
   }
 };
 
@@ -288,6 +388,14 @@ export const confirmerConformite = async (
     prestationId,
     "✅ Tasky-Infos — Objet conforme. En attente du paiement pour démarrer la prestation.",
   ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+
+  await refuserDevisConcurrents(
+    prestation.demandeId,
+    prestation.demande.clientId,
+    prestation.prestataireId,
+    prestation.demande.titre,
+    prestation.demande.reference,
+  ).catch((e: any) => console.error("[refuserDevisConcurrents]", e.message));
 };
 
 // =============================================================================
@@ -410,6 +518,10 @@ export const validerPrestation = async (
     prestationId,
     "🎉 Tasky-Infos — Prestation validée par le client ! Le paiement sera libéré sous 1 à 2 jours ouvrés.",
   ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+
+  await recalculerStatsPrestataire(prestation.prestataireId).catch((e: any) =>
+    console.error("[Stats prestataire]", e.message),
+  );
 
   notifyOrderCompleted({
     clientEmail:            prestation.demande.client.user.email,

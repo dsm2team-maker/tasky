@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { adminService } from "@/services/admin.service";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import MessageThread from "@/components/chat/MessageThread";
 
 const statusLabel: Record<string, { label: string; color: string }> = {
   EN_ATTENTE_INSPECTION: { label: "Inspection", color: "bg-orange-900 text-orange-300" },
@@ -103,6 +104,12 @@ export default function AdminPrestationDetailPage() {
           <Row label="Email prestataire" value={p.prestataire.user.email} />
           {p.prestataire.iban && (
             <Row label="IBAN prestataire" value={<span className="font-mono">{p.prestataire.iban}</span>} />
+          )}
+          {p.prestataire.bic && (
+            <Row label="BIC prestataire" value={<span className="font-mono">{p.prestataire.bic}</span>} />
+          )}
+          {p.prestataire.bankName && (
+            <Row label="Banque prestataire" value={p.prestataire.bankName} />
           )}
         </Section>
 
@@ -221,18 +228,18 @@ export default function AdminPrestationDetailPage() {
       {/* Conversation */}
       {userMessages.length > 0 && (
         <Section title={`Conversation (${userMessages.length} messages)`}>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {userMessages.map((m: any) => (
-              <div key={m.id} className="flex gap-2 items-start">
-                <div className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white ${m.auteurId === clientUserId ? "bg-blue-700" : "bg-emerald-700"}`}>
-                  {m.auteurId === clientUserId ? "C" : "P"}
-                </div>
-                <div>
-                  <p className="text-xs text-gray-300">{m.contenu}</p>
-                  <p className="text-xs text-gray-600 mt-0.5">{new Date(m.createdAt).toLocaleString("fr-FR")}</p>
-                </div>
-              </div>
-            ))}
+          <div className="max-h-96 overflow-y-auto">
+            <MessageThread
+              messages={userMessages}
+              isRight={(m) => m.auteurId !== clientUserId}
+              sender={(m) =>
+                m.auteurId === clientUserId
+                  ? { fallback: <span className="font-bold">C</span> }
+                  : { fallback: <span className="font-bold">P</span> }
+              }
+              hideAvatarOnRight={false}
+              rightBubbleClass="bg-emerald-700 text-white rounded-br-sm"
+            />
           </div>
         </Section>
       )}

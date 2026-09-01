@@ -16,6 +16,7 @@ import {
   useProfile,
   useUpdateProfile,
   useUploadAvatar,
+  useDeleteAvatar,
   useUpdatePrestataireProfile,
   usePrestataireCompetences,
   useUpdatePrestataireCompetences,
@@ -76,7 +77,7 @@ export default function PrestataireProfilePage() {
   const { isHydrated, isReady } = useAuthGuard({ requireEmailVerified: false });
 
   const { success: toastSuccess, error: toastError } = useToast();
-  const [localPhoto, setLocalPhoto] = useState<string | null>(null);
+  const [localPhoto, setLocalPhoto] = useState<string | null | undefined>(undefined);
 
   const [isEditingInfo, setIsEditingInfo] = useState(false);
   const [isEditingBio, setIsEditingBio] = useState(false);
@@ -156,8 +157,10 @@ export default function PrestataireProfilePage() {
 
   const updateProfile = useUpdateProfile();
   const uploadAvatar = useUploadAvatar();
+  const deleteAvatar = useDeleteAvatar();
   const updatePrestataireProfile = useUpdatePrestataireProfile();
   const updateCompetences = useUpdatePrestataireCompetences();
+  const displayedAvatar = localPhoto !== undefined ? localPhoto : profile?.avatar || null;
 
   // ── Barre de progression 5/5 ─────────────────────────────────────────────
   const hasBio = (profile?.prestataire?.bio?.length ?? 0) >= BIO_MIN;
@@ -289,7 +292,18 @@ export default function PrestataireProfilePage() {
     if (photoData) {
       uploadAvatar.mutate(photoData, {
         onSuccess: () => toastSuccess("Photo mise à jour !"),
-        onError: () => toastError("Erreur lors de l'upload"),
+        onError: () => {
+          setLocalPhoto(undefined);
+          toastError("Erreur lors de l'upload");
+        },
+      });
+    } else {
+      deleteAvatar.mutate(undefined, {
+        onSuccess: () => toastSuccess("Photo supprimée !"),
+        onError: () => {
+          setLocalPhoto(undefined);
+          toastError("Erreur lors de la suppression de la photo");
+        },
       });
     }
   };
@@ -464,9 +478,9 @@ export default function PrestataireProfilePage() {
         >
           <div className="flex items-center gap-6">
             <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white/30 flex-shrink-0 bg-white/20">
-              {localPhoto || profile?.avatar ? (
+              {displayedAvatar ? (
                 <img
-                  src={localPhoto || profile?.avatar || ""}
+                  src={displayedAvatar}
                   alt="Avatar"
                   className="w-full h-full object-cover"
                 />
@@ -542,7 +556,7 @@ export default function PrestataireProfilePage() {
                 Photo de profil
               </h2>
               <ProfilePhotoUpload
-                photo={localPhoto || profile?.avatar || null}
+                photo={displayedAvatar}
                 onPhotoChange={onPhotoChange}
                 onError={(msg) => toastError(msg)}
               />
@@ -1024,6 +1038,8 @@ export default function PrestataireProfilePage() {
                     placeholder="Centre commercial, épicerie, laverie..."
                     value={localComplement}
                     onChange={(e) => setLocalComplement(e.target.value)}
+                    maxLength={50}
+                    helperText={`${localComplement.length}/50 caractères`}
                   />
                   {pointDepotError && (
                     <p className={`text-sm ${colors.error.text}`}>

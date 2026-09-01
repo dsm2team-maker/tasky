@@ -28,6 +28,11 @@ export const queryKeys = {
   messagesUnreadCount:   ["messages", "unread-count"] as const,
   messagesUnreadByPrestation: ["messages", "unread-by-prestation"] as const,
 
+  // ── Conversations directes ────────────────────────────────────────────────
+  conversations:              ["conversations"] as const,
+  conversation:                (conversationId: string) => ["conversations", conversationId] as const,
+  conversationsUnreadByConversation: ["conversations", "unread-by-conversation"] as const,
+
   // ── Prestataires (public) ─────────────────────────────────────────────────
   prestataire:      (id: string) => ["prestataire", id] as const,
   prestataires:     (filters: Record<string, unknown>) => ["prestataires", filters] as const,

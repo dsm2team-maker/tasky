@@ -2,7 +2,8 @@ import { apiClient } from "@/lib/api-client";
 
 export interface Message {
   id: string;
-  prestationId: string;
+  prestationId: string | null;
+  conversationId?: string | null;
   auteurId: string | null;
   contenu: string;
   lu: boolean;

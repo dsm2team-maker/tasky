@@ -11,8 +11,17 @@ export const adminService = {
   },
   suspendUser: (id: string) => apiClient.patch(`/api/admin/users/${id}/suspend`, {}),
   reactivateUser: (id: string) => apiClient.patch(`/api/admin/users/${id}/reactivate`, {}),
-  getPrestations: (page = 1, status = "") =>
-    apiClient.get(`/api/admin/prestations?page=${page}&status=${status}`),
+  getPrestations: (
+    page = 1,
+    status = "",
+    filters: { reference?: string; client?: string; prestataire?: string } = {},
+  ) => {
+    const params = new URLSearchParams({ page: String(page), status });
+    if (filters.reference) params.set("reference", filters.reference);
+    if (filters.client) params.set("client", filters.client);
+    if (filters.prestataire) params.set("prestataire", filters.prestataire);
+    return apiClient.get(`/api/admin/prestations?${params.toString()}`);
+  },
   getPrestationDetail: (id: string) => apiClient.get(`/api/admin/prestations/${id}`),
   getSignalements: (page = 1) => apiClient.get(`/api/admin/signalements?page=${page}`),
   resolveSignalement: (id: string, note: string) =>

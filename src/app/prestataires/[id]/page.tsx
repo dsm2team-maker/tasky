@@ -2,11 +2,12 @@
 
 export const dynamic = "force-dynamic";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { usePublicPrestataire } from "@/hooks/usePrestataire";
 import { useAuthStore } from "@/stores/auth-store";
+import { useStartConversation } from "@/hooks/useConversations";
 import { Button } from "@/components/ui/Button";
 import HeaderClient from "@/components/headers/HeaderClient";
 import { colors } from "@/config/colors";
@@ -66,6 +67,16 @@ export default function PrestataireProfil() {
   const router = useRouter();
   const { data: prestataire, isLoading } = usePublicPrestataire(id);
   const { isAuthenticated } = useAuthStore();
+  const startConversation = useStartConversation();
+  const [contactError, setContactError] = useState<string | null>(null);
+
+  const handleContact = () => {
+    setContactError(null);
+    startConversation.mutate(id, {
+      onSuccess: (conversation) => router.push(routes.client.messages.conversation(conversation.id)),
+      onError: () => setContactError("Impossible de démarrer la discussion. Réessayez."),
+    });
+  };
 
   if (isLoading) {
     return (
@@ -145,22 +156,21 @@ export default function PrestataireProfil() {
 
         {/* Contact */}
         <div className={`bg-white rounded-2xl border ${colors.border.light} shadow-sm p-5 mb-6`}>
-          <p className={`text-sm ${colors.text.secondary} mb-3`}>
-            Vous ne pouvez pas envoyer de message directement à {prestataire.firstName}. Publiez une
-            demande décrivant votre besoin : {prestataire.firstName} et les autres prestataires
-            qualifiés pourront vous envoyer un devis, et la messagerie s'ouvrira dès qu'un devis est
-            accepté.
-          </p>
+          {contactError && <p className="text-sm text-red-600 mb-3">⚠️ {contactError}</p>}
           {isAuthenticated ? (
-            <Link href={routes.client.requests.new}>
-              <Button variant="primary" fullWidth size="lg">
-                📋 Créer une demande
-              </Button>
-            </Link>
+            <Button
+              variant="primary"
+              fullWidth
+              size="lg"
+              onClick={handleContact}
+              disabled={startConversation.isPending}
+            >
+              {startConversation.isPending ? "…" : `💬 Envoyer un message à ${prestataire.firstName}`}
+            </Button>
           ) : (
             <Link href={routes.auth.login}>
               <Button variant="primary" fullWidth size="lg">
-                Se connecter pour faire une demande
+                Se connecter pour envoyer un message
               </Button>
             </Link>
           )}

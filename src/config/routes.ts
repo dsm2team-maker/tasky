@@ -203,6 +203,12 @@ export const routes = {
       conversation: (id: string) => `/api/messages/${id}`,
       send: "/api/messages/send",
     },
+    conversations: {
+      list: "/api/conversations",
+      start: "/api/conversations",
+      detail: (id: string) => `/api/conversations/${id}`,
+      unreadByConversation: "/api/conversations/unread-by-conversation",
+    },
     categories: {
       list: "/api/categories",
       detail: (id: string) => `/api/categories/${id}`,

@@ -10,6 +10,7 @@ import {
   useProfile,
   useUpdateProfile,
   useUploadAvatar,
+  useDeleteAvatar,
 } from "@/hooks/useProfile";
 import { PhoneModal, EmailModal, DeleteAccountModal } from "@/components/shared/OtpModals";
 import HeaderClient from "@/components/headers/HeaderClient";
@@ -47,7 +48,7 @@ export default function ClientProfilePage() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [localPhoto, setLocalPhoto] = useState<string | null>(null);
+  const [localPhoto, setLocalPhoto] = useState<string | null | undefined>(undefined);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -97,6 +98,8 @@ export default function ClientProfilePage() {
 
   const updateProfile = useUpdateProfile();
   const uploadAvatar = useUploadAvatar();
+  const deleteAvatar = useDeleteAvatar();
+  const displayedAvatar = localPhoto !== undefined ? localPhoto : profile?.avatar || null;
 
   const onSubmitProfile = (data: ProfileFormData) => {
     updateProfile.mutate(
@@ -121,7 +124,18 @@ export default function ClientProfilePage() {
     if (photoData) {
       uploadAvatar.mutate(photoData, {
         onSuccess: () => setSuccessMessage("Photo mise à jour !"),
-        onError: () => setSuccessMessage("Erreur lors de l'upload"),
+        onError: () => {
+          setLocalPhoto(undefined);
+          setSuccessMessage("Erreur lors de l'upload");
+        },
+      });
+    } else {
+      deleteAvatar.mutate(undefined, {
+        onSuccess: () => setSuccessMessage("Photo supprimée !"),
+        onError: () => {
+          setLocalPhoto(undefined);
+          setSuccessMessage("Erreur lors de la suppression de la photo");
+        },
       });
     }
   };
@@ -181,9 +195,9 @@ export default function ClientProfilePage() {
         >
           <div className="flex items-center gap-6">
             <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white/30 flex-shrink-0 bg-white/20">
-              {localPhoto || profile?.avatar ? (
+              {displayedAvatar ? (
                 <img
-                  src={localPhoto || profile?.avatar || ""}
+                  src={displayedAvatar}
                   alt="Avatar"
                   className="w-full h-full object-cover"
                 />
@@ -232,7 +246,7 @@ export default function ClientProfilePage() {
                 Photo de profil
               </h2>
               <ProfilePhotoUpload
-                photo={localPhoto || profile?.avatar || null}
+                photo={displayedAvatar}
                 onPhotoChange={onPhotoChange}
                 onError={(msg) => setSuccessMessage(msg)}
               />

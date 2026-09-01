@@ -17,32 +17,66 @@ const statusLabel: Record<string, { label: string; color: string }> = {
 export default function AdminPrestationsPage() {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("");
+  const [filters, setFilters] = useState({ reference: "", client: "", prestataire: "" });
+  const [filtersInput, setFiltersInput] = useState({ reference: "", client: "", prestataire: "" });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-prestations", page, status],
-    queryFn: () => adminService.getPrestations(page, status).then((r) => r.data.data),
+    queryKey: ["admin-prestations", page, status, filters],
+    queryFn: () => adminService.getPrestations(page, status, filters).then((r) => r.data.data),
   });
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">🛠️ Prestations</h1>
           <p className="text-gray-400 text-sm mt-1">{data?.total ?? 0} prestations au total</p>
         </div>
-        <select
-          value={status}
-          onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-          className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none"
-        >
-          <option value="">Tous les statuts</option>
-          <option value="EN_ATTENTE_INSPECTION">Inspection</option>
-          <option value="EN_ATTENTE_PAIEMENT">Paiement</option>
-          <option value="EN_COURS">En cours</option>
-          <option value="A_VALIDER">À valider</option>
-          <option value="TERMINEE">Terminées</option>
-          <option value="ANNULEE">Annulées</option>
-        </select>
+        <div className="flex items-center gap-2 flex-wrap">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setFilters(filtersInput);
+              setPage(1);
+            }}
+            className="flex gap-2 flex-wrap"
+          >
+            <input
+              value={filtersInput.reference}
+              onChange={(e) => setFiltersInput((f) => ({ ...f, reference: e.target.value }))}
+              placeholder="Référence"
+              className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-500 w-32"
+            />
+            <input
+              value={filtersInput.client}
+              onChange={(e) => setFiltersInput((f) => ({ ...f, client: e.target.value }))}
+              placeholder="Client"
+              className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-500 w-36"
+            />
+            <input
+              value={filtersInput.prestataire}
+              onChange={(e) => setFiltersInput((f) => ({ ...f, prestataire: e.target.value }))}
+              placeholder="Prestataire"
+              className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-500 w-36"
+            />
+            <button type="submit" className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-xl text-sm transition-colors">
+              Rechercher
+            </button>
+          </form>
+          <select
+            value={status}
+            onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+            className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none"
+          >
+            <option value="">Tous les statuts</option>
+            <option value="EN_ATTENTE_INSPECTION">Inspection</option>
+            <option value="EN_ATTENTE_PAIEMENT">Paiement</option>
+            <option value="EN_COURS">En cours</option>
+            <option value="A_VALIDER">À valider</option>
+            <option value="TERMINEE">Terminées</option>
+            <option value="ANNULEE">Annulées</option>
+          </select>
+        </div>
       </div>
 
       <div className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">

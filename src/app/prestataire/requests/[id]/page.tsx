@@ -61,7 +61,7 @@ export default function PrestataireRequestDetailPage() {
   const handleSubmit = () => {
     setError(null);
     if (!montant || parseFloat(montant) <= 0) {
-      setError("Montant invalide");
+      setError("Le montant doit être supérieur à 0.");
       return;
     }
     if (!delai || parseInt(delai) <= 0) {

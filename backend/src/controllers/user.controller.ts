@@ -100,6 +100,31 @@ export const uploadAvatar = async (req: AuthRequest, res: Response) => {
 };
 
 // =============================================
+// SUPPRIMER AVATAR
+// DELETE /api/users/avatar
+// =============================================
+export const deleteAvatar = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+
+    const existingUser = await prisma.user.findUnique({ where: { id: userId } });
+    if (existingUser?.avatar) {
+      const oldFileName = existingUser.avatar.split("/").pop();
+      if (oldFileName) {
+        await supabase.storage.from(AVATAR_BUCKET).remove([oldFileName]);
+      }
+    }
+
+    await prisma.user.update({ where: { id: userId }, data: { avatar: null } });
+
+    return res.status(200).json({ success: true, message: "Photo de profil supprimée" });
+  } catch (error) {
+    console.error("Erreur deleteAvatar:", error);
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+};
+
+// =============================================
 // GET /api/users/profile
 // =============================================
 export const getMyProfile = async (req: AuthRequest, res: Response) => {
@@ -541,11 +566,11 @@ export const updatePrestataireProfileHandler = async (
     // Validation instructions
     if (
       pointDepotInstructions !== undefined &&
-      pointDepotInstructions.length > 300
+      pointDepotInstructions.length > 50
     ) {
       return res.status(400).json({
         success: false,
-        message: "Les instructions ne peuvent pas dépasser 300 caractères",
+        message: "Les instructions ne peuvent pas dépasser 50 caractères",
       });
     }
 

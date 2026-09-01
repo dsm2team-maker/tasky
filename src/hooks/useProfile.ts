@@ -80,6 +80,20 @@ export const useUploadAvatar = () => {
   });
 };
 
+// ─── Mutation suppression avatar ─────────────────────────────────────────────
+export const useDeleteAvatar = () => {
+  const queryClient = useQueryClient();
+  const updateUser = useAuthStore((state) => state.updateUser);
+
+  return useMutation({
+    mutationFn: () => userService.deleteAvatar(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY });
+      updateUser({ avatar: null });
+    },
+  });
+};
+
 // ─── Mutation changement téléphone ───────────────────────────────────────────
 export const useRequestPhoneChange = () => {
   return useMutation({

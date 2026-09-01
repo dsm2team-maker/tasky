@@ -52,7 +52,12 @@ export const getPrestationsHandler = async (req: AuthRequest, res: Response) => 
   try {
     const page = parseInt(req.query.page as string) || 1;
     const status = (req.query.status as string) || "";
-    const data = await adminService.getPrestations(page, status);
+    const filters = {
+      reference: (req.query.reference as string) || "",
+      client: (req.query.client as string) || "",
+      prestataire: (req.query.prestataire as string) || "",
+    };
+    const data = await adminService.getPrestations(page, status, filters);
     res.json({ success: true, data });
   } catch { res.status(500).json({ success: false, message: "Erreur serveur" }); }
 };

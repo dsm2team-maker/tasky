@@ -240,6 +240,15 @@ export const accepterDevis = async (userId: string, devisId: string) => {
 
   const isModification = devis.demande.typePrestation === "MODIFICATION";
 
+  const autresDevis = isModification
+    ? []
+    : await prisma.devis.findMany({
+        where: { demandeId: devis.demandeId, id: { not: devisId }, status: "ENVOYE" },
+        include: {
+          prestataire: { select: { user: { select: { email: true, firstName: true } } } },
+        },
+      });
+
   const { prestationId } = await prisma.$transaction(async (tx) => {
     // Accepter ce devis
     await tx.devis.update({
@@ -302,6 +311,17 @@ export const accepterDevis = async (userId: string, devisId: string) => {
       ? "✅ Tasky-Infos — Devis accepté. La prochaine étape est l'inspection de l'objet par le prestataire."
       : "✅ Tasky-Infos — Devis accepté. La prestation démarrera dès que le paiement sera confirmé.",
   ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+
+  if (devis.demande.reference) {
+    for (const autre of autresDevis) {
+      notifyDevisRefuse(
+        autre.prestataire.user.email,
+        autre.prestataire.user.firstName,
+        devis.demande.reference,
+        devis.demande.titre,
+      );
+    }
+  }
 };
 
 // =============================================================================

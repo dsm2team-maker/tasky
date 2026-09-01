@@ -94,10 +94,48 @@ export const reactivateUser = async (userId: string) => {
 
 // ─── Prestations ─────────────────────────────────────────────────────────────
 
-export const getPrestations = async (page = 1, status = "") => {
+export const getPrestations = async (
+  page = 1,
+  status = "",
+  filters: { reference?: string; client?: string; prestataire?: string } = {},
+) => {
   const take = 20;
   const skip = (page - 1) * take;
-  const where = status ? { status: status as any } : {};
+  const { reference, client, prestataire } = filters;
+
+  const AND: Record<string, unknown>[] = [];
+  if (status) AND.push({ status: status as any });
+  if (reference) {
+    const refNum = parseInt(reference.replace(/[^0-9]/g, ""), 10);
+    AND.push({ demande: { reference: Number.isNaN(refNum) ? -1 : refNum } });
+  }
+  if (client) {
+    AND.push({
+      demande: {
+        client: {
+          user: {
+            OR: [
+              { firstName: { contains: client, mode: "insensitive" as const } },
+              { lastName: { contains: client, mode: "insensitive" as const } },
+            ],
+          },
+        },
+      },
+    });
+  }
+  if (prestataire) {
+    AND.push({
+      prestataire: {
+        user: {
+          OR: [
+            { firstName: { contains: prestataire, mode: "insensitive" as const } },
+            { lastName: { contains: prestataire, mode: "insensitive" as const } },
+          ],
+        },
+      },
+    });
+  }
+  const where = AND.length ? { AND } : {};
 
   const [prestations, total] = await Promise.all([
     prisma.prestation.findMany({

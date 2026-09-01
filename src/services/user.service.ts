@@ -120,6 +120,9 @@ export const userService = {
       { imageData },
     ),
 
+  deleteAvatar: () =>
+    apiClient.delete<{ success: boolean; message: string }>(routes.api.users.avatar),
+
   requestPhoneChange: (newPhone: string) =>
     apiClient.post<{ success: boolean; message: string }>(
       routes.api.users.requestPhoneChange,
