@@ -60,6 +60,7 @@ export interface EnvoyerDevisPayload {
 export interface StatsDevis {
   envoyes: number;
   acceptes: number;
+  refuses: number;
   taux: number;
 }
 
@@ -70,6 +71,22 @@ export interface DevisRefuse {
     id: string;
     titre: string;
     reference: number | null;
+  };
+}
+
+export interface DevisHistorique {
+  id: string;
+  montant: number;
+  status: "ENVOYE" | "ACCEPTE" | "REFUSE" | "EXPIRE";
+  createdAt: string;
+  updatedAt: string;
+  demande: {
+    id: string;
+    titre: string;
+    reference: number | null;
+    client: {
+      user: { firstName: string; lastName: string };
+    };
   };
 }
 
@@ -112,6 +129,9 @@ export const devisService = {
 
   getMesDevisRefuses: () =>
     apiClient.get<{ success: boolean; data: DevisRefuse[] }>("/api/devis/mes-devis-refuses"),
+
+  getMesDevis: () =>
+    apiClient.get<{ success: boolean; data: DevisHistorique[] }>("/api/devis/mes-devis"),
 
   dismisserDevis: (devisId: string) =>
     apiClient.patch<{ success: boolean }>(`/api/devis/${devisId}/dismiss`, {}),

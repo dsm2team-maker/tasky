@@ -17,6 +17,7 @@ export const queryKeys = {
   demandeDetail:       (id: string) => ["demande-detail", id] as const,
   devisRefuses:        ["devis", "refuses"] as const,
   devisStats:          ["devis", "stats"] as const,
+  devisMes:            ["devis", "mes-devis"] as const,
 
   // ── Prestations ───────────────────────────────────────────────────────────
   prestations:         ["prestations"] as const,

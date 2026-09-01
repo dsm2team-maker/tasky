@@ -16,9 +16,19 @@ export const useDismisserDevis = () => {
     mutationFn: (devisId: string) => devisService.dismisserDevis(devisId).then((r) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.devisRefuses });
+      queryClient.invalidateQueries({ queryKey: queryKeys.devisMes });
+      queryClient.invalidateQueries({ queryKey: queryKeys.devisStats });
     },
   });
 };
+
+export const useMesDevis = () =>
+  useQuery({
+    queryKey: queryKeys.devisMes,
+    queryFn: () => devisService.getMesDevis().then((r) => r.data.data),
+    staleTime: 0,
+    refetchInterval: 15_000,
+  });
 
 export const useMesStatsDevis = () =>
   useQuery({
@@ -33,7 +43,8 @@ export const useDemandesDisponibles = () =>
     queryKey: queryKeys.devisDisponibles,
     queryFn: () => devisService.getDemandesDisponibles().then((r) => r.data.data),
     staleTime: 0,
-    refetchInterval: 15_000,
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: true,
   });
 
 export const useDemandeDetail = (id: string) =>
@@ -60,6 +71,8 @@ export const useDevisDemande = (demandeId: string) =>
     queryFn: () => devisService.getDevisDemande(demandeId).then((r) => r.data.data),
     enabled: !!demandeId,
     staleTime: 0,
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: true,
   });
 
 export const useAccepterDevis = () => {

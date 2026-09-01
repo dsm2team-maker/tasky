@@ -6,7 +6,7 @@ export const usePublicPrestataire = (id: string) => {
     queryKey: ["prestataire", id],
     queryFn: () => prestataireService.getProfil(id).then((r) => r.data.data),
     enabled: !!id,
-    staleTime: 60_000,
+    staleTime: 0,
   });
 };
 

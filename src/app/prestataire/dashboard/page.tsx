@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useAuthStore } from "@/stores/auth-store";
 import { useProfile, usePrestataireCompetences } from "@/hooks/useProfile";
 import { useMesPrestations } from "@/hooks/usePrestation";
-import { useDemandesDisponibles, useMesStatsDevis, useMesDevisRefuses, useDismisserDevis } from "@/hooks/useDevis";
+import { useDemandesDisponibles, useMesStatsDevis } from "@/hooks/useDevis";
 import { useUnreadMessageCount } from "@/hooks/useMessages";
 import { Button } from "@/components/ui/Button";
 import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
@@ -105,8 +105,6 @@ export default function PrestataireDashboard() {
   const { data: demandesDisponibles } = useDemandesDisponibles();
   const { data: unreadCount } = useUnreadMessageCount();
   const { data: statsDevis } = useMesStatsDevis();
-  const { data: devisRefuses } = useMesDevisRefuses();
-  const dismisser = useDismisserDevis();
 
   // ── Calculs activité ────────────────────────────────────────────────────────
   const COMMISSION = 0.15;
@@ -425,10 +423,10 @@ export default function PrestataireDashboard() {
                   <div className={`text-xs ${colors.text.muted} mt-0.5`}>Acceptés</div>
                 </div>
                 <div>
-                  <div className={`text-2xl font-bold ${statsDevis.envoyes - statsDevis.acceptes > 0 ? "text-gray-400" : colors.text.primary}`}>
-                    {statsDevis.envoyes - statsDevis.acceptes}
+                  <div className={`text-2xl font-bold ${statsDevis.refuses > 0 ? "text-red-500" : colors.text.primary}`}>
+                    {statsDevis.refuses}
                   </div>
-                  <div className={`text-xs ${colors.text.muted} mt-0.5`}>Non retenus</div>
+                  <div className={`text-xs ${colors.text.muted} mt-0.5`}>Refusés</div>
                 </div>
               </div>
               <div className="ml-auto hidden sm:block">
@@ -448,7 +446,7 @@ export default function PrestataireDashboard() {
 
         {/* ── Actions rapides ── */}
         <h2 className={`text-lg font-bold ${colors.text.primary} mb-4`}>⚡ Actions rapides</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           {profileComplete ? (
             <Link href={routes.prestataire.requests.list}>
               <div className={`bg-white rounded-xl p-6 shadow-sm border ${colors.border.light} hover:shadow-md ${transitions.base} cursor-pointer group`}>
@@ -514,41 +512,39 @@ export default function PrestataireDashboard() {
               </div>
             </div>
           )}
-        </div>
 
-        {/* ── Devis non retenus ── */}
-        {profileComplete && devisRefuses && devisRefuses.length > 0 && (
-          <div className="mt-8 space-y-2">
-            {devisRefuses.map((d) => {
-              const ref = d.demande.reference
-                ? `TSK-${String(d.demande.reference).padStart(6, "0")}`
-                : "";
-              return (
-                <div key={d.id} className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
-                  <span className="text-xl">❌</span>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm text-gray-500">
-                      Devis non retenu — <span className="font-medium text-gray-700">{d.demande.titre}</span>
-                    </span>
-                    {ref && (
-                      <div className="text-[11px] font-mono text-gray-400 mt-0.5">{ref}</div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => dismisser.mutate(d.id)}
-                    disabled={dismisser.isPending}
-                    className="flex-shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                    title="Supprimer"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          {profileComplete ? (
+            <Link href={routes.prestataire.devis.list}>
+              <div className={`bg-white rounded-xl p-6 shadow-sm border ${colors.border.light} hover:shadow-md ${transitions.base} cursor-pointer group`}>
+                <div className="flex items-start gap-4">
+                  <div className={`w-14 h-14 ${colors.secondary.gradient} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 ${transitions.base}`}>
+                    <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                  </button>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className={`text-lg font-bold ${colors.text.primary} mb-1`}>Mes devis</h3>
+                    <p className={`text-sm ${colors.text.secondary}`}>Consultez l&apos;historique de tous vos devis envoyés</p>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
+              </div>
+            </Link>
+          ) : (
+            <div onClick={() => router.push(routes.prestataire.profile.view)} className={`bg-white rounded-xl p-6 shadow-sm border ${colors.border.light} cursor-pointer opacity-60`}>
+              <div className="flex items-start gap-4">
+                <div className="w-14 h-14 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className={`text-lg font-bold ${colors.text.primary} mb-1`}>Mes devis</h3>
+                  <p className={`text-sm ${colors.warning.text} font-medium`}>⚠️ Complétez votre profil pour accéder à vos devis</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {!profileComplete && (
           <div className={`bg-white rounded-xl p-12 text-center shadow-sm border ${colors.border.light}`}>

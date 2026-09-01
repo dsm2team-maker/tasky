@@ -9,6 +9,7 @@ import { routes } from "@/config/routes";
 import { useAuthStore } from "@/stores/auth-store";
 import Logo from "@/components/ui/Logo";
 import { useUnreadMessageCount } from "@/hooks/useMessages";
+import { useDemandesDisponibles } from "@/hooks/useDevis";
 
 /**
  * 🌿 HeaderPrestataire — Header pour les pages prestataire
@@ -20,6 +21,8 @@ export default function HeaderPrestataire() {
   const { user, logout } = useAuthStore();
   const { data: unread } = useUnreadMessageCount();
   const unreadCount = unread ?? 0;
+  const { data: demandesDisponibles } = useDemandesDisponibles();
+  const demandesCount = demandesDisponibles?.length ?? 0;
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = () => {
@@ -28,9 +31,14 @@ export default function HeaderPrestataire() {
     router.push(routes.auth.login);
   };
 
-  const navLinks: { href: string; label: string; badge?: number }[] = [
+  const navLinks: { href: string; label: string; badge?: number; badgeColor?: string }[] = [
     { href: routes.prestataire.dashboard, label: "Tableau de bord" },
-    { href: routes.prestataire.requests.list, label: "Demandes disponibles" },
+    {
+      href: routes.prestataire.requests.list,
+      label: "Demandes disponibles",
+      badge: demandesCount,
+      badgeColor: "bg-emerald-500",
+    },
     { href: routes.prestataire.services.list, label: "Mes prestations" },
     { href: routes.prestataire.messages.list, label: "Messages", badge: unreadCount },
     { href: routes.prestataire.profile.view, label: "Mon profil" },
@@ -64,7 +72,7 @@ export default function HeaderPrestataire() {
                 >
                   {link.label}
                   {!!link.badge && link.badge > 0 && (
-                    <span className="absolute -top-2 -right-3 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    <span className={`absolute -top-2 -right-3 min-w-[16px] h-4 px-1 ${link.badgeColor ?? "bg-red-500"} text-white text-[10px] font-bold rounded-full flex items-center justify-center`}>
                       {link.badge > 99 ? "99+" : link.badge}
                     </span>
                   )}
@@ -123,7 +131,7 @@ export default function HeaderPrestataire() {
                 >
                   {link.label}
                   {!!link.badge && link.badge > 0 && (
-                    <span className="ml-2 inline-flex min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full items-center justify-center">
+                    <span className={`ml-2 inline-flex min-w-[16px] h-4 px-1 ${link.badgeColor ?? "bg-red-500"} text-white text-[10px] font-bold rounded-full items-center justify-center`}>
                       {link.badge > 99 ? "99+" : link.badge}
                     </span>
                   )}

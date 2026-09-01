@@ -791,9 +791,18 @@ export default function ClientRequestDetailPage() {
           className={`${colors.primary.gradient} rounded-2xl p-6 mb-6 text-white`}
         >
           <div className="flex items-center justify-between mb-1">
-            <div className={`text-sm text-pink-100`}>
-              {statusLabel[demande.status] || demande.status}
-            </div>
+            {demande.status === "PUBLIEE" && devis.length > 0 ? (
+              <div className="inline-flex items-center gap-2 bg-white text-pink-600 font-bold px-3 py-1.5 rounded-full shadow-sm animate-pulse">
+                <span className="text-lg leading-none">💬</span>
+                <span className="text-sm">
+                  {devis.length} devis reçu{devis.length > 1 ? "s" : ""} — en attente de votre choix
+                </span>
+              </div>
+            ) : (
+              <div className={`text-sm text-pink-100`}>
+                {statusLabel[demande.status] || demande.status}
+              </div>
+            )}
             {demande.reference && (
               <div className="flex flex-col items-end">
                 <span className="text-[10px] text-pink-200 uppercase tracking-wide leading-none mb-0.5">Référence</span>
@@ -893,8 +902,17 @@ export default function ClientRequestDetailPage() {
 
         {/* Devis */}
         <div>
-          <h2 className={`text-lg font-bold ${colors.text.primary} mb-4`}>
-            Devis reçus ({devis.length})
+          <h2 className={`text-lg font-bold ${colors.text.primary} mb-4 flex items-center gap-2`}>
+            💬 Devis reçus
+            <span
+              className={`text-sm font-bold px-2.5 py-0.5 rounded-full ${
+                devis.length > 0
+                  ? `${colors.primary.gradient} text-white`
+                  : `${colors.background.light} ${colors.text.muted}`
+              }`}
+            >
+              {devis.length}
+            </span>
           </h2>
 
           {devis.length === 0 ? (

@@ -75,6 +75,7 @@ export default function PrestatairePublicPage() {
         }>(`/api/prestataires/${id}`)
         .then((r) => r.data.data),
     enabled: !!id,
+    staleTime: 0,
   });
 
   if (isLoading) {

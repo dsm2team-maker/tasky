@@ -1,7 +1,7 @@
 import { prisma } from "../../lib/prisma";
 import { calculerScore } from "./matching.service";
 import { notifyQuoteReceived, notifyDevisRefuse } from "../../services/notifications.service";
-import { sendSystemMessage } from "../messages/message.service";
+import { sendSystemMessage, sendSystemMessageConversation } from "../messages/message.service";
 
 // =============================================================================
 // GET DEMANDES DISPONIBLES (avec matching)
@@ -320,6 +320,11 @@ export const accepterDevis = async (userId: string, devisId: string) => {
         devis.demande.reference,
         devis.demande.titre,
       );
+      sendSystemMessageConversation(
+        client.id,
+        autre.prestataireId,
+        `❌ Tasky-Infos — Votre devis pour la demande "${devis.demande.titre}" (TSK-${String(devis.demande.reference).padStart(6, "0")}) n'a pas été retenu.`,
+      ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
     }
   }
 };
@@ -334,14 +339,19 @@ export const getMesStatsDevis = async (userId: string) => {
   });
   if (!prestataire) throw new Error("PRESTATAIRE_NOT_FOUND");
 
-  const [envoyes, acceptes] = await Promise.all([
+  const [envoyes, acceptes, refuses] = await Promise.all([
     prisma.devis.count({ where: { prestataireId: prestataire.id } }),
     prisma.devis.count({ where: { prestataireId: prestataire.id, status: "ACCEPTE" } }),
+    // Même filtre que getMesDevis (liste "Mes devis") pour que les deux chiffres correspondent toujours
+    prisma.devis.count({
+      where: { prestataireId: prestataire.id, status: "REFUSE", dismissedByPrestataire: false },
+    }),
   ]);
 
   return {
     envoyes,
     acceptes,
+    refuses,
     taux: envoyes > 0 ? Math.round((acceptes / envoyes) * 100) : 0,
   };
 };
@@ -381,6 +391,11 @@ export const refuserDevis = async (userId: string, devisId: string) => {
       devis.demande.reference,
       devis.demande.titre,
     );
+    sendSystemMessageConversation(
+      client.id,
+      devis.prestataireId,
+      `❌ Tasky-Infos — Votre devis pour la demande "${devis.demande.titre}" (TSK-${String(devis.demande.reference).padStart(6, "0")}) n'a pas été retenu.`,
+    ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
   }
 };
 
@@ -415,7 +430,38 @@ export const getMesDevisRefuses = async (userId: string) => {
 };
 
 // =============================================================================
-// DISMISSER UN DEVIS REFUSE (prestataire)
+// MES DEVIS (historique complet — prestataire)
+// =============================================================================
+export const getMesDevis = async (userId: string) => {
+  const prestataire = await prisma.prestataire.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  if (!prestataire) throw new Error("PRESTATAIRE_NOT_FOUND");
+
+  return prisma.devis.findMany({
+    where: { prestataireId: prestataire.id, dismissedByPrestataire: false },
+    select: {
+      id: true,
+      montant: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      demande: {
+        select: {
+          id: true,
+          titre: true,
+          reference: true,
+          client: { select: { user: { select: { firstName: true, lastName: true } } } },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+};
+
+// =============================================================================
+// DISMISSER UN DEVIS (prestataire) — uniquement REFUSE ou EXPIRE
 // =============================================================================
 export const dismisserDevis = async (userId: string, devisId: string) => {
   const prestataire = await prisma.prestataire.findUnique({
@@ -430,7 +476,8 @@ export const dismisserDevis = async (userId: string, devisId: string) => {
   });
   if (!devis) throw new Error("DEVIS_NOT_FOUND");
   if (devis.prestataireId !== prestataire.id) throw new Error("FORBIDDEN");
-  if (devis.status !== "REFUSE") throw new Error("DEVIS_NON_REFUSE");
+  if (devis.status !== "REFUSE" && devis.status !== "EXPIRE")
+    throw new Error("DEVIS_NON_SUPPRIMABLE");
 
   await prisma.devis.update({
     where: { id: devisId },

@@ -10,6 +10,7 @@ import {
   refuserDevis,
   getMesStatsDevis,
   getMesDevisRefuses,
+  getMesDevis,
   dismisserDevis,
 } from "../modules/devis/devis.service";
 
@@ -83,6 +84,15 @@ export const accepterDevisHandler = async (req: AuthRequest, res: Response) => {
 export const getMesDevisRefusesHandler = async (req: AuthRequest, res: Response) => {
   try {
     const data = await getMesDevisRefuses(req.user!.userId);
+    return res.json({ success: true, data });
+  } catch (error) {
+    return handleError(error, res);
+  }
+};
+
+export const getMesDevisHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await getMesDevis(req.user!.userId);
     return res.json({ success: true, data });
   } catch (error) {
     return handleError(error, res);

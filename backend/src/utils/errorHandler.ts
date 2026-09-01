@@ -39,6 +39,7 @@ const ERROR_MAP: Record<string, [number, string]> = {
   DEVIS_DEJA_ENVOYE:         [409, "Vous avez déjà envoyé un devis pour cette demande"],
   DEVIS_NON_DISPONIBLE:      [409, "Ce devis n'est plus disponible"],
   DEVIS_NON_REFUSE:          [409, "Ce devis n'est pas dans un état refusé"],
+  DEVIS_NON_SUPPRIMABLE:     [409, "Seuls les devis refusés ou expirés peuvent être supprimés"],
 
   // Prestations
   PRESTATION_NOT_FOUND:                  [404, "Prestation introuvable"],

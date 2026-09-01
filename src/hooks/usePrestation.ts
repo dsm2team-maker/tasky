@@ -111,6 +111,9 @@ export const useCreerReview = () => {
       prestationService.creerReview(id, data).then((r) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.prestationsClient });
+      // Rafraîchit le profil public et les stats du prestataire noté (note/avis affichés instantanément)
+      queryClient.invalidateQueries({ queryKey: ["prestataire"] });
+      queryClient.invalidateQueries({ queryKey: ["prestataire", "stats"] });
     },
   });
 };
