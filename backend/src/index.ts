@@ -11,6 +11,7 @@ import messageRoutes from "./routes/message.routes";
 import conversationRoutes from "./routes/conversation.routes";
 import contactRoutes from "./routes/contact.routes";
 import paymentRoutes, { stripeWebhookHandler } from "./routes/payment.routes";
+import connectRoutes, { stripeConnectWebhookHandler } from "./routes/connect.routes";
 import adminRoutes from "./routes/admin.routes";
 import signalementRoutes from "./routes/signalement.routes";
 
@@ -31,6 +32,7 @@ app.use(morgan("dev"));
 
 // Webhook Stripe — doit recevoir le body brut AVANT express.json
 app.post("/api/payment/webhook", express.raw({ type: "application/json" }), stripeWebhookHandler);
+app.post("/api/payment/webhook/connect", express.raw({ type: "application/json" }), stripeConnectWebhookHandler);
 
 app.use(
   cors({
@@ -84,6 +86,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/connect", connectRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/signalements", signalementRoutes);
 

@@ -23,7 +23,7 @@ import {
   usePrestataireStats,
 } from "@/hooks/useProfile";
 import { PhoneModal, EmailModal, DeleteAccountModal } from "@/components/shared/OtpModals";
-import { validateIban, formatIban, maskIban, validateBic } from "@/lib/iban";
+import { useRouter } from "next/navigation";
 import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -75,6 +75,7 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 // ─── Page principale ──────────────────────────────────────────────────────────
 export default function PrestataireProfilePage() {
   const { isHydrated, isReady } = useAuthGuard({ requireEmailVerified: false });
+  const router = useRouter();
 
   const { success: toastSuccess, error: toastError } = useToast();
   const [localPhoto, setLocalPhoto] = useState<string | null | undefined>(undefined);
@@ -86,20 +87,10 @@ export default function PrestataireProfilePage() {
   const [isEditingPointDepot, setIsEditingPointDepot] = useState(false);
   const [pointDepotError, setPointDepotError] = useState<string | null>(null);
 
-  const [ibanValue, setIbanValue] = useState("");
-  const [ibanError, setIbanError] = useState<string | null>(null);
-  const [bicValue, setBicValue] = useState("");
   const [localAdresse, setLocalAdresse] = useState("");
   const [localCodePostal, setLocalCodePostal] = useState("");
   const [localVille, setLocalVille] = useState("");
   const [localComplement, setLocalComplement] = useState("");
-
-  // États IBAN
-  const [ibanStep, setIbanStep] = useState<null | "form" | "otp" | "success">(
-    null,
-  );
-
-  const [ibanCooldown, setIbanCooldown] = useState(0);
 
   const [showCompetences, setShowCompetences] = useState(false);
   const [selection, setSelection] = useState<Selection>({});
@@ -113,12 +104,6 @@ export default function PrestataireProfilePage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const categories = categoriesData.categories as Categorie[];
-
-  useEffect(() => {
-    if (ibanCooldown <= 0) return;
-    const t = setTimeout(() => setIbanCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [ibanCooldown]);
 
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: competences, isLoading: competencesLoading } =
@@ -166,10 +151,10 @@ export default function PrestataireProfilePage() {
   const hasBio = (profile?.prestataire?.bio?.length ?? 0) >= BIO_MIN;
   const hasCompetences = (competences?.length ?? 0) > 0;
   const hasPointDepot = !!profile?.prestataire?.pointDepotAdresse;
-  const hasIban = !!profile?.prestataire?.iban;
+  const hasPayoutsEnabled = !!profile?.prestataire?.stripePayoutsEnabled;
   const emailVerified = !!profile?.emailVerified;
   const profileComplete =
-    emailVerified && hasBio && hasCompetences && hasPointDepot && hasIban;
+    emailVerified && hasBio && hasCompetences && hasPointDepot && hasPayoutsEnabled;
 
   useEffect(() => {
     if (competences && showCompetences) {
@@ -246,35 +231,6 @@ export default function PrestataireProfilePage() {
         },
         onError: (err: any) =>
           setPointDepotError(err.response?.data?.message || "Erreur"),
-      },
-    );
-  };
-
-  // ── IBAN ─────────────────────────────────────────────────────────────────
-  const onSubmitIban = () => {
-    setIbanError(null);
-    const cleaned = ibanValue.replace(/\s/g, "");
-    if (!validateIban(cleaned)) {
-      setIbanError("Format IBAN invalide");
-      return;
-    }
-    const cleanedBic = bicValue.replace(/\s/g, "");
-    if (!validateBic(cleanedBic)) {
-      setIbanError("Format BIC invalide");
-      return;
-    }
-    // Envoyer OTP email pour confirmer
-    updatePrestataireProfile.mutate(
-      { iban: cleaned, bic: cleanedBic },
-      {
-        onSuccess: () => {
-          toastSuccess("IBAN et BIC enregistrés !");
-          setIbanStep("success");
-          setIbanValue("");
-          setBicValue("");
-        },
-        onError: (err: any) =>
-          setIbanError(err.response?.data?.message || "Erreur"),
       },
     );
   };
@@ -448,8 +404,6 @@ export default function PrestataireProfilePage() {
 
   const bioLength = bioValue.length;
   const bioOk = bioLength >= BIO_MIN && bioLength <= BIO_MAX;
-  const ibanValid = validateIban(ibanValue.replace(/\s/g, ""));
-  const bicValid = validateBic(bicValue.replace(/\s/g, ""));
 
   return (
     <div className={`min-h-screen ${colors.background.gray}`}>
@@ -462,14 +416,14 @@ export default function PrestataireProfilePage() {
           hasBio={hasBio}
           hasCompetences={hasCompetences}
           hasPointDepot={hasPointDepot}
-          hasIban={hasIban}
+          hasPayoutsEnabled={hasPayoutsEnabled}
           onActionBio={() => setIsEditingBio(true)}
           onActionCompetences={() => {
             setShowCompetences(true);
             setCompetenceError(null);
           }}
           onActionPointDepot={() => setIsEditingPointDepot(true)}
-          onActionIban={() => setIbanStep("form")}
+          onActionPayment={() => router.push(routes.prestataire.settings.paiement)}
         />
 
         {/* Bannière identité */}
@@ -710,7 +664,7 @@ export default function PrestataireProfilePage() {
                   </Button>
                 </div>
 
-                {/* IBAN */}
+                {/* Paiement (Stripe Connect) */}
                 <div
                   className={`p-4 rounded-xl ${colors.background.gray} border ${colors.border.light}`}
                 >
@@ -718,47 +672,32 @@ export default function PrestataireProfilePage() {
                     <span
                       className={`text-xs font-semibold ${colors.text.tertiary} uppercase tracking-wide`}
                     >
-                      IBAN
+                      Paiement
                     </span>
-                    {profile?.prestataire?.iban && (
+                    {hasPayoutsEnabled && (
                       <span
                         className={`text-xs font-medium ${colors.success.text}`}
                       >
-                        ✓ Enregistré
+                        ✓ Activé
                       </span>
                     )}
                   </div>
                   <p
-                    className={`text-sm font-medium ${colors.text.primary} mb-3 font-mono`}
+                    className={`text-sm font-medium ${colors.text.primary} mb-3`}
                   >
-                    {profile?.prestataire?.iban
-                      ? maskIban(profile.prestataire.iban)
-                      : "Non renseigné"}
+                    {hasPayoutsEnabled
+                      ? "Vous recevez vos paiements via Stripe"
+                      : "Configuration requise pour recevoir vos paiements"}
                   </p>
-                  {profile?.prestataire?.bic && (
-                    <p className={`text-xs ${colors.text.tertiary} mb-1 font-mono`}>
-                      BIC : {profile.prestataire.bic}
-                    </p>
-                  )}
-                  {profile?.prestataire?.bankName && (
-                    <p className={`text-xs ${colors.text.tertiary} mb-3`}>
-                      🏦 {profile.prestataire.bankName}
-                    </p>
-                  )}
                   <Button
                     variant="secondary"
                     size="sm"
                     fullWidth
-                    onClick={() => {
-                      setIbanError(null);
-                      setIbanValue("");
-                      setBicValue(profile?.prestataire?.bic || "");
-                      setIbanStep("form");
-                    }}
+                    onClick={() => router.push(routes.prestataire.settings.paiement)}
                   >
-                    {profile?.prestataire?.iban
-                      ? "Modifier l'IBAN"
-                      : "Ajouter un IBAN"}
+                    {hasPayoutsEnabled
+                      ? "Gérer mon paiement"
+                      : "Configurer mon paiement"}
                   </Button>
                 </div>
               </div>
@@ -1187,148 +1126,6 @@ export default function PrestataireProfilePage() {
           </div>
         </div>
       </main>
-
-      {/* ════ MODAL IBAN ════ */}
-      <Modal
-        isOpen={ibanStep !== null}
-        preventClose={updatePrestataireProfile.isPending}
-        onClose={() => {
-          setIbanStep(null);
-          setIbanError(null);
-          setIbanValue("");
-          setBicValue("");
-        }}
-        title={
-          ibanStep === "success"
-            ? "IBAN et BIC enregistrés !"
-            : "Renseigner mon IBAN et mon BIC"
-        }
-        icon={ibanStep === "success" ? "✅" : "🏦"}
-        headerVariant="secondary"
-      >
-        {ibanStep === "form" && (
-          <div className="space-y-4">
-            <div
-              className={`p-3 rounded-xl ${colors.background.gray} border ${colors.border.light}`}
-            >
-              <p className={`text-xs ${colors.text.secondary}`}>
-                🔒 Votre IBAN est chiffré et sécurisé. Il sera utilisé
-                uniquement pour vous verser vos paiements après chaque
-                prestation terminée.
-              </p>
-            </div>
-            <div>
-              <label
-                className={`block text-sm font-medium ${colors.text.primary} mb-1.5`}
-              >
-                IBAN
-              </label>
-              <input
-                type="text"
-                placeholder="FR76 3000 4000 0100 0000 0000 000"
-                value={ibanValue}
-                onChange={(e) => {
-                  const formatted = formatIban(e.target.value);
-                  setIbanValue(formatted);
-                  setIbanError(null);
-                }}
-                maxLength={34}
-                className={`w-full px-3 py-2.5 rounded-xl border text-sm font-mono focus:outline-none focus:ring-2 transition-all ${
-                  ibanValue.length > 4
-                    ? ibanValid
-                      ? "border-emerald-300 focus:ring-emerald-200"
-                      : "border-red-300 focus:ring-red-200"
-                    : `${colors.border.default} focus:ring-gray-200`
-                }`}
-              />
-              {ibanValue.length > 4 && (
-                <p
-                  className={`text-xs mt-1 font-medium ${ibanValid ? colors.secondary.text : colors.error.text}`}
-                >
-                  {ibanValid
-                    ? "✓ Format IBAN valide"
-                    : "✗ Format IBAN invalide"}
-                </p>
-              )}
-            </div>
-            <div>
-              <label
-                className={`block text-sm font-medium ${colors.text.primary} mb-1.5`}
-              >
-                BIC
-              </label>
-              <input
-                type="text"
-                placeholder="AGRIFRPP"
-                value={bicValue}
-                onChange={(e) => {
-                  setBicValue(e.target.value.toUpperCase());
-                  setIbanError(null);
-                }}
-                maxLength={11}
-                className={`w-full px-3 py-2.5 rounded-xl border text-sm font-mono focus:outline-none focus:ring-2 transition-all ${
-                  bicValue.length > 4
-                    ? bicValid
-                      ? "border-emerald-300 focus:ring-emerald-200"
-                      : "border-red-300 focus:ring-red-200"
-                    : `${colors.border.default} focus:ring-gray-200`
-                }`}
-              />
-              {bicValue.length > 4 && (
-                <p
-                  className={`text-xs mt-1 font-medium ${bicValid ? colors.secondary.text : colors.error.text}`}
-                >
-                  {bicValid ? "✓ Format BIC valide" : "✗ Format BIC invalide"}
-                </p>
-              )}
-            </div>
-            {ibanError && (
-              <p className={`text-sm ${colors.error.text}`}>{ibanError}</p>
-            )}
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                variant="ghost"
-                fullWidth
-                onClick={() => {
-                  setIbanStep(null);
-                  setIbanError(null);
-                  setIbanValue("");
-                  setBicValue("");
-                }}
-              >
-                Annuler
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                fullWidth
-                isLoading={updatePrestataireProfile.isPending}
-                disabled={!ibanValid || !bicValid}
-                onClick={onSubmitIban}
-              >
-                Enregistrer
-              </Button>
-            </div>
-          </div>
-        )}
-        {ibanStep === "success" && (
-          <div className="space-y-4 text-center py-2">
-            <p className={`text-sm ${colors.text.secondary}`}>
-              Votre IBAN et votre BIC ont été enregistrés avec succès. Vous
-              recevrez vos paiements sur ce compte après chaque prestation
-              terminée.
-            </p>
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() => setIbanStep(null)}
-            >
-              Fermer
-            </Button>
-          </div>
-        )}
-      </Modal>
 
       {/* ════ MODAL COMPÉTENCES ════ */}
       <Modal

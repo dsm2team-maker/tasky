@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { apiClient } from "@/lib/api-client";
+import { paymentService } from "@/services/payment.service";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
@@ -61,10 +61,7 @@ function CheckoutForm({
 
     // Confirmer côté backend pour passer la prestation EN_COURS
     try {
-      await apiClient.post("/api/payment/confirm", {
-        prestationId,
-        paymentIntentId: paymentIntent.id,
-      });
+      await paymentService.confirmPayment(prestationId, paymentIntent.id);
     } catch (err: any) {
       console.error("[confirm]", err?.response?.data || err);
       onError(err?.response?.data?.message ?? "Paiement reçu mais erreur lors de la mise à jour. Contactez le support.");

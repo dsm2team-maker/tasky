@@ -34,10 +34,11 @@ export interface UserProfile {
     tauxReussite: number;
     delaiMoyen: number;
     tempsReponse: number;
-    iban: string | null;
-    bic: string | null;
-    bankName: string | null;
-    ibanVerified: boolean;
+    stripeAccountId: string | null;
+    stripeOnboardingStatus: "NOT_STARTED" | "IN_PROGRESS" | "RESTRICTED" | "COMPLETE";
+    stripeChargesEnabled: boolean;
+    stripePayoutsEnabled: boolean;
+    stripeDetailsSubmitted: boolean;
   } | null;
 }
 
@@ -56,10 +57,6 @@ export interface UpdatePrestatairePayload {
   pointDepotLat?: number;
   pointDepotLng?: number;
   pointDepotInstructions?: string;
-  iban?: string;
-  bic?: string;
-  bankName?: string;
-  ibanVerified?: boolean;
 }
 
 // ─── Types compétences ────────────────────────────────────────────────────────

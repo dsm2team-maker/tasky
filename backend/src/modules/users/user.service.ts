@@ -2,7 +2,6 @@ import { prisma } from "../../lib/prisma";
 import { addEmailJob, EMAIL_PRIORITY } from "../../queues/email.queue";
 import { generateOtp, generateResetToken } from "../../utils/token.utils";
 import { env } from "../../config/env.config";
-import { encryptNullable, decryptNullable } from "../../lib/crypto";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 const OTP_COOLDOWN_MS = 2 * 60 * 1000;
@@ -51,11 +50,11 @@ export const getProfile = async (userId: string) => {
           tauxReussite: true,
           delaiMoyen: true,
           tempsReponse: true,
-          // ✅ IBAN ajouté
-          iban: true,
-          bic: true,
-          bankName: true,
-          ibanVerified: true,
+          stripeAccountId: true,
+          stripeOnboardingStatus: true,
+          stripeChargesEnabled: true,
+          stripePayoutsEnabled: true,
+          stripeDetailsSubmitted: true,
         },
       },
     },
@@ -67,14 +66,6 @@ export const getProfile = async (userId: string) => {
 
   return {
     ...user,
-    prestataire: user.prestataire
-      ? {
-          ...user.prestataire,
-          iban: decryptNullable(user.prestataire.iban) ?? null,
-          bic: decryptNullable(user.prestataire.bic) ?? null,
-          bankName: decryptNullable(user.prestataire.bankName) ?? null,
-        }
-      : user.prestataire,
     phone: undefined,
     phoneMasked,
   };
@@ -524,7 +515,7 @@ const maskPhone = (phone: string): string => {
 
 // =============================================================================
 // UTILITAIRE — Vérifier si le profil prestataire est complet (5/5)
-// ✅ Email vérifié + Bio + Compétences + Point de dépôt + IBAN
+// ✅ Email vérifié + Bio + Compétences + Point de dépôt + Paiement Stripe Connect
 // =============================================================================
 const isPrestataireProfileComplete = async (
   prestataireId: string,
@@ -540,7 +531,7 @@ const isPrestataireProfileComplete = async (
     select: {
       bio: true,
       pointDepotAdresse: true,
-      iban: true,
+      stripePayoutsEnabled: true,
       competences: { select: { id: true }, take: 1 },
     },
   });
@@ -551,9 +542,9 @@ const isPrestataireProfileComplete = async (
   const hasBio = (prestataire.bio?.length ?? 0) >= BIO_MIN;
   const hasCompetences = prestataire.competences.length > 0;
   const hasPointDepot = !!prestataire.pointDepotAdresse;
-  const hasIban = !!prestataire.iban;
+  const hasPayoutsEnabled = prestataire.stripePayoutsEnabled;
 
-  return emailVerified && hasBio && hasCompetences && hasPointDepot && hasIban;
+  return emailVerified && hasBio && hasCompetences && hasPointDepot && hasPayoutsEnabled;
 };
 
 // =============================================================================
@@ -715,9 +706,6 @@ interface UpdatePrestataireData {
   pointDepotLat?: number;
   pointDepotLng?: number;
   pointDepotInstructions?: string;
-  iban?: string;
-  bic?: string;
-  bankName?: string;
 }
 
 export const updatePrestataireProfile = async (
@@ -766,12 +754,6 @@ export const updatePrestataireProfile = async (
       ...(data.pointDepotInstructions !== undefined && {
         pointDepotInstructions: data.pointDepotInstructions,
       }),
-      ...(data.iban !== undefined && {
-        iban: encryptNullable(data.iban),
-        ibanVerified: false,
-      }),
-      ...(data.bic !== undefined && { bic: encryptNullable(data.bic) }),
-      ...(data.bankName !== undefined && { bankName: encryptNullable(data.bankName) }),
     },
     select: {
       id: true,
@@ -785,19 +767,15 @@ export const updatePrestataireProfile = async (
       pointDepotLat: true,
       pointDepotLng: true,
       pointDepotInstructions: true,
-      iban: true,
-      bic: true,
-      bankName: true,
-      ibanVerified: true,
+      stripeAccountId: true,
+      stripeOnboardingStatus: true,
+      stripeChargesEnabled: true,
+      stripePayoutsEnabled: true,
+      stripeDetailsSubmitted: true,
     },
   });
 
-  return {
-    ...updated,
-    iban: decryptNullable(updated.iban) ?? null,
-    bic: decryptNullable(updated.bic) ?? null,
-    bankName: decryptNullable(updated.bankName) ?? null,
-  };
+  return updated;
 };
 
 // =============================================================================

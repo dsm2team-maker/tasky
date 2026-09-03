@@ -72,7 +72,7 @@ export default function AdminPaiementsPage() {
               <th className="text-left px-4 py-3">Référence</th>
               <th className="text-left px-4 py-3">Client</th>
               <th className="text-left px-4 py-3">Prestataire</th>
-              <th className="text-left px-4 py-3">IBAN</th>
+              <th className="text-left px-4 py-3">Paiement Stripe</th>
               <th className="text-left px-4 py-3">Montant</th>
               <th className="text-left px-4 py-3">Commission</th>
               <th className="text-left px-4 py-3">Net presta</th>
@@ -110,19 +110,12 @@ export default function AdminPaiementsPage() {
                     <div className="text-gray-500">{p.prestataire.user.email}</div>
                   </td>
                   <td className="px-4 py-3">
-                    {p.prestataire.iban ? (
-                      <button
-                        onClick={() => copyToClipboard(p.prestataire.iban, p.id)}
-                        className="text-xs font-mono text-gray-300 hover:text-white transition-colors group flex items-center gap-1"
-                        title={p.prestataire.iban}
-                      >
-                        <span>{p.prestataire.iban.slice(0, 10)}…</span>
-                        <span className="text-gray-500 group-hover:text-gray-300 text-xs">
-                          {copiedId === p.id ? "✓" : "⎘"}
-                        </span>
-                      </button>
+                    {p.prestataire.stripePayoutsEnabled ? (
+                      <span className="text-xs text-emerald-400">✓ Activé</span>
+                    ) : p.prestataire.stripeAccountId ? (
+                      <span className="text-xs text-yellow-400">En cours</span>
                     ) : (
-                      <span className="text-xs text-red-400">Non renseigné</span>
+                      <span className="text-xs text-red-400">Non configuré</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-white text-xs font-semibold">{montant.toFixed(2)} €</td>

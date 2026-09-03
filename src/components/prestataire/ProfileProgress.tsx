@@ -7,23 +7,23 @@ interface Props {
   hasBio: boolean;
   hasCompetences: boolean;
   hasPointDepot: boolean;
-  hasIban: boolean;
+  hasPayoutsEnabled: boolean;
   onActionBio: () => void;
   onActionCompetences: () => void;
   onActionPointDepot: () => void;
-  onActionIban: () => void;
+  onActionPayment: () => void;
 }
 
 export const ProfileProgress: React.FC<Props> = ({
-  emailVerified, hasBio, hasCompetences, hasPointDepot, hasIban,
-  onActionBio, onActionCompetences, onActionPointDepot, onActionIban,
+  emailVerified, hasBio, hasCompetences, hasPointDepot, hasPayoutsEnabled,
+  onActionBio, onActionCompetences, onActionPointDepot, onActionPayment,
 }) => {
   const steps = [
     { label: "Email vérifié",        done: emailVerified,   icon: "✉️", action: null },
     { label: "Bio complétée",         done: hasBio,          icon: "✍️", action: onActionBio },
     { label: "Compétences ajoutées",  done: hasCompetences,  icon: "🛠️", action: onActionCompetences },
     { label: "Point de dépôt défini", done: hasPointDepot,   icon: "📍", action: onActionPointDepot },
-    { label: "IBAN renseigné",        done: hasIban,         icon: "🏦", action: onActionIban },
+    { label: "Paiement configuré",    done: hasPayoutsEnabled, icon: "💳", action: onActionPayment },
   ];
   const doneCount = steps.filter((s) => s.done).length;
   if (doneCount === 5) return null;

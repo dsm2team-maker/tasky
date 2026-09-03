@@ -102,15 +102,16 @@ export default function AdminPrestationDetailPage() {
           <Row label="Email client" value={p.demande.client.user.email} />
           <Row label="Prestataire" value={`${p.prestataire.user.firstName} ${p.prestataire.user.lastName}`} />
           <Row label="Email prestataire" value={p.prestataire.user.email} />
-          {p.prestataire.iban && (
-            <Row label="IBAN prestataire" value={<span className="font-mono">{p.prestataire.iban}</span>} />
-          )}
-          {p.prestataire.bic && (
-            <Row label="BIC prestataire" value={<span className="font-mono">{p.prestataire.bic}</span>} />
-          )}
-          {p.prestataire.bankName && (
-            <Row label="Banque prestataire" value={p.prestataire.bankName} />
-          )}
+          <Row
+            label="Paiement Stripe"
+            value={
+              p.prestataire.stripePayoutsEnabled
+                ? "✓ Activé"
+                : p.prestataire.stripeAccountId
+                  ? "En cours de configuration"
+                  : "Non configuré"
+            }
+          />
         </Section>
 
         {/* Finance */}

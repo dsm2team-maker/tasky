@@ -1,3 +1,5 @@
+import { splitMontant } from "../config/commission.config";
+
 interface OrderConfirmedProps {
   firstName: string;
   demandeReference: string;
@@ -32,7 +34,7 @@ export const orderConfirmedTemplate = ({
   const badgeBorder = isClient ? "#fbcfe8" : "#6ee7b7";
   const badgeText = isClient ? "#9d174d" : "#065f46";
   const montantLabel = isClient ? "Montant payé" : "Montant à percevoir (net)";
-  const montantAffiche = isClient ? montant : montant * 0.85;
+  const montantAffiche = isClient ? montant : splitMontant(montant).montantPrestataire;
 
   return `<!DOCTYPE html>
 <html lang="fr">

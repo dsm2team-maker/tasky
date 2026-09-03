@@ -2,6 +2,7 @@ import cron from "node-cron";
 import { prisma } from "../lib/prisma";
 import { notifyOrderCompleted } from "../services/notifications.service";
 import { recalculerStatsPrestataire } from "../modules/prestations/prestation.service";
+import { createTransferForPrestation } from "../modules/payment/transfer.service";
 
 export async function runAutoValidationNow(): Promise<number> {
   return runAutoValidation();
@@ -35,6 +36,8 @@ async function runAutoValidation(): Promise<number> {
         },
       });
       console.log(`✅ Prestation ${p.id} → TERMINEE`);
+
+      await createTransferForPrestation(p.id);
 
       await recalculerStatsPrestataire(p.prestataire.id).catch((e) =>
         console.error("[Stats prestataire]", (e as any).message),

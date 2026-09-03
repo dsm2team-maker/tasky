@@ -13,7 +13,7 @@ export const getDemandesDisponibles = async (userId: string) => {
       id: true,
       disponibilite: true,
       rating: true,
-      iban: true,
+      stripePayoutsEnabled: true,
       bio: true,
       pointDepotAdresse: true,
       user: { select: { city: true } },

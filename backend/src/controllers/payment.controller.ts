@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import { getStripe } from "../config/stripe.config";
 import env from "../config/env.config";
 import { prisma } from "../lib/prisma";
-import { decryptNullable } from "../lib/crypto";
 import { notifyOrderConfirmed } from "../services/notifications.service";
+import { splitMontant } from "../config/commission.config";
 
 // POST /api/payment/create-intent
 export async function createPaymentIntentHandler(req: Request, res: Response) {
@@ -54,12 +54,15 @@ export async function createPaymentIntentHandler(req: Request, res: Response) {
       }
     }
 
+    const { montantPrestataire, commissionTasky } = splitMontant(montant);
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: montantCentimes,
       currency: "eur",
       payment_method_types: ["card"],
       description: `Tasky — ${prestation.demande.titre}`,
       receipt_email: client.email,
+      transfer_group: `prestation_${prestationId}`,
       metadata: {
         prestationId,
         demandeId: prestation.demandeId,
@@ -68,9 +71,8 @@ export async function createPaymentIntentHandler(req: Request, res: Response) {
         clientEmail: client.email,
         prestataireNom: `${prestataire.firstName} ${prestataire.lastName}`,
         prestataireEmail: prestataire.email,
-        prestataireIban: decryptNullable(prestation.prestataire.iban) ?? "non renseigné",
-        montantPrestataire: (montant * 0.85).toFixed(2),
-        commissionTasky: (montant * 0.15).toFixed(2),
+        montantPrestataire: montantPrestataire.toFixed(2),
+        commissionTasky: commissionTasky.toFixed(2),
       },
     });
 
@@ -114,15 +116,18 @@ export async function confirmPaymentHandler(req: Request, res: Response) {
 
     // Vérifier auprès de Stripe que le paiement est bien réussi
     const stripe = getStripe();
-    const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const pi = await stripe.paymentIntents.retrieve(paymentIntentId, { expand: ["latest_charge"] });
 
     if (pi.status !== "succeeded") {
       return res.status(400).json({ success: false, message: "Paiement non confirmé par Stripe" });
     }
 
-    if (prestation.status === "EN_COURS") {
-      return res.json({ success: true, message: "Déjà en cours" });
+    if (prestation.status !== "EN_ATTENTE_PAIEMENT") {
+      return res.json({ success: true, message: "Déjà traité" });
     }
+
+    const latestCharge = pi.latest_charge as any;
+    const stripeChargeId = typeof latestCharge === "string" ? latestCharge : latestCharge?.id ?? null;
 
     // Charger prestataire pour l'email
     const prestataireUser = await prisma.user.findFirst({
@@ -133,7 +138,7 @@ export async function confirmPaymentHandler(req: Request, res: Response) {
     await prisma.$transaction([
       prisma.prestation.update({
         where: { id: prestationId },
-        data: { status: "EN_COURS" },
+        data: { status: "EN_COURS", stripeChargeId },
       }),
       prisma.demande.update({
         where: { id: prestation.demandeId },
@@ -191,23 +196,33 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
     const prestationId = pi.metadata?.prestationId;
 
     if (prestationId) {
-      await prisma.prestation.update({
+      const prestation = await prisma.prestation.findUnique({
         where: { id: prestationId },
-        data: { status: "EN_COURS" },
+        select: { status: true },
       });
 
-      await prisma.demande.updateMany({
-        where: { prestation: { id: prestationId } },
-        data: { status: "EN_COURS" },
-      });
+      if (prestation?.status === "EN_ATTENTE_PAIEMENT") {
+        const stripeChargeId =
+          typeof pi.latest_charge === "string" ? pi.latest_charge : pi.latest_charge?.id ?? null;
 
-      await prisma.message.create({
-        data: {
-          prestationId,
-          contenu: "✅ Paiement reçu. La prestation est maintenant en cours.",
-          isSystem: true,
-        },
-      });
+        await prisma.prestation.update({
+          where: { id: prestationId },
+          data: { status: "EN_COURS", stripeChargeId },
+        });
+
+        await prisma.demande.updateMany({
+          where: { prestation: { id: prestationId } },
+          data: { status: "EN_COURS" },
+        });
+
+        await prisma.message.create({
+          data: {
+            prestationId,
+            contenu: "✅ Paiement reçu. La prestation est maintenant en cours.",
+            isSystem: true,
+          },
+        });
+      }
     }
   }
 

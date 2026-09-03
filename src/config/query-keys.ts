@@ -46,4 +46,7 @@ export const queryKeys = {
   adminPrestation:  (id: string) => ["admin", "prestations", id] as const,
   adminSignalements: (page: number) => ["admin", "signalements", page] as const,
   adminPaiements:   (page: number) => ["admin", "paiements", page] as const,
+
+  // ── Paiement / Stripe Connect ─────────────────────────────────────────────
+  connectStatus:    ["connect", "status"] as const,
 } as const;

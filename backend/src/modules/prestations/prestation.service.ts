@@ -1,6 +1,7 @@
 import { prisma } from "../../lib/prisma";
 import { sendSystemMessage, sendSystemMessageConversation } from "../messages/message.service";
 import { notifyOrderCompleted } from "../../services/notifications.service";
+import { createTransferForPrestation } from "../payment/transfer.service";
 
 // =============================================================================
 // REFUSER LES DEVIS CONCURRENTS (demandes MODIFICATION) — appelé au moment où
@@ -518,6 +519,8 @@ export const validerPrestation = async (
     prestationId,
     "🎉 Tasky-Infos — Prestation validée par le client ! Le paiement sera libéré sous 1 à 2 jours ouvrés.",
   ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+
+  await createTransferForPrestation(prestationId);
 
   await recalculerStatsPrestataire(prestation.prestataireId).catch((e: any) =>
     console.error("[Stats prestataire]", e.message),

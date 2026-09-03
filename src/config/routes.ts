@@ -234,6 +234,11 @@ export const routes = {
       confirmPayment: "/api/payment/confirm",
       refund: (id: string) => `/api/payment/${id}/refund`,
     },
+    connect: {
+      account: "/api/connect/account",
+      accountSession: "/api/connect/account-session",
+      status: "/api/connect/status",
+    },
   },
 };
 

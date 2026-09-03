@@ -66,27 +66,27 @@ model Client {
 }
 
 model Prestataire {
-  id                     String           @id @default(cuid())
-  userId                 String           @unique
-  user                   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                     String                 @id @default(cuid())
+  userId                 String                 @unique
+  user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   bio                    String?
-  rating                 Float            @default(0)
-  reviewCount            Int              @default(0)
-  disponibilite          Disponibilite    @default(ACTIF)
+  rating                 Float                  @default(0)
+  reviewCount            Int                    @default(0)
+  disponibilite          Disponibilite          @default(ACTIF)
   pointDepotAdresse      String?
   pointDepotVille        String?
   pointDepotCodePostal   String?
   pointDepotLat          Float?
   pointDepotLng          Float?
   pointDepotInstructions String?
-  tauxReussite           Float            @default(0)
-  delaiMoyen             Int              @default(0)
-  tempsReponse           Int              @default(0)
-  // Chiffrés au niveau applicatif (AES-256-GCM, voir src/lib/crypto.ts) avant écriture
-  iban                   String?
-  bic                    String?
-  bankName               String?
-  ibanVerified           Boolean          @default(false)
+  tauxReussite           Float                  @default(0)
+  delaiMoyen             Int                    @default(0)
+  tempsReponse           Int                    @default(0)
+  stripeAccountId        String?                @unique
+  stripeOnboardingStatus StripeOnboardingStatus @default(NOT_STARTED)
+  stripeChargesEnabled   Boolean                @default(false)
+  stripePayoutsEnabled   Boolean                @default(false)
+  stripeDetailsSubmitted Boolean                @default(false)
   competences            Competence[]
   devis                  Devis[]
   prestations            Prestation[]
@@ -95,6 +95,13 @@ model Prestataire {
   conversations          Conversation[]
 
   @@map("prestataires")
+}
+
+enum StripeOnboardingStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  RESTRICTED
+  COMPLETE
 }
 
 model Conversation {
@@ -242,6 +249,7 @@ model Prestation {
   montant               Float
   montantFinal          Float?
   stripePaymentIntentId String?
+  stripeChargeId        String?
   status                StatusPrestation @default(EN_ATTENTE_INSPECTION)
   createdAt             DateTime         @default(now())
   completedAt           DateTime?
@@ -251,6 +259,7 @@ model Prestation {
   review                Review?
   etatDesLieux          EtatDesLieux?
   messages              Message[]
+  transfer              Transfer?
 
   @@map("prestations")
 }
@@ -262,6 +271,28 @@ enum StatusPrestation {
   A_VALIDER
   TERMINEE
   ANNULEE
+}
+
+model Transfer {
+  id               String         @id @default(cuid())
+  prestationId     String         @unique
+  prestation       Prestation     @relation(fields: [prestationId], references: [id])
+  prestataireId    String
+  amount           Float
+  status           TransferStatus @default(PENDING)
+  stripeTransferId String?
+  failureReason    String?
+  createdAt        DateTime       @default(now())
+  completedAt      DateTime?
+
+  @@map("transfers")
+}
+
+enum TransferStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  SKIPPED
 }
 
 model EtatDesLieux {

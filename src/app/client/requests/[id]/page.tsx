@@ -23,6 +23,7 @@ import { Modal } from "@/components/ui/Modal";
 import SectionChat from "@/components/chat/SectionChat";
 import { StripeCheckout } from "@/components/payment/StripeCheckout";
 import { apiClient } from "@/lib/api-client";
+import { paymentService } from "@/services/payment.service";
 import { Button } from "@/components/ui/Button";
 import { colors } from "@/config/colors";
 import { spacing, typography } from "@/config/design-tokens";
@@ -477,10 +478,8 @@ function SectionPaiement({
   useEffect(() => {
     if (prestation.status !== "EN_ATTENTE_PAIEMENT") return;
     setLoadingIntent(true);
-    apiClient
-      .post<{ clientSecret: string }>("/api/payment/create-intent", {
-        prestationId: prestation.id,
-      })
+    paymentService
+      .createPaymentIntent(prestation.id)
       .then((res) => setClientSecret(res.data.clientSecret))
       .catch(() => setErrorMsg("Impossible de préparer le paiement. Réessayez."))
       .finally(() => setLoadingIntent(false));

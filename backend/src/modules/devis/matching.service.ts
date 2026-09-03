@@ -28,7 +28,7 @@ interface PrestataireForMatching {
   id: string;
   disponibilite: string;
   rating: number;
-  iban: string | null;
+  stripePayoutsEnabled: boolean;
   bio: string | null;
   pointDepotAdresse: string | null;
   user: { city?: string | null };
@@ -46,7 +46,7 @@ export const calculerScore = (
   prestataire: PrestataireForMatching,
 ): MatchScore | null => {
   // ── Hard filters ────────────────────────────────────────────────────────────
-  if (!prestataire.iban) return null;
+  if (!prestataire.stripePayoutsEnabled) return null;
   if (!prestataire.bio || prestataire.bio.length < BIO_MIN) return null;
   if (!prestataire.pointDepotAdresse) return null;
 

@@ -1,3 +1,5 @@
+import { splitMontant } from "../config/commission.config";
+
 interface OrderCompletedProps {
   firstName: string;
   demandeReference: string;
@@ -31,7 +33,7 @@ export const orderCompletedTemplate = ({
   const accentColorDark = isClient ? "#db2777" : "#059669";
   const tagLabel = isClient ? "👤 CLIENT" : "🛠️ PRESTATAIRE";
   const montantLabel = isClient ? "Montant total payé" : "Net à percevoir";
-  const montantAffiche = isClient ? montant : montant * 0.85;
+  const montantAffiche = isClient ? montant : splitMontant(montant).montantPrestataire;
 
   return `<!DOCTYPE html>
 <html lang="fr">

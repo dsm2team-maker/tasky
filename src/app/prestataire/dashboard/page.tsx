@@ -147,9 +147,9 @@ export default function PrestataireDashboard() {
   const hasBio = (profile?.prestataire?.bio?.length ?? 0) >= BIO_MIN;
   const hasCompetences = (competences?.length ?? 0) > 0;
   const hasPointDepot = !!profile?.prestataire?.pointDepotAdresse;
-  const hasIban = !!profile?.prestataire?.iban;
+  const hasPayoutsEnabled = !!profile?.prestataire?.stripePayoutsEnabled;
   const emailVerified = !!profile?.emailVerified;
-  const profileComplete = emailVerified && hasBio && hasCompetences && hasPointDepot && hasIban;
+  const profileComplete = emailVerified && hasBio && hasCompetences && hasPointDepot && hasPayoutsEnabled;
 
   useEffect(() => setIsHydrated(true), []);
   useEffect(() => {

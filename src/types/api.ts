@@ -56,8 +56,11 @@ export interface PrestataireProfile {
   disponibilite: "ACTIF" | "OCCUPE" | "ABSENT";
   rating: number;
   reviewCount: number;
-  iban?: string | null;
-  ibanVerified: boolean;
+  stripeAccountId?: string | null;
+  stripeOnboardingStatus: "NOT_STARTED" | "IN_PROGRESS" | "RESTRICTED" | "COMPLETE";
+  stripeChargesEnabled: boolean;
+  stripePayoutsEnabled: boolean;
+  stripeDetailsSubmitted: boolean;
   pointDepotAdresse?: string | null;
   pointDepotCodePostal?: string | null;
   pointDepotVille?: string | null;
