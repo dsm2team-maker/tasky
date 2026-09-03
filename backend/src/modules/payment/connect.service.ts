@@ -23,6 +23,7 @@ export const getOrCreateConnectAccount = async (userId: string): Promise<string>
       fees: { payer: "application" },
       losses: { payments: "application" },
       stripe_dashboard: { type: "none" },
+      requirement_collection: "application",
     },
   });
 
