@@ -5,9 +5,12 @@ import Link from "next/link";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useMesPrestations } from "@/hooks/usePrestation";
 import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
+import { Pagination } from "@/components/shared/Pagination";
 import { colors } from "@/config/colors";
 import { spacing } from "@/config/design-tokens";
 import type { Prestation } from "@/services/prestation.service";
+
+const PAGE_SIZE = 8;
 
 // ─── Utilitaires ──────────────────────────────────────────────────────────────
 
@@ -268,9 +271,11 @@ export default function PrestatairePrestationsPage() {
   useAuthGuard();
   const [isHydrated, setIsHydrated] = useState(false);
   const [filter, setFilter] = useState<FilterValue>("TOUTES");
+  const [page, setPage] = useState(1);
   const { data: prestations, isLoading } = useMesPrestations();
 
   useEffect(() => setIsHydrated(true), []);
+  useEffect(() => setPage(1), [filter]);
 
   if (!isHydrated)
     return (
@@ -282,6 +287,8 @@ export default function PrestatairePrestationsPage() {
   const filtered = prestations?.filter((p) =>
     filter === "TOUTES" ? true : p.status === filter,
   );
+  const totalPages = Math.max(1, Math.ceil((filtered?.length ?? 0) / PAGE_SIZE));
+  const paginated = filtered?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const counts: Record<FilterValue, number> = {
     TOUTES: prestations?.length ?? 0,
@@ -361,11 +368,19 @@ export default function PrestatairePrestationsPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {filtered.map((p) => (
-              <CardPrestation key={p.id} prestation={p} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {paginated?.map((p) => (
+                <CardPrestation key={p.id} prestation={p} />
+              ))}
+            </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              activeClassName={`${colors.secondary.gradient} text-white`}
+            />
+          </>
         )}
       </main>
     </div>
