@@ -36,8 +36,10 @@ export default function PaiementSettingsPage() {
 
   const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 
+  const isComplete = status?.stripeOnboardingStatus === "COMPLETE";
+
   useEffect(() => {
-    if (!isReady || connectInstance) return;
+    if (!isReady || connectInstance || isComplete) return;
 
     let cancelled = false;
 
@@ -76,7 +78,7 @@ export default function PaiementSettingsPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isReady, status]);
+  }, [isReady, status, isComplete]);
 
   const statusInfo = useMemo(
     () => STATUS_LABELS[status?.stripeOnboardingStatus ?? "NOT_STARTED"],
@@ -115,17 +117,23 @@ export default function PaiementSettingsPage() {
         <div
           className={`bg-white rounded-2xl ${spacing.card} border ${colors.border.light} shadow-sm`}
         >
-          {initError && (
+          {isComplete && (
+            <p className={`text-sm ${colors.text.secondary}`}>
+              ✓ Votre compte Stripe est configuré. Vous recevrez automatiquement vos paiements après chaque prestation terminée.
+            </p>
+          )}
+
+          {!isComplete && initError && (
             <p className={`text-sm ${colors.error.text} mb-4`}>{initError}</p>
           )}
 
-          {!publishableKey && (
+          {!isComplete && !publishableKey && (
             <p className={`text-sm ${colors.error.text}`}>
               Configuration Stripe manquante — contactez le support.
             </p>
           )}
 
-          {publishableKey && !connectInstance && !initError && (
+          {!isComplete && publishableKey && !connectInstance && !initError && (
             <div className="flex items-center justify-center py-12">
               <div
                 className={`animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 ${colors.secondary.border}`}
@@ -133,7 +141,7 @@ export default function PaiementSettingsPage() {
             </div>
           )}
 
-          {connectInstance && (
+          {!isComplete && connectInstance && (
             <ConnectComponentsProvider connectInstance={connectInstance}>
               <ConnectAccountOnboarding
                 onExit={() => window.location.reload()}
