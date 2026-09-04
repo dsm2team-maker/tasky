@@ -102,7 +102,7 @@ export default function PaiementSettingsPage() {
 
       <main className={`${spacing.container} py-8 max-w-3xl`}>
         <h1 className={`${typography.h5.base} ${colors.text.primary} mb-1`}>
-          💳 Être payé après chaque prestation
+          💰 Recevez vos rémunérations
         </h1>
         <p className={`text-sm ${colors.text.tertiary} mb-6`}>
           Renseignez vos informations bancaires une seule fois pour recevoir automatiquement votre part sur votre compte, dès qu'une prestation est validée.
@@ -134,7 +134,7 @@ export default function PaiementSettingsPage() {
               </li>
               <li className="flex items-start gap-2">
                 <span>⏱️</span>
-                <span>Ça prend environ 5 minutes, avec une pièce d'identité et un RIB.</span>
+                <span>La création prend environ 5 minutes, avec une pièce d'identité et un RIB.</span>
               </li>
             </ul>
           </div>
