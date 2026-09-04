@@ -9,6 +9,8 @@ export const useMesPrestations = () =>
     queryKey: queryKeys.prestations,
     queryFn: () => prestationService.getMesPrestations().then((r) => r.data.data),
     staleTime: 0,
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: true,
   });
 
 export const usePrestationDetail = (id: string) =>
@@ -17,6 +19,8 @@ export const usePrestationDetail = (id: string) =>
     queryFn: () => prestationService.getPrestationDetail(id).then((r) => r.data.data),
     enabled: !!id,
     staleTime: 0,
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: true,
   });
 
 export const useCreerEtatDesLieux = () => {

@@ -1,5 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import { getStripe } from "../../config/stripe.config";
+import { env } from "../../config/env.config";
 
 const getPrestataireByUserId = async (userId: string) => {
   const prestataire = await prisma.prestataire.findUnique({
@@ -27,6 +28,9 @@ export const getOrCreateConnectAccount = async (userId: string): Promise<string>
     capabilities: {
       card_payments: { requested: true },
       transfers: { requested: true },
+    },
+    business_profile: {
+      url: `${env.frontendUrl}/prestataires/${prestataire.id}`,
     },
   });
 

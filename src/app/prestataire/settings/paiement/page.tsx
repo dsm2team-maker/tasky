@@ -136,6 +136,12 @@ export default function PaiementSettingsPage() {
                 <span>⏱️</span>
                 <span>La création prend environ 5 minutes, avec une pièce d'identité et un RIB.</span>
               </li>
+              <li className="flex items-start gap-2">
+                <span>💡</span>
+                <span>
+                  Vous n'avez pas de société ? Laissez l'option par défaut « Entrepreneur individuel / Micro-entrepreneur / Auto-entrepreneur » — c'est fait pour vous, aucune création d'entreprise n'est nécessaire.
+                </span>
+              </li>
             </ul>
           </div>
         )}
