@@ -25,6 +25,7 @@ export const getOrCreateConnectAccount = async (userId: string): Promise<string>
       stripe_dashboard: { type: "none" },
     },
     capabilities: {
+      card_payments: { requested: true },
       transfers: { requested: true },
     },
   });
