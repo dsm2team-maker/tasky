@@ -21,9 +21,8 @@ export const getOrCreateConnectAccount = async (userId: string): Promise<string>
     email: prestataire.user.email,
     controller: {
       fees: { payer: "application" },
-      losses: { payments: "application" },
+      losses: { payments: "stripe" },
       stripe_dashboard: { type: "none" },
-      requirement_collection: "application",
     },
   });
 
