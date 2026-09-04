@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { CityInput } from "@/components/shared/CityInput";
 import HeaderClient from "@/components/headers/HeaderClient";
 import { Modal } from "@/components/ui/Modal";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { colors } from "@/config/colors";
 import { spacing, typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
@@ -59,6 +60,7 @@ export default function NewDemandePage() {
   const [delaiJours, setDelaiJours] = useState<number | null>(null);
   const [urgence, setUrgence] = useState<Urgence>("NORMAL");
   const [photos, setPhotos] = useState<string[]>([]);
+  const [deletePhotoIdx, setDeletePhotoIdx] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -595,9 +597,7 @@ export default function NewDemandePage() {
                         className="w-full h-full object-cover rounded-xl"
                       />
                       <button
-                        onClick={() =>
-                          setPhotos((prev) => prev.filter((_, i) => i !== idx))
-                        }
+                        onClick={() => setDeletePhotoIdx(idx)}
                         className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center"
                       >
                         ✕
@@ -680,6 +680,18 @@ export default function NewDemandePage() {
           </Button>
         </div>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={deletePhotoIdx !== null}
+        title="Supprimer cette photo ?"
+        message="La photo sera retirée de votre demande."
+        onCancel={() => setDeletePhotoIdx(null)}
+        onConfirm={() => {
+          if (deletePhotoIdx === null) return;
+          setPhotos((prev) => prev.filter((_, i) => i !== deletePhotoIdx));
+          setDeletePhotoIdx(null);
+        }}
+      />
     </div>
   );
 }

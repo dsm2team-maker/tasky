@@ -8,11 +8,14 @@ import { useMesPrestationsClient } from "@/hooks/usePrestation";
 import type { Prestation } from "@/services/prestation.service";
 import { Button } from "@/components/ui/Button";
 import HeaderClient from "@/components/headers/HeaderClient";
+import { Pagination } from "@/components/shared/Pagination";
 import { colors } from "@/config/colors";
 import { spacing } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 import type { Demande } from "@/services/demande.service";
 import { DemandCardCategory, DemandCardMeta } from "@/components/shared/DemandCardParts";
+
+const PAGE_SIZE = 8;
 
 // ─── Config statuts ───────────────────────────────────────────────────────────
 
@@ -313,8 +316,10 @@ export default function ClientRequestsPage() {
   const { data: prestations } = useMesPrestationsClient();
   const deleteDemande = useDeleteDemande();
   const [filter, setFilter] = useState<FilterValue>("TOUTES");
+  const [page, setPage] = useState(1);
 
   useEffect(() => setIsHydrated(true), []);
+  useEffect(() => setPage(1), [filter]);
 
   if (!isHydrated)
     return (
@@ -328,6 +333,8 @@ export default function ClientRequestsPage() {
   const filteredDemandes = demandes?.filter((d) =>
     filter === "TOUTES" ? true : d.status === filter,
   );
+  const totalPages = Math.max(1, Math.ceil((filteredDemandes?.length ?? 0) / PAGE_SIZE));
+  const paginatedDemandes = filteredDemandes?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const counts: Record<FilterValue, number> = {
     TOUTES: demandes?.length ?? 0,
@@ -420,16 +427,24 @@ export default function ClientRequestsPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredDemandes.map((demande) => (
-              <CardDemande
-                key={demande.id}
-                demande={demande}
-                prestation={prestations?.find((p) => p.demandeId === demande.id)}
-                onDelete={(id) => deleteDemande.mutate(id)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {paginatedDemandes?.map((demande) => (
+                <CardDemande
+                  key={demande.id}
+                  demande={demande}
+                  prestation={prestations?.find((p) => p.demandeId === demande.id)}
+                  onDelete={(id) => deleteDemande.mutate(id)}
+                />
+              ))}
+            </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              activeClassName={`${colors.primary.gradient} text-white`}
+            />
+          </>
         )}
       </main>
     </div>

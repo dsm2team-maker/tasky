@@ -25,11 +25,14 @@ import { StripeCheckout } from "@/components/payment/StripeCheckout";
 import { apiClient } from "@/lib/api-client";
 import { paymentService } from "@/services/payment.service";
 import { Button } from "@/components/ui/Button";
+import { Pagination } from "@/components/shared/Pagination";
 import { colors } from "@/config/colors";
 import { spacing, typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 import type { Devis } from "@/services/devis.service";
 import type { Prestation } from "@/services/prestation.service";
+
+const PAGE_SIZE = 8;
 
 // ─── Carte devis ──────────────────────────────────────────────────────────────
 
@@ -719,6 +722,7 @@ export default function ClientRequestDetailPage() {
   const id = params.id as string;
 
   const [isHydrated, setIsHydrated] = useState(false);
+  const [devisPage, setDevisPage] = useState(1);
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [showSignalModal, setShowSignalModal] = useState(false);
   const [signalMessage, setSignalMessage] = useState("");
@@ -928,23 +932,33 @@ export default function ClientRequestDetailPage() {
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {devis.map((d) => (
-                <CardDevis
-                  key={d.id}
-                  devis={d}
-                  demandeStatus={demande.status}
-                  isAccepting={accepterDevis.isPending}
-                  isRefusing={refuserDevis.isPending}
-                  onAccept={(devisId) =>
-                    accepterDevis.mutate(devisId, {
-                      onSuccess: () => setShowAcceptModal(true),
-                    })
-                  }
-                  onRefuse={(devisId) => refuserDevis.mutate(devisId)}
-                />
-              ))}
-            </div>
+            <>
+              <div className="space-y-4">
+                {devis
+                  .slice((devisPage - 1) * PAGE_SIZE, devisPage * PAGE_SIZE)
+                  .map((d) => (
+                    <CardDevis
+                      key={d.id}
+                      devis={d}
+                      demandeStatus={demande.status}
+                      isAccepting={accepterDevis.isPending}
+                      isRefusing={refuserDevis.isPending}
+                      onAccept={(devisId) =>
+                        accepterDevis.mutate(devisId, {
+                          onSuccess: () => setShowAcceptModal(true),
+                        })
+                      }
+                      onRefuse={(devisId) => refuserDevis.mutate(devisId)}
+                    />
+                  ))}
+              </div>
+              <Pagination
+                page={devisPage}
+                totalPages={Math.max(1, Math.ceil(devis.length / PAGE_SIZE))}
+                onPageChange={setDevisPage}
+                activeClassName={`${colors.primary.gradient} text-white`}
+              />
+            </>
           )}
         </div>
       </main>
@@ -1025,13 +1039,13 @@ export default function ClientRequestDetailPage() {
               </p>
               <div className="bg-pink-50 border border-pink-200 rounded-xl p-3">
                 <p className="text-xs text-pink-700 font-medium">
-                  💳 Rendez-vous dans l'onglet "Mes demandes" pour procéder au paiement et lancer la prestation.
+                  💳 Procédez au paiement juste en dessous pour lancer la prestation.
                 </p>
               </div>
             </>
           )}
-          <Button variant="primary" fullWidth onClick={() => { setShowAcceptModal(false); router.push(routes.client.requests.list); }}>
-            Voir mes demandes →
+          <Button variant="primary" fullWidth onClick={() => setShowAcceptModal(false)}>
+            {isModification ? "Compris →" : "Procéder au paiement →"}
           </Button>
         </div>
       </Modal>

@@ -52,6 +52,9 @@ export const useDemandeDetail = (id: string) =>
     queryKey: queryKeys.demandeDetail(id),
     queryFn: () => devisService.getDemandeDetail(id).then((r) => r.data.data),
     enabled: !!id,
+    staleTime: 0,
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: true,
   });
 
 export const useEnvoyerDevis = () => {

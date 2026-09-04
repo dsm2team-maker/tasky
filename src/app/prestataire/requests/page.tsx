@@ -6,11 +6,14 @@ import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useDemandesDisponibles } from "@/hooks/useDevis";
 import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
 import { Button } from "@/components/ui/Button";
+import { Pagination } from "@/components/shared/Pagination";
 import { colors } from "@/config/colors";
 import { spacing } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 import type { DemandeDisponible, MatchLabel } from "@/services/devis.service";
 import { DemandCardCategory, DemandCardMeta } from "@/components/shared/DemandCardParts";
+
+const PAGE_SIZE = 8;
 
 // ─── Utilitaires ──────────────────────────────────────────────────────────────
 
@@ -266,9 +269,11 @@ export default function PrestataireRequestsPage() {
   useAuthGuard();
   const [isHydrated, setIsHydrated] = useState(false);
   const [filter, setFilter] = useState<MatchLabel | "TOUTES">("TOUTES");
+  const [page, setPage] = useState(1);
   const { data: demandes, isLoading, error } = useDemandesDisponibles();
 
   useEffect(() => setIsHydrated(true), []);
+  useEffect(() => setPage(1), [filter]);
 
   if (!isHydrated)
     return (
@@ -280,6 +285,8 @@ export default function PrestataireRequestsPage() {
   const filtered = demandes?.filter((d) =>
     filter === "TOUTES" ? true : d.matching.label === filter,
   );
+  const totalPages = Math.max(1, Math.ceil((filtered?.length ?? 0) / PAGE_SIZE));
+  const paginated = filtered?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const filters: { value: MatchLabel | "TOUTES"; label: string }[] = [
     { value: "TOUTES", label: "Toutes" },
@@ -372,11 +379,19 @@ export default function PrestataireRequestsPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {filtered.map((demande) => (
-              <CardDemande key={demande.id} demande={demande} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {paginated?.map((demande) => (
+                <CardDemande key={demande.id} demande={demande} />
+              ))}
+            </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              activeClassName={`${colors.secondary.gradient} text-white`}
+            />
+          </>
         )}
       </main>
     </div>

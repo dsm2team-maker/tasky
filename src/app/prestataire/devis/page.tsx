@@ -4,9 +4,13 @@ import React, { useState, useEffect } from "react";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useMesDevis, useDismisserDevis } from "@/hooks/useDevis";
 import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
+import { Pagination } from "@/components/shared/Pagination";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { colors } from "@/config/colors";
 import { spacing } from "@/config/design-tokens";
 import type { DevisHistorique } from "@/services/devis.service";
+
+const PAGE_SIZE = 8;
 
 // ─── Statuts ──────────────────────────────────────────────────────────────────
 
@@ -96,10 +100,13 @@ export default function PrestataireDevisPage() {
   useAuthGuard();
   const [isHydrated, setIsHydrated] = useState(false);
   const [filter, setFilter] = useState<FilterValue>("TOUTES");
+  const [page, setPage] = useState(1);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const { data: devis, isLoading } = useMesDevis();
   const dismisser = useDismisserDevis();
 
   useEffect(() => setIsHydrated(true), []);
+  useEffect(() => setPage(1), [filter]);
 
   if (!isHydrated)
     return (
@@ -109,6 +116,8 @@ export default function PrestataireDevisPage() {
     );
 
   const filtered = devis?.filter((d) => (filter === "TOUTES" ? true : d.status === filter));
+  const totalPages = Math.max(1, Math.ceil((filtered?.length ?? 0) / PAGE_SIZE));
+  const paginated = filtered?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const counts: Record<FilterValue, number> = {
     TOUTES: devis?.length ?? 0,
@@ -171,18 +180,38 @@ export default function PrestataireDevisPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {filtered.map((d) => (
-              <CardDevis
-                key={d.id}
-                devis={d}
-                onDelete={(id) => dismisser.mutate(id)}
-                deleting={dismisser.isPending}
-              />
-            ))}
-          </div>
+          <>
+            <div className="space-y-3">
+              {paginated?.map((d) => (
+                <CardDevis
+                  key={d.id}
+                  devis={d}
+                  onDelete={(id) => setDeleteId(id)}
+                  deleting={dismisser.isPending && deleteId === d.id}
+                />
+              ))}
+            </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              activeClassName={`${colors.secondary.gradient} text-white`}
+            />
+          </>
         )}
       </main>
+
+      <ConfirmDialog
+        isOpen={!!deleteId}
+        title="Supprimer ce devis ?"
+        message="Cette action est irréversible. Le devis sera définitivement supprimé de votre historique."
+        isLoading={dismisser.isPending}
+        onCancel={() => setDeleteId(null)}
+        onConfirm={() => {
+          if (!deleteId) return;
+          dismisser.mutate(deleteId, { onSuccess: () => setDeleteId(null) });
+        }}
+      />
     </div>
   );
 }
