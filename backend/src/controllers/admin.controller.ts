@@ -2,6 +2,7 @@ import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
 import * as adminService from "../modules/admin/admin.service";
 import { runAutoValidationNow } from "../jobs/autoValidate.job";
+import { env } from "../config/env.config";
 
 const isAdmin = (req: AuthRequest, res: Response): boolean => {
   if (req.user?.role !== "ADMIN") {
@@ -103,5 +104,28 @@ export const runAutoValidateHandler = async (req: AuthRequest, res: Response) =>
   try {
     const count = await runAutoValidationNow();
     res.json({ success: true, message: `${count} prestation(s) auto-validée(s)` });
+  } catch { res.status(500).json({ success: false, message: "Erreur serveur" }); }
+};
+
+export const getTestEmailTypesHandler = async (req: AuthRequest, res: Response) => {
+  if (!isAdmin(req, res)) return;
+  res.json({ success: true, data: adminService.TEST_EMAIL_TYPES });
+};
+
+export const sendTestEmailHandler = async (req: AuthRequest, res: Response) => {
+  if (!isAdmin(req, res)) return;
+  if (env.isProd) {
+    return res.status(403).json({ success: false, message: "Fonctionnalité désactivée en production" });
+  }
+  try {
+    const { type, to } = req.body as { type?: string; to?: string };
+    if (!type || !adminService.TEST_EMAIL_TYPES.includes(type as any)) {
+      return res.status(400).json({ success: false, message: "Type de template invalide" });
+    }
+    if (!to || typeof to !== "string") {
+      return res.status(400).json({ success: false, message: "Adresse email requise" });
+    }
+    await adminService.sendTestEmail(type as any, to);
+    res.json({ success: true, message: `Email de test "${type}" envoyé à ${to}` });
   } catch { res.status(500).json({ success: false, message: "Erreur serveur" }); }
 };

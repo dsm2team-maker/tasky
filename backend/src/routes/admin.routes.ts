@@ -11,6 +11,8 @@ import {
   resolveSignalementHandler,
   getPaiementsHandler,
   runAutoValidateHandler,
+  getTestEmailTypesHandler,
+  sendTestEmailHandler,
 } from "../controllers/admin.controller";
 
 const router = Router();
@@ -27,5 +29,7 @@ router.get("/signalements", getSignalementsHandler);
 router.patch("/signalements/:id/resolve", resolveSignalementHandler);
 router.get("/paiements", getPaiementsHandler);
 router.post("/jobs/auto-validate", runAutoValidateHandler);
+router.get("/test-email/types", getTestEmailTypesHandler);
+router.post("/test-email", sendTestEmailHandler);
 
 export default router;

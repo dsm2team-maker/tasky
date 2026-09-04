@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { notifySignalementCreated } from "../../services/notifications.service";
 
 export const creerSignalement = async (
   userId: string,
@@ -10,7 +11,7 @@ export const creerSignalement = async (
 
   const demande = await prisma.demande.findUnique({
     where: { id: demandeId },
-    include: { client: true },
+    include: { client: { include: { user: { select: { firstName: true, lastName: true } } } } },
   });
 
   if (!demande) throw new Error("DEMANDE_NOT_FOUND");
@@ -26,7 +27,7 @@ export const creerSignalement = async (
   });
   if (existing) throw new Error("SIGNALEMENT_EXISTANT");
 
-  return prisma.signalement.create({
+  const signalement = await prisma.signalement.create({
     data: {
       demandeId,
       auteurId: userId,
@@ -34,4 +35,18 @@ export const creerSignalement = async (
       statut: "EN_ATTENTE",
     },
   });
+
+  const admins = await prisma.user.findMany({
+    where: { role: "ADMIN" },
+    select: { email: true },
+  });
+  notifySignalementCreated(
+    admins.map((a) => a.email),
+    demande.reference,
+    demande.titre,
+    `${demande.client.user.firstName} ${demande.client.user.lastName}`,
+    message.trim(),
+  );
+
+  return signalement;
 };

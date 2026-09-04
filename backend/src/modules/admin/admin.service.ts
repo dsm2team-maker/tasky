@@ -1,5 +1,7 @@
 import { prisma } from "../../lib/prisma";
 import { splitMontant } from "../../config/commission.config";
+import { addEmailJob, EmailJobData, EmailJobType } from "../../queues/email.queue";
+import { notifyAccountStatus, notifySignalementResolved } from "../../services/notifications.service";
 
 // ─── Dashboard KPIs ───────────────────────────────────────────────────────────
 
@@ -85,11 +87,21 @@ export const getUsers = async (
 };
 
 export const suspendUser = async (userId: string) => {
-  await prisma.user.update({ where: { id: userId }, data: { isActive: false } });
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { isActive: false },
+    select: { email: true, firstName: true },
+  });
+  notifyAccountStatus(user.email, user.firstName, true);
 };
 
 export const reactivateUser = async (userId: string) => {
-  await prisma.user.update({ where: { id: userId }, data: { isActive: true } });
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { isActive: true },
+    select: { email: true, firstName: true },
+  });
+  notifyAccountStatus(user.email, user.firstName, false);
 };
 
 // ─── Prestations ─────────────────────────────────────────────────────────────
@@ -219,7 +231,14 @@ export const getSignalements = async (page = 1) => {
 export const resolveSignalement = async (id: string, note: string) => {
   const signalement = await prisma.signalement.findUnique({
     where: { id },
-    include: { demande: { include: { prestation: { select: { id: true } } } } },
+    include: {
+      demande: {
+        include: {
+          prestation: { select: { id: true } },
+          client: { include: { user: { select: { email: true, firstName: true } } } },
+        },
+      },
+    },
   });
 
   if (!signalement) throw new Error("SIGNALEMENT_NOT_FOUND");
@@ -247,6 +266,18 @@ export const resolveSignalement = async (id: string, note: string) => {
         isSystem: true,
       },
     });
+  }
+
+  const demande = signalement.demande;
+  if (demande) {
+    notifySignalementResolved(
+      demande.client.user.email,
+      demande.client.user.firstName,
+      demande.reference,
+      demande.titre,
+      demande.id,
+      note || undefined,
+    );
   }
 };
 
@@ -283,4 +314,70 @@ export const getPaiements = async (page = 1) => {
   ]);
 
   return { paiements, total, pages: Math.ceil(total / take) };
+};
+
+// ─── Emails de test ───────────────────────────────────────────────────────────
+
+export const TEST_EMAIL_TYPES: EmailJobType[] = [
+  "verify-email",
+  "reset-password",
+  "new-message",
+  "quote-received",
+  "order-confirmed",
+  "order-completed",
+  "phone-change-otp",
+  "email-change-alert",
+  "devis-refuse",
+  "delete-account-otp",
+  "demande-created",
+  "signalement-created",
+  "signalement-resolved",
+  "prestation-contested",
+  "account-status",
+  "connect-onboarding-complete",
+  "transfer-completed",
+];
+
+const buildTestEmailPayload = (type: EmailJobType) => {
+  switch (type) {
+    case "verify-email":
+      return { firstName: "Test", verificationUrl: "https://tasky.fr/auth/verify?token=test-token", variant: "client" };
+    case "reset-password":
+      return { firstName: "Test", resetUrl: "https://tasky.fr/auth/reset-password?token=test-token" };
+    case "new-message":
+      return { firstName: "Test", senderName: "Jean Dupont", messageCount: 2, conversationUrl: "https://tasky.fr/client/messages/test-id", variant: "client" };
+    case "quote-received":
+      return { firstName: "Test", demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", prestataireNom: "Jean Dupont", montant: 150, devisUrl: "https://tasky.fr/client/requests/test-id" };
+    case "order-confirmed":
+      return { firstName: "Test", demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", montant: 150, role: "client" as const, prestationUrl: "https://tasky.fr/client/requests/test-id" };
+    case "order-completed":
+      return { firstName: "Test", demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", montant: 150, role: "client" as const, isAutoValidated: false, prestationUrl: "https://tasky.fr/client/requests/test-id" };
+    case "phone-change-otp":
+      return { firstName: "Test", otp: "123456", newPhone: "0612345678", isAlert: false };
+    case "email-change-alert":
+      return { firstName: "Test", newEmail: "nouvelle-adresse@example.com" };
+    case "devis-refuse":
+      return { firstName: "Test", demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", demandesUrl: "https://tasky.fr/prestataire/requests" };
+    case "delete-account-otp":
+      return { firstName: "Test", otp: "123456" };
+    case "demande-created":
+      return { firstName: "Test", demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", demandeUrl: "https://tasky.fr/client/requests/test-id" };
+    case "signalement-created":
+      return { demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", auteurNom: "Jean Dupont", message: "La prestation ne correspond pas à ce qui était prévu.", signalementUrl: "https://tasky.fr/admin/signalements" };
+    case "signalement-resolved":
+      return { firstName: "Test", demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", note: "Le prestataire a été recontacté, le problème est résolu.", demandeUrl: "https://tasky.fr/client/requests/test-id" };
+    case "prestation-contested":
+      return { firstName: "Test", demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", motif: "Le travail n'a pas été terminé correctement.", prestationUrl: "https://tasky.fr/prestataire/requests" };
+    case "account-status":
+      return { firstName: "Test", suspended: true, reason: "Non-respect des CGU.", supportUrl: "https://tasky.fr/contact" };
+    case "connect-onboarding-complete":
+      return { firstName: "Test", earningsUrl: "https://tasky.fr/prestataire/earnings" };
+    case "transfer-completed":
+      return { firstName: "Test", demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", montant: 127.5, earningsUrl: "https://tasky.fr/prestataire/earnings" };
+  }
+};
+
+export const sendTestEmail = async (type: EmailJobType, to: string) => {
+  const data = { type, to, payload: buildTestEmailPayload(type) } as EmailJobData;
+  await addEmailJob(data);
 };

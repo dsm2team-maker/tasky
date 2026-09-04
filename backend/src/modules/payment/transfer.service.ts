@@ -2,6 +2,7 @@ import { prisma } from "../../lib/prisma";
 import { getStripe } from "../../config/stripe.config";
 import { sendSystemMessage } from "../messages/message.service";
 import { splitMontant } from "../../config/commission.config";
+import { notifyTransferCompleted } from "../../services/notifications.service";
 
 // Point d'accroche unique du transfert — appelé depuis validerPrestation() et
 // runAutoValidation(), jamais directement. Ne lève jamais d'exception : un échec
@@ -19,9 +20,15 @@ export const createTransferForPrestation = async (prestationId: string): Promise
         montant: true,
         stripeChargeId: true,
         prestataireId: true,
+        demandeId: true,
         prestataire: {
-          select: { stripeAccountId: true, stripePayoutsEnabled: true },
+          select: {
+            stripeAccountId: true,
+            stripePayoutsEnabled: true,
+            user: { select: { email: true, firstName: true } },
+          },
         },
+        demande: { select: { reference: true, titre: true } },
       },
     });
     if (!prestation) return;
@@ -76,6 +83,14 @@ export const createTransferForPrestation = async (prestationId: string): Promise
           completedAt: new Date(),
         },
       });
+
+      notifyTransferCompleted(
+        prestation.prestataire.user.email,
+        prestation.prestataire.user.firstName,
+        prestation.demande.reference,
+        prestation.demande.titre,
+        montantPrestataire,
+      );
     } catch (err: any) {
       console.error("[transfer] stripe.transfers.create failed:", err);
       await prisma.transfer.upsert({

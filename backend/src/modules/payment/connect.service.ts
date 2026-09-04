@@ -1,6 +1,7 @@
 import { prisma } from "../../lib/prisma";
 import { getStripe } from "../../config/stripe.config";
 import { env } from "../../config/env.config";
+import { notifyConnectOnboardingComplete } from "../../services/notifications.service";
 
 const getPrestataireByUserId = async (userId: string) => {
   const prestataire = await prisma.prestataire.findUnique({
@@ -82,7 +83,7 @@ export const syncConnectAccountStatus = async (account: {
 }) => {
   const prestataire = await prisma.prestataire.findUnique({
     where: { stripeAccountId: account.id },
-    select: { id: true, stripeOnboardingStatus: true },
+    select: { id: true, stripeOnboardingStatus: true, user: { select: { email: true, firstName: true } } },
   });
   if (!prestataire) return;
 
@@ -102,4 +103,8 @@ export const syncConnectAccountStatus = async (account: {
       stripeOnboardingStatus: status,
     },
   });
+
+  if (status === "COMPLETE" && prestataire.stripeOnboardingStatus !== "COMPLETE") {
+    notifyConnectOnboardingComplete(prestataire.user.email, prestataire.user.firstName);
+  }
 };

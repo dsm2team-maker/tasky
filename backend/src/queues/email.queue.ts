@@ -12,7 +12,14 @@ export type EmailJobType =
   | "phone-change-otp" // OTP changement téléphone → envoyé par email
   | "email-change-alert" // Alerte sécurité → envoyé sur l'ancienne adresse
   | "devis-refuse" // Notification prestataire — devis non retenu
-  | "delete-account-otp"; // OTP suppression de compte
+  | "delete-account-otp" // OTP suppression de compte
+  | "demande-created" // Confirmation client — demande publiée
+  | "signalement-created" // Notification admin — nouveau signalement
+  | "signalement-resolved" // Notification client — signalement traité
+  | "prestation-contested" // Notification prestataire — prestation contestée
+  | "account-status" // Notification utilisateur — suspension/réactivation
+  | "connect-onboarding-complete" // Notification prestataire — Stripe Connect activé
+  | "transfer-completed"; // Notification prestataire — virement envoyé
 
 // ─── Payloads typés par type d'email ─────────────────────────────────────────
 
@@ -26,6 +33,13 @@ interface PhoneChangeOtpPayload   { firstName: string; otp: string; newPhone: st
 interface EmailChangeAlertPayload { firstName: string; newEmail: string }
 interface DevisRefusePayload      { firstName: string; demandeReference: string; demandeTitre: string; demandesUrl: string }
 interface DeleteAccountOtpPayload { firstName: string; otp: string }
+interface DemandeCreatedPayload   { firstName: string; demandeReference: string; demandeTitre: string; demandeUrl: string }
+interface SignalementCreatedPayload  { demandeReference: string; demandeTitre: string; auteurNom: string; message: string; signalementUrl: string }
+interface SignalementResolvedPayload { firstName: string; demandeReference: string; demandeTitre: string; note?: string; demandeUrl: string }
+interface PrestationContestedPayload { firstName: string; demandeReference: string; demandeTitre: string; motif: string; prestationUrl: string }
+interface AccountStatusPayload    { firstName: string; suspended: boolean; reason?: string; supportUrl: string }
+interface ConnectOnboardingCompletePayload { firstName: string; earningsUrl: string }
+interface TransferCompletedPayload { firstName: string; demandeReference: string; demandeTitre: string; montant: number; earningsUrl: string }
 
 type EmailPayloadMap = {
   "verify-email":       VerifyEmailPayload;
@@ -38,6 +52,13 @@ type EmailPayloadMap = {
   "email-change-alert": EmailChangeAlertPayload;
   "devis-refuse":       DevisRefusePayload;
   "delete-account-otp": DeleteAccountOtpPayload;
+  "demande-created":              DemandeCreatedPayload;
+  "signalement-created":          SignalementCreatedPayload;
+  "signalement-resolved":         SignalementResolvedPayload;
+  "prestation-contested":         PrestationContestedPayload;
+  "account-status":               AccountStatusPayload;
+  "connect-onboarding-complete":  ConnectOnboardingCompletePayload;
+  "transfer-completed":           TransferCompletedPayload;
 };
 
 export type EmailJobData<T extends EmailJobType = EmailJobType> = {

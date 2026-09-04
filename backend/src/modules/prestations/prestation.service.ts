@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import { sendSystemMessage, sendSystemMessageConversation } from "../messages/message.service";
-import { notifyOrderCompleted } from "../../services/notifications.service";
+import { notifyOrderCompleted, notifyPrestationContested } from "../../services/notifications.service";
 import { createTransferForPrestation } from "../payment/transfer.service";
 
 // =============================================================================
@@ -552,7 +552,10 @@ export const contesterPrestation = async (
 
   const prestation = await prisma.prestation.findUnique({
     where: { id: prestationId },
-    include: { demande: true },
+    include: {
+      demande: true,
+      prestataire: { include: { user: { select: { email: true, firstName: true } } } },
+    },
   });
   if (!prestation) throw new Error("PRESTATION_NOT_FOUND");
   if (prestation.demande.clientId !== client.id) throw new Error("FORBIDDEN");
@@ -578,6 +581,14 @@ export const contesterPrestation = async (
       },
     }),
   ]);
+
+  notifyPrestationContested(
+    prestation.prestataire.user.email,
+    prestation.prestataire.user.firstName,
+    prestation.demande.reference,
+    prestation.demande.titre,
+    motif.trim(),
+  );
 };
 
 // =============================================================================

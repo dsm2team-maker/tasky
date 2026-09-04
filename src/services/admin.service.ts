@@ -28,4 +28,6 @@ export const adminService = {
     apiClient.patch(`/api/admin/signalements/${id}/resolve`, { note }),
   getPaiements: (page = 1) => apiClient.get(`/api/admin/paiements?page=${page}`),
   runAutoValidate: () => apiClient.post("/api/admin/jobs/auto-validate", {}),
+  getTestEmailTypes: () => apiClient.get("/api/admin/test-email/types"),
+  sendTestEmail: (type: string, to: string) => apiClient.post("/api/admin/test-email", { type, to }),
 };

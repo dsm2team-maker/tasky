@@ -126,3 +126,130 @@ export const notifyOrderCompleted = (params: {
     prestationUrl: `${FRONTEND_URL}/prestataire/requests`,
   }}));
 };
+
+// ─── Demandes ─────────────────────────────────────────────────────────────────
+
+export const notifyDemandeCreated = (
+  clientEmail: string,
+  clientFirstName: string,
+  demandeReference: number,
+  demandeTitre: string,
+  demandeId: string,
+) =>
+  safe(() => addEmailJob({
+    type: "demande-created",
+    to: clientEmail,
+    payload: {
+      firstName: clientFirstName,
+      demandeReference: ref(demandeReference),
+      demandeTitre,
+      demandeUrl: `${FRONTEND_URL}/client/requests/${demandeId}`,
+    },
+  }));
+
+// ─── Signalements ─────────────────────────────────────────────────────────────
+
+export const notifySignalementCreated = (
+  adminEmails: string[],
+  demandeReference: number,
+  demandeTitre: string,
+  auteurNom: string,
+  message: string,
+) => {
+  for (const to of adminEmails) {
+    safe(() => addEmailJob({
+      type: "signalement-created",
+      to,
+      payload: {
+        demandeReference: ref(demandeReference),
+        demandeTitre,
+        auteurNom,
+        message,
+        signalementUrl: `${FRONTEND_URL}/admin/signalements`,
+      },
+    }, EMAIL_PRIORITY.CRITICAL));
+  }
+};
+
+export const notifySignalementResolved = (
+  clientEmail: string,
+  clientFirstName: string,
+  demandeReference: number,
+  demandeTitre: string,
+  demandeId: string,
+  note?: string,
+) =>
+  safe(() => addEmailJob({
+    type: "signalement-resolved",
+    to: clientEmail,
+    payload: {
+      firstName: clientFirstName,
+      demandeReference: ref(demandeReference),
+      demandeTitre,
+      note,
+      demandeUrl: `${FRONTEND_URL}/client/requests/${demandeId}`,
+    },
+  }));
+
+// ─── Prestations ──────────────────────────────────────────────────────────────
+
+export const notifyPrestationContested = (
+  prestataireEmail: string,
+  prestataireFirstName: string,
+  demandeReference: number,
+  demandeTitre: string,
+  motif: string,
+) =>
+  safe(() => addEmailJob({
+    type: "prestation-contested",
+    to: prestataireEmail,
+    payload: {
+      firstName: prestataireFirstName,
+      demandeReference: ref(demandeReference),
+      demandeTitre,
+      motif,
+      prestationUrl: `${FRONTEND_URL}/prestataire/requests`,
+    },
+  }, EMAIL_PRIORITY.CRITICAL));
+
+// ─── Comptes ──────────────────────────────────────────────────────────────────
+
+export const notifyAccountStatus = (
+  to: string,
+  firstName: string,
+  suspended: boolean,
+  reason?: string,
+) =>
+  safe(() => addEmailJob({
+    type: "account-status",
+    to,
+    payload: { firstName, suspended, reason, supportUrl: `${FRONTEND_URL}/contact` },
+  }, EMAIL_PRIORITY.CRITICAL));
+
+// ─── Paiements ────────────────────────────────────────────────────────────────
+
+export const notifyConnectOnboardingComplete = (prestataireEmail: string, prestataireFirstName: string) =>
+  safe(() => addEmailJob({
+    type: "connect-onboarding-complete",
+    to: prestataireEmail,
+    payload: { firstName: prestataireFirstName, earningsUrl: `${FRONTEND_URL}/prestataire/earnings` },
+  }));
+
+export const notifyTransferCompleted = (
+  prestataireEmail: string,
+  prestataireFirstName: string,
+  demandeReference: number,
+  demandeTitre: string,
+  montant: number,
+) =>
+  safe(() => addEmailJob({
+    type: "transfer-completed",
+    to: prestataireEmail,
+    payload: {
+      firstName: prestataireFirstName,
+      demandeReference: ref(demandeReference),
+      demandeTitre,
+      montant,
+      earningsUrl: `${FRONTEND_URL}/prestataire/earnings`,
+    },
+  }));

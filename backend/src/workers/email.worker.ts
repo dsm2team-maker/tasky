@@ -12,6 +12,13 @@ import { deleteAccountOtpTemplate } from "../emails/delete-account-otp.template"
 import { quoteReceivedTemplate } from "../emails/quote-received.template";
 import { orderConfirmedTemplate } from "../emails/order-confirmed.template";
 import { orderCompletedTemplate } from "../emails/order-completed.template";
+import { demandeCreatedTemplate } from "../emails/demande-created.template";
+import { signalementCreatedTemplate } from "../emails/signalement-created.template";
+import { signalementResolvedTemplate } from "../emails/signalement-resolved.template";
+import { prestationContestedTemplate } from "../emails/prestation-contested.template";
+import { accountStatusTemplate } from "../emails/account-status.template";
+import { connectOnboardingCompleteTemplate } from "../emails/connect-onboarding-complete.template";
+import { transferCompletedTemplate } from "../emails/transfer-completed.template";
 import { prisma } from "../lib/prisma";
 
 const processEmailJob = async (job: Job<EmailJobData>) => {
@@ -126,6 +133,80 @@ const processEmailJob = async (job: Job<EmailJobData>) => {
         role: payload.role,
         isAutoValidated: payload.isAutoValidated ?? false,
         prestationUrl: payload.prestationUrl,
+      });
+      break;
+
+    case "demande-created":
+      subject = `Votre demande a été publiée — ${payload.demandeReference} — Tasky`;
+      html = demandeCreatedTemplate({
+        firstName: payload.firstName,
+        demandeReference: payload.demandeReference,
+        demandeTitre: payload.demandeTitre,
+        demandeUrl: payload.demandeUrl,
+      });
+      break;
+
+    case "signalement-created":
+      subject = `Nouveau signalement — ${payload.demandeReference} — Tasky`;
+      html = signalementCreatedTemplate({
+        demandeReference: payload.demandeReference,
+        demandeTitre: payload.demandeTitre,
+        auteurNom: payload.auteurNom,
+        message: payload.message,
+        signalementUrl: payload.signalementUrl,
+      });
+      break;
+
+    case "signalement-resolved":
+      subject = `Votre signalement a été traité — ${payload.demandeReference} — Tasky`;
+      html = signalementResolvedTemplate({
+        firstName: payload.firstName,
+        demandeReference: payload.demandeReference,
+        demandeTitre: payload.demandeTitre,
+        note: payload.note,
+        demandeUrl: payload.demandeUrl,
+      });
+      break;
+
+    case "prestation-contested":
+      subject = `Prestation contestée — ${payload.demandeReference} — Tasky`;
+      html = prestationContestedTemplate({
+        firstName: payload.firstName,
+        demandeReference: payload.demandeReference,
+        demandeTitre: payload.demandeTitre,
+        motif: payload.motif,
+        prestationUrl: payload.prestationUrl,
+      });
+      break;
+
+    case "account-status":
+      subject = payload.suspended
+        ? "Votre compte a été suspendu — Tasky"
+        : "Votre compte a été réactivé — Tasky";
+      html = accountStatusTemplate({
+        firstName: payload.firstName,
+        suspended: payload.suspended,
+        reason: payload.reason,
+        supportUrl: payload.supportUrl,
+      });
+      break;
+
+    case "connect-onboarding-complete":
+      subject = "Vos paiements sont activés — Tasky";
+      html = connectOnboardingCompleteTemplate({
+        firstName: payload.firstName,
+        earningsUrl: payload.earningsUrl,
+      });
+      break;
+
+    case "transfer-completed":
+      subject = `Virement envoyé — ${payload.demandeReference} — Tasky`;
+      html = transferCompletedTemplate({
+        firstName: payload.firstName,
+        demandeReference: payload.demandeReference,
+        demandeTitre: payload.demandeTitre,
+        montant: payload.montant,
+        earningsUrl: payload.earningsUrl,
       });
       break;
 

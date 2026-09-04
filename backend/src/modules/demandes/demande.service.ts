@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { notifyDemandeCreated } from "../../services/notifications.service";
 
 export interface CreateDemandeData {
   titre: string;
@@ -21,7 +22,10 @@ export const createDemande = async (
   userId: string,
   data: CreateDemandeData,
 ) => {
-  const client = await prisma.client.findUnique({ where: { userId } });
+  const client = await prisma.client.findUnique({
+    where: { userId },
+    include: { user: { select: { email: true, firstName: true } } },
+  });
   if (!client) throw new Error("CLIENT_NOT_FOUND");
 
   const category = await prisma.category.findUnique({
@@ -57,6 +61,8 @@ export const createDemande = async (
       subCategory: { select: { id: true, nom: true } },
     },
   });
+
+  notifyDemandeCreated(client.user.email, client.user.firstName, demande.reference, demande.titre, demande.id);
 
   return demande;
 };

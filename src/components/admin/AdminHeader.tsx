@@ -11,6 +11,7 @@ const navItems = [
   { href: "/admin/prestations", label: "🛠️ Prestations" },
   { href: "/admin/signalements", label: "⚠️ Signalements" },
   { href: "/admin/paiements", label: "💳 Paiements" },
+  { href: "/admin/emails", label: "📧 Emails" },
 ];
 
 export default function AdminHeader() {
