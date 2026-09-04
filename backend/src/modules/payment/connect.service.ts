@@ -24,6 +24,9 @@ export const getOrCreateConnectAccount = async (userId: string): Promise<string>
       losses: { payments: "stripe" },
       stripe_dashboard: { type: "none" },
     },
+    capabilities: {
+      transfers: { requested: true },
+    },
   });
 
   await prisma.prestataire.update({
