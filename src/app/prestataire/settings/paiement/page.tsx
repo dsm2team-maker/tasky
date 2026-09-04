@@ -102,10 +102,10 @@ export default function PaiementSettingsPage() {
 
       <main className={`${spacing.container} py-8 max-w-3xl`}>
         <h1 className={`${typography.h5.base} ${colors.text.primary} mb-1`}>
-          💳 Paiement
+          💳 Être payé après chaque prestation
         </h1>
         <p className={`text-sm ${colors.text.tertiary} mb-6`}>
-          Configurez votre compte Stripe pour recevoir vos paiements après chaque prestation terminée.
+          Renseignez vos informations bancaires une seule fois pour recevoir automatiquement votre part sur votre compte, dès qu'une prestation est validée.
         </p>
 
         <div className="flex items-center gap-2 mb-6">
@@ -113,6 +113,32 @@ export default function PaiementSettingsPage() {
             {statusLoading ? "Chargement…" : statusInfo.label}
           </span>
         </div>
+
+        {!isComplete && (
+          <div className={`rounded-2xl border ${colors.secondary.borderLight} ${colors.secondary.bg} p-5 mb-6`}>
+            <p className={`text-sm font-semibold ${colors.secondary.textDark} mb-3`}>
+              Pourquoi Stripe ?
+            </p>
+            <ul className={`space-y-2 text-sm ${colors.text.secondary}`}>
+              <li className="flex items-start gap-2">
+                <span>🔒</span>
+                <span>
+                  Stripe est le partenaire de paiement utilisé par des millions d'entreprises (Uber, Airbnb...). Tasky n'a jamais accès à votre IBAN : tout est géré et chiffré directement par Stripe.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span>⚡</span>
+                <span>
+                  Une fois configuré, vous n'avez plus rien à faire : votre part (85% du montant) est virée automatiquement dès qu'un client valide votre prestation.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span>⏱️</span>
+                <span>Ça prend environ 5 minutes, avec une pièce d'identité et un RIB.</span>
+              </li>
+            </ul>
+          </div>
+        )}
 
         <div
           className={`bg-white rounded-2xl ${spacing.card} border ${colors.border.light} shadow-sm`}
