@@ -6,6 +6,7 @@ import { verifyEmailTemplate } from "../emails/verify-email.template";
 import { resetPasswordTemplate } from "../emails/reset-password.template";
 import { newMessageTemplate } from "../emails/new-message.template";
 import { phoneChangeOtpTemplate } from "../emails/phone-change-otp.template";
+import { emailChangeOtpTemplate } from "../emails/email-change-otp.template";
 import { emailChangeAlertTemplate } from "../emails/email-change-alert.template";
 import { devisRefuseTemplate } from "../emails/devis-refuse.template";
 import { deleteAccountOtpTemplate } from "../emails/delete-account-otp.template";
@@ -70,6 +71,15 @@ const processEmailJob = async (job: Job<EmailJobData>) => {
         otp: payload.otp,
         newPhone: payload.newPhone,
         isAlert: payload.isAlert,
+      });
+      break;
+
+    case "email-change-otp":
+      subject = "Votre code de vérification — Tasky";
+      html = emailChangeOtpTemplate({
+        firstName: payload.firstName,
+        otp: payload.otp,
+        newEmail: payload.newEmail,
       });
       break;
 

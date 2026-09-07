@@ -1,11 +1,16 @@
 import { prisma } from "../../lib/prisma";
+import { notifyNewMessagePrestation, notifyNewMessageConversation } from "../../services/notifications.service";
 
 const checkAccess = async (prestationId: string, userId: string) => {
   const prestation = await prisma.prestation.findUnique({
     where: { id: prestationId },
     include: {
-      demande: { include: { client: { select: { userId: true } } } },
-      prestataire: { select: { userId: true } },
+      demande: {
+        include: {
+          client: { select: { userId: true, user: { select: { email: true, firstName: true } } } },
+        },
+      },
+      prestataire: { select: { userId: true, user: { select: { email: true, firstName: true } } } },
     },
   });
   if (!prestation) throw new Error("PRESTATION_NOT_FOUND");
@@ -125,16 +130,38 @@ export const sendMessage = async (
   userId: string,
   contenu: string,
 ) => {
-  await checkAccess(prestationId, userId);
+  const prestation = await checkAccess(prestationId, userId);
 
   if (!contenu || contenu.trim().length === 0) throw new Error("CONTENU_VIDE");
   if (contenu.trim().length > 1000) throw new Error("CONTENU_TROP_LONG");
   if (EMAIL_REGEX.test(contenu) || PHONE_REGEX.test(contenu))
     throw new Error("CONTACT_INFO_DETECTED");
 
-  return prisma.message.create({
+  const message = await prisma.message.create({
     data: { prestationId, auteurId: userId, contenu: contenu.trim() },
   });
+
+  const isClient = prestation.demande.client.userId === userId;
+  const sender = isClient ? prestation.demande.client.user : prestation.prestataire.user;
+  const recipient = isClient ? prestation.prestataire.user : prestation.demande.client.user;
+  const recipientUserId = isClient ? prestation.prestataire.userId : prestation.demande.client.userId;
+  const recipientVariant: "client" | "prestataire" = isClient ? "prestataire" : "client";
+
+  const messageCount = await prisma.message.count({
+    where: { prestationId, auteurId: { not: recipientUserId }, lu: false },
+  });
+
+  notifyNewMessagePrestation(
+    recipient.email,
+    recipient.firstName,
+    sender.firstName,
+    messageCount,
+    recipientVariant,
+    prestation.demandeId,
+    prestationId,
+  );
+
+  return message;
 };
 
 export const sendSystemMessage = async (prestationId: string, contenu: string) => {
@@ -166,8 +193,8 @@ const checkConversationAccess = async (conversationId: string, userId: string) =
   const conversation = await prisma.conversation.findUnique({
     where: { id: conversationId },
     include: {
-      client: { select: { userId: true } },
-      prestataire: { select: { userId: true } },
+      client: { select: { userId: true, user: { select: { email: true, firstName: true } } } },
+      prestataire: { select: { userId: true, user: { select: { email: true, firstName: true } } } },
     },
   });
   if (!conversation) throw new Error("CONVERSATION_NOT_FOUND");
@@ -285,14 +312,35 @@ export const sendConversationMessage = async (
   userId: string,
   contenu: string,
 ) => {
-  await checkConversationAccess(conversationId, userId);
+  const conversation = await checkConversationAccess(conversationId, userId);
 
   if (!contenu || contenu.trim().length === 0) throw new Error("CONTENU_VIDE");
   if (contenu.trim().length > 1000) throw new Error("CONTENU_TROP_LONG");
   if (EMAIL_REGEX.test(contenu) || PHONE_REGEX.test(contenu))
     throw new Error("CONTACT_INFO_DETECTED");
 
-  return prisma.message.create({
+  const message = await prisma.message.create({
     data: { conversationId, auteurId: userId, contenu: contenu.trim() },
   });
+
+  const isClient = conversation.client.userId === userId;
+  const sender = isClient ? conversation.client.user : conversation.prestataire.user;
+  const recipient = isClient ? conversation.prestataire.user : conversation.client.user;
+  const recipientUserId = isClient ? conversation.prestataire.userId : conversation.client.userId;
+  const recipientVariant: "client" | "prestataire" = isClient ? "prestataire" : "client";
+
+  const messageCount = await prisma.message.count({
+    where: { conversationId, auteurId: { not: recipientUserId }, lu: false },
+  });
+
+  notifyNewMessageConversation(
+    recipient.email,
+    recipient.firstName,
+    sender.firstName,
+    messageCount,
+    recipientVariant,
+    conversationId,
+  );
+
+  return message;
 };

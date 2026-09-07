@@ -326,6 +326,7 @@ export const TEST_EMAIL_TYPES: EmailJobType[] = [
   "order-confirmed",
   "order-completed",
   "phone-change-otp",
+  "email-change-otp",
   "email-change-alert",
   "devis-refuse",
   "delete-account-otp",
@@ -354,6 +355,8 @@ const buildTestEmailPayload = (type: EmailJobType) => {
       return { firstName: "Test", demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", montant: 150, role: "client" as const, isAutoValidated: false, prestationUrl: "https://tasky.fr/client/requests/test-id" };
     case "phone-change-otp":
       return { firstName: "Test", otp: "123456", newPhone: "0612345678", isAlert: false };
+    case "email-change-otp":
+      return { firstName: "Test", otp: "123456", newEmail: "nouvelle-adresse@example.com" };
     case "email-change-alert":
       return { firstName: "Test", newEmail: "nouvelle-adresse@example.com" };
     case "devis-refuse":

@@ -68,13 +68,16 @@ export const notifyDevisRefuse = (
 
 // ─── Messages ─────────────────────────────────────────────────────────────────
 
-export const notifyNewMessage = (
+// Chat lié à une prestation en cours — URL différente selon le rôle
+// (le client navigue par demande, le prestataire par prestation)
+export const notifyNewMessagePrestation = (
   to: string,
   firstName: string,
   senderName: string,
   messageCount: number,
-  prestationId: string,
   variant: "client" | "prestataire",
+  demandeId: string,
+  prestationId: string,
 ) =>
   safe(() => addEmailJob({
     type: "new-message",
@@ -83,7 +86,31 @@ export const notifyNewMessage = (
       firstName,
       senderName,
       messageCount,
-      conversationUrl: `${FRONTEND_URL}/${variant}/requests/${prestationId}`,
+      conversationUrl:
+        variant === "client"
+          ? `${FRONTEND_URL}/client/requests/${demandeId}`
+          : `${FRONTEND_URL}/prestataire/services/${prestationId}`,
+      variant,
+    },
+  }));
+
+// Conversation directe (avant toute demande) — même route côté client et prestataire
+export const notifyNewMessageConversation = (
+  to: string,
+  firstName: string,
+  senderName: string,
+  messageCount: number,
+  variant: "client" | "prestataire",
+  conversationId: string,
+) =>
+  safe(() => addEmailJob({
+    type: "new-message",
+    to,
+    payload: {
+      firstName,
+      senderName,
+      messageCount,
+      conversationUrl: `${FRONTEND_URL}/${variant}/messages/${conversationId}`,
       variant,
     },
   }));

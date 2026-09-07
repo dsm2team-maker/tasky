@@ -13,6 +13,7 @@ const EMAIL_TYPES: { value: string; label: string; description: string }[] = [
   { value: "order-confirmed", label: "Prestation confirmée", description: "Envoyé après paiement, quand la prestation démarre." },
   { value: "order-completed", label: "Prestation terminée", description: "Envoyé quand la prestation est validée (manuellement ou auto)." },
   { value: "phone-change-otp", label: "OTP changement téléphone", description: "Code de vérification envoyé par email pour changer le numéro." },
+  { value: "email-change-otp", label: "OTP changement email", description: "Code de vérification envoyé sur la nouvelle adresse email." },
   { value: "email-change-alert", label: "Alerte changement email", description: "Alerte de sécurité envoyée sur l'ancienne adresse." },
   { value: "devis-refuse", label: "Devis refusé", description: "Envoyé au prestataire quand son devis n'est pas retenu." },
   { value: "delete-account-otp", label: "OTP suppression de compte", description: "Code de vérification envoyé pour confirmer la suppression du compte." },

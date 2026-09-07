@@ -279,17 +279,17 @@ export const requestEmailChange = async (userId: string, newEmail: string) => {
   } else {
     addEmailJob(
       {
-        type: "phone-change-otp",
+        type: "email-change-otp",
         to: newEmail.toLowerCase(),
         userId,
         payload: {
           firstName: user.firstName,
           otp,
-          newPhone: newEmail.toLowerCase(),
+          newEmail: newEmail.toLowerCase(),
         },
       },
       EMAIL_PRIORITY.CRITICAL,
-    ).catch((e) => console.warn("[email] phone-change otp:", e?.message));
+    ).catch((e) => console.warn("[email] email-change otp:", e?.message));
   }
 };
 

@@ -10,6 +10,7 @@ export type EmailJobType =
   | "order-confirmed"
   | "order-completed"
   | "phone-change-otp" // OTP changement téléphone → envoyé par email
+  | "email-change-otp" // OTP changement email → envoyé sur la nouvelle adresse
   | "email-change-alert" // Alerte sécurité → envoyé sur l'ancienne adresse
   | "devis-refuse" // Notification prestataire — devis non retenu
   | "delete-account-otp" // OTP suppression de compte
@@ -30,6 +31,7 @@ interface QuoteReceivedPayload    { firstName: string; demandeReference: string;
 interface OrderConfirmedPayload   { firstName: string; demandeReference: string; demandeTitre: string; montant: number; role: "client" | "prestataire"; prestationUrl: string }
 interface OrderCompletedPayload   { firstName: string; demandeReference: string; demandeTitre: string; montant: number; role: "client" | "prestataire"; isAutoValidated: boolean; prestationUrl: string }
 interface PhoneChangeOtpPayload   { firstName: string; otp: string; newPhone: string; isAlert: boolean }
+interface EmailChangeOtpPayload   { firstName: string; otp: string; newEmail: string }
 interface EmailChangeAlertPayload { firstName: string; newEmail: string }
 interface DevisRefusePayload      { firstName: string; demandeReference: string; demandeTitre: string; demandesUrl: string }
 interface DeleteAccountOtpPayload { firstName: string; otp: string }
@@ -49,6 +51,7 @@ type EmailPayloadMap = {
   "order-confirmed":    OrderConfirmedPayload;
   "order-completed":    OrderCompletedPayload;
   "phone-change-otp":   PhoneChangeOtpPayload;
+  "email-change-otp":   EmailChangeOtpPayload;
   "email-change-alert": EmailChangeAlertPayload;
   "devis-refuse":       DevisRefusePayload;
   "delete-account-otp": DeleteAccountOtpPayload;
