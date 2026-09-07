@@ -151,7 +151,20 @@ export const requestPhoneChange = async (userId: string, newPhone: string) => {
       `🔐 [DEV] OTP changement téléphone → envoyé sur ${newPhone} : ${otp}`,
     );
   } else {
-    console.warn("⚠️ [PROD] Twilio non configuré — OTP non envoyé par SMS");
+    addEmailJob(
+      {
+        type: "phone-change-otp",
+        to: user.email,
+        userId,
+        payload: {
+          firstName: user.firstName,
+          otp,
+          isAlert: false,
+          newPhone,
+        },
+      },
+      EMAIL_PRIORITY.CRITICAL,
+    ).catch((e) => console.warn("[email] phone-change otp:", e?.message));
   }
 };
 
