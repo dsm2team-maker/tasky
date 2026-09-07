@@ -7,7 +7,7 @@ export const createDemandeHandler = async (req: AuthRequest, res: Response) => {
   try {
     const {
       titre, description, typePrestation, categoryId, subCategoryId,
-      budget, ville, photos, delaiJours, urgence, interventionIds,
+      budget, ville, codePostal, photos, delaiJours, urgence, interventionIds,
     } = req.body;
 
     if (!titre || titre.trim().length < 5)
@@ -38,6 +38,7 @@ export const createDemandeHandler = async (req: AuthRequest, res: Response) => {
       interventionIds,
       budget: budgetParsed,
       ville,
+      codePostal,
       photos: photos || [],
       delaiJours: delaiJoursParsed,
       urgence: urgence || "NORMAL",

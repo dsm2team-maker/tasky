@@ -57,6 +57,7 @@ export default function NewDemandePage() {
   const [description, setDescription] = useState("");
   const [budget, setBudget] = useState("");
   const [ville, setVille] = useState("");
+  const [codePostal, setCodePostal] = useState("");
   const [delaiJours, setDelaiJours] = useState<number | null>(null);
   const [urgence, setUrgence] = useState<Urgence>("NORMAL");
   const [photos, setPhotos] = useState<string[]>([]);
@@ -165,6 +166,7 @@ export default function NewDemandePage() {
         interventionIds: realInterventionIds,
         budget: budget ? parseFloat(budget) : undefined,
         ville,
+        codePostal: codePostal || undefined,
         photos,
         delaiJours,
         urgence,
@@ -509,6 +511,10 @@ export default function NewDemandePage() {
                 label="Ville *"
                 value={ville}
                 onChange={setVille}
+                onCitySelect={(city, postalCode) => {
+                  setVille(city);
+                  setCodePostal(postalCode);
+                }}
                 placeholder="Ex: Paris ou 75001"
               />
 

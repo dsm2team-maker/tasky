@@ -175,6 +175,7 @@ model Demande {
   interventionIds String[]
   budget          Float?
   ville           String?
+  codePostal      String?
   photos          String[]
   delaiJours      Int            @default(7)
   urgence         UrgenceDemande @default(NORMAL)

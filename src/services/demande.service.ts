@@ -9,6 +9,7 @@ export interface CreateDemandePayload {
   interventionIds?: string[];
   budget?: number;
   ville?: string;
+  codePostal?: string;
   photos?: string[];
   delaiJours: number;
   urgence: "NORMAL" | "URGENT" | "TRES_URGENT";
@@ -27,6 +28,7 @@ export interface Demande {
   interventionIds: string[];
   budget?: number;
   ville?: string;
+  codePostal?: string;
   photos: string[];
   delaiJours: number;
   urgence: "NORMAL" | "URGENT" | "TRES_URGENT";

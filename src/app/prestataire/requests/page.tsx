@@ -12,6 +12,7 @@ import { spacing } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 import type { DemandeDisponible, MatchLabel } from "@/services/devis.service";
 import { DemandCardCategory, DemandCardMeta } from "@/components/shared/DemandCardParts";
+import { CityInput } from "@/components/shared/CityInput";
 
 const PAGE_SIZE = 8;
 
@@ -269,11 +270,14 @@ export default function PrestataireRequestsPage() {
   useAuthGuard();
   const [isHydrated, setIsHydrated] = useState(false);
   const [filter, setFilter] = useState<MatchLabel | "TOUTES">("TOUTES");
+  const [categoryFilter, setCategoryFilter] = useState<string>("TOUTES");
+  const [postalFilter, setPostalFilter] = useState<string>("");
+  const [postalFilterVille, setPostalFilterVille] = useState<string>("");
   const [page, setPage] = useState(1);
   const { data: demandes, isLoading, error } = useDemandesDisponibles();
 
   useEffect(() => setIsHydrated(true), []);
-  useEffect(() => setPage(1), [filter]);
+  useEffect(() => setPage(1), [filter, categoryFilter, postalFilter]);
 
   if (!isHydrated)
     return (
@@ -282,9 +286,12 @@ export default function PrestataireRequestsPage() {
       </div>
     );
 
-  const filtered = demandes?.filter((d) =>
-    filter === "TOUTES" ? true : d.matching.label === filter,
-  );
+  const filtered = demandes?.filter((d) => {
+    if (filter !== "TOUTES" && d.matching.label !== filter) return false;
+    if (categoryFilter !== "TOUTES" && d.categoryId !== categoryFilter) return false;
+    if (postalFilter && d.codePostal !== postalFilter) return false;
+    return true;
+  });
   const totalPages = Math.max(1, Math.ceil((filtered?.length ?? 0) / PAGE_SIZE));
   const paginated = filtered?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -303,6 +310,13 @@ export default function PrestataireRequestsPage() {
     PARTIEL:
       demandes?.filter((d) => d.matching.label === "PARTIEL").length ?? 0,
   };
+
+  // Catégories réellement présentes dans les demandes disponibles
+  const categoryOptions = Array.from(
+    new Map(
+      (demandes ?? []).map((d) => [d.categoryId, d.category.nom]),
+    ).entries(),
+  ).map(([id, nom]) => ({ id, nom }));
 
   return (
     <div className={`min-h-screen ${colors.background.gray}`}>
@@ -342,6 +356,64 @@ export default function PrestataireRequestsPage() {
               )}
             </button>
           ))}
+        </div>
+
+        {/* Filtres catégorie + code postal */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6 sm:items-end">
+          {categoryOptions.length > 0 && (
+            <div className="flex gap-2 flex-wrap flex-1">
+              <button
+                onClick={() => setCategoryFilter("TOUTES")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                  categoryFilter === "TOUTES"
+                    ? `${colors.secondary.gradient} text-white border-transparent`
+                    : `bg-white ${colors.text.secondary} ${colors.border.light} hover:border-gray-300`
+                }`}
+              >
+                Toutes les catégories
+              </button>
+              {categoryOptions.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setCategoryFilter(c.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                    categoryFilter === c.id
+                      ? `${colors.secondary.gradient} text-white border-transparent`
+                      : `bg-white ${colors.text.secondary} ${colors.border.light} hover:border-gray-300`
+                  }`}
+                >
+                  {c.nom}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="w-full sm:w-64 flex items-end gap-2">
+            <div className="flex-1">
+              <CityInput
+                label="Code postal ou ville"
+                value={postalFilterVille}
+                onChange={setPostalFilterVille}
+                onCitySelect={(city, postalCode) => {
+                  setPostalFilterVille(city);
+                  setPostalFilter(postalCode);
+                }}
+                placeholder="Ex: Paris ou 75001"
+              />
+            </div>
+            {postalFilter && (
+              <button
+                onClick={() => {
+                  setPostalFilter("");
+                  setPostalFilterVille("");
+                }}
+                className={`mb-0.5 px-2.5 py-2 rounded-lg text-xs font-medium bg-white ${colors.text.secondary} border ${colors.border.light} hover:border-gray-300`}
+                title="Réinitialiser le filtre code postal"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Contenu */}
