@@ -25,7 +25,7 @@ export const emailChangeAlertTemplate = ({
     headline: "Votre adresse email a été modifiée",
     content,
     ctaText: "Contacter le support",
-    ctaUrl: `${process.env.FRONTEND_URL}/support`,
+    ctaUrl: `${process.env.FRONTEND_URL}/contact`,
     footerNote: "Vous recevez cet email car une modification a été effectuée sur votre compte Tasky.",
   });
 };

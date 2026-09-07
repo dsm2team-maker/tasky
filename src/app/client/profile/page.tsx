@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ProfilePhotoUpload } from "@/components/shared/ProfilePhotoUpload";
 import { CityInput } from "@/components/shared/CityInput";
+import { maskEmail } from "@/lib/utils";
 import { colors } from "@/config/colors";
 import { spacing, typography } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
@@ -51,6 +52,7 @@ export default function ClientProfilePage() {
   const [localPhoto, setLocalPhoto] = useState<string | null | undefined>(undefined);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailRevealed, setEmailRevealed] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Hydratation + auth
@@ -281,11 +283,26 @@ export default function ClientProfilePage() {
                       {profile?.emailVerified ? "✓ Vérifié" : "⚠️ Non vérifié"}
                     </span>
                   </div>
-                  <p
-                    className={`text-sm font-medium ${colors.text.primary} mb-3 break-all`}
-                  >
-                    {profile?.email}
-                  </p>
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <p
+                      className={`text-sm font-medium ${colors.text.primary} break-all`}
+                    >
+                      {profile?.email &&
+                        (emailRevealed
+                          ? profile.email
+                          : maskEmail(profile.email))}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setEmailRevealed((v) => !v)}
+                      className={`shrink-0 text-sm ${colors.text.tertiary} hover:${colors.text.primary}`}
+                      aria-label={
+                        emailRevealed ? "Masquer l'email" : "Afficher l'email"
+                      }
+                    >
+                      {emailRevealed ? "🙈" : "👁️"}
+                    </button>
+                  </div>
                   <Button
                     variant="premium"
                     size="sm"

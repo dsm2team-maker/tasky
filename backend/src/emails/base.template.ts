@@ -111,7 +111,9 @@ export const emailLayout = ({
                     <p style="margin:0 0 12px;">
                       <a href="${frontendUrl}/legal/privacy" style="color:${c.primary};font-size:11px;text-decoration:none;">Politique de confidentialité</a>
                       <span style="color:#d1d5db;margin:0 8px;">•</span>
-                      <a href="${frontendUrl}/legal/cgu" style="color:${c.primary};font-size:11px;text-decoration:none;">CGU</a>
+                      <a href="${frontendUrl}/legal/cgu-client" style="color:${c.primary};font-size:11px;text-decoration:none;">CGU Clients</a>
+                      <span style="color:#d1d5db;margin:0 8px;">•</span>
+                      <a href="${frontendUrl}/legal/cgu-prestataire" style="color:${c.primary};font-size:11px;text-decoration:none;">CGU Prestataires</a>
                     </p>
                     ` : ""}
                     <p style="margin:0;color:#d1d5db;font-size:11px;">© ${new Date().getFullYear()} Tasky.fr — Tous droits réservés</p>

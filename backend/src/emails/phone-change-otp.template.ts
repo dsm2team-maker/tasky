@@ -29,7 +29,7 @@ export const phoneChangeOtpTemplate = ({
       headline: "Votre numéro de téléphone a été modifié",
       content,
       ctaText: "Contacter le support",
-      ctaUrl: `${process.env.FRONTEND_URL}/support`,
+      ctaUrl: `${process.env.FRONTEND_URL}/contact`,
       footerNote: "Vous recevez cet email car une modification a été effectuée sur votre compte Tasky.",
     });
   }

@@ -36,7 +36,8 @@ interface PhoneModalProps {
 
 export const PhoneModal: React.FC<PhoneModalProps> = ({ isOpen, onClose }) => {
   const router = useRouter();
-  const { logout } = useAuthStore();
+  const { logout, user } = useAuthStore();
+  const maskedAccountEmail = user?.email ? maskEmail(user.email) : "votre adresse email";
   const [step, setStep] = useState<"request" | "otp" | "success">("request");
   const [error, setError] = useState<string | null>(null);
   const [newPhoneValue, setNewPhoneValue] = useState("");
@@ -124,7 +125,8 @@ export const PhoneModal: React.FC<PhoneModalProps> = ({ isOpen, onClose }) => {
           className="space-y-4"
         >
           <p className={`text-sm ${colors.text.secondary}`}>
-            🔒 Un code de vérification sera envoyé par email à l'adresse de votre compte.
+            🔒 Un code de vérification sera envoyé à l'adresse{" "}
+            <strong>{maskedAccountEmail}</strong>.
           </p>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -166,7 +168,7 @@ export const PhoneModal: React.FC<PhoneModalProps> = ({ isOpen, onClose }) => {
           >
             <span>✅</span>
             <p className={`text-sm ${colors.success.textDark}`}>
-              Code envoyé par email à l'adresse de votre compte.
+              Code envoyé à <strong>{maskedAccountEmail}</strong>.
             </p>
           </div>
           <Input

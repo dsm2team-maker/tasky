@@ -259,7 +259,7 @@ export const notifyConnectOnboardingComplete = (prestataireEmail: string, presta
   safe(() => addEmailJob({
     type: "connect-onboarding-complete",
     to: prestataireEmail,
-    payload: { firstName: prestataireFirstName, earningsUrl: `${FRONTEND_URL}/prestataire/earnings` },
+    payload: { firstName: prestataireFirstName, earningsUrl: `${FRONTEND_URL}/prestataire/settings/paiement` },
   }));
 
 export const notifyTransferCompleted = (
@@ -277,6 +277,6 @@ export const notifyTransferCompleted = (
       demandeReference: ref(demandeReference),
       demandeTitre,
       montant,
-      earningsUrl: `${FRONTEND_URL}/prestataire/earnings`,
+      earningsUrl: `${FRONTEND_URL}/prestataire/settings/paiement`,
     },
   }));
