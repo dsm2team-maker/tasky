@@ -124,7 +124,7 @@ export const PhoneModal: React.FC<PhoneModalProps> = ({ isOpen, onClose }) => {
           className="space-y-4"
         >
           <p className={`text-sm ${colors.text.secondary}`}>
-            🔒 Un code SMS sera envoyé sur votre nouveau numéro.
+            🔒 Un code de vérification sera envoyé par email à l'adresse de votre compte.
           </p>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -166,10 +166,7 @@ export const PhoneModal: React.FC<PhoneModalProps> = ({ isOpen, onClose }) => {
           >
             <span>✅</span>
             <p className={`text-sm ${colors.success.textDark}`}>
-              Code envoyé au{" "}
-              <strong>
-                {newPhoneValue.replace(/(\d{2})(?=\d)/g, "$1 ").trim()}
-              </strong>
+              Code envoyé par email à l'adresse de votre compte.
             </p>
           </div>
           <Input
