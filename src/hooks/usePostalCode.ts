@@ -9,6 +9,10 @@ export interface CityResult {
   nom: string;
   codesPostaux: string[];
   codeDepartement: string;
+  // Code postal à retenir pour cette suggestion : celui recherché s'il est connu
+  // (utile pour Paris/Lyon/Marseille, une seule "commune" avec un code postal par arrondissement),
+  // sinon le premier de la liste.
+  matchedPostalCode: string;
 }
 
 export const usePostalCode = (
@@ -38,9 +42,16 @@ export const usePostalCode = (
           : `https://geo.api.gouv.fr/communes?nom=${query}&fields=nom,codesPostaux,codeDepartement&limit=5&boost=population`;
 
         const res = await fetch(url);
-        const data: CityResult[] = await res.json();
-        setSuggestions(data);
-        setIsOpen(data.length > 0);
+        const data: Omit<CityResult, "matchedPostalCode">[] = await res.json();
+        const withMatch: CityResult[] = data.map((c) => ({
+          ...c,
+          matchedPostalCode:
+            isPostalCode && c.codesPostaux.includes(query)
+              ? query
+              : c.codesPostaux[0] || "",
+        }));
+        setSuggestions(withMatch);
+        setIsOpen(withMatch.length > 0);
       } catch {
         setSuggestions([]);
       } finally {
@@ -51,8 +62,7 @@ export const usePostalCode = (
 
   const selectCity = useCallback(
     (city: CityResult) => {
-      const postalCode = city.codesPostaux[0] || "";
-      onSelect?.(city.nom, postalCode);
+      onSelect?.(city.nom, city.matchedPostalCode);
       setSuggestions([]);
       setIsOpen(false);
     },

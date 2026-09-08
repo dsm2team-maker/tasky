@@ -127,7 +127,7 @@ export const CityInput: React.FC<CityInputProps> = ({
               <span
                 className={`text-xs ${colors.text.tertiary} bg-gray-100 px-2 py-0.5 rounded-full`}
               >
-                {city.codesPostaux[0]}
+                {city.matchedPostalCode}
               </span>
             </button>
           ))}
