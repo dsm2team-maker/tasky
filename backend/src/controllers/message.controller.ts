@@ -6,6 +6,7 @@ import {
   sendMessage,
   getUnreadCount,
   getUnreadByPrestation,
+  markPrestationInfosRead,
   startConversation,
   getConversations,
   getConversationMessages,
@@ -37,6 +38,15 @@ export const getMessagesHandler = async (req: AuthRequest, res: Response) => {
   try {
     const data = await getMessages(req.params.prestationId, req.user!.userId);
     res.json({ success: true, data });
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+export const markPrestationInfosReadHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    await markPrestationInfosRead(req.params.prestationId, req.user!.userId);
+    res.json({ success: true });
   } catch (error) {
     handleError(error, res);
   }

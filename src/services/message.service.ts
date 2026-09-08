@@ -48,6 +48,11 @@ export const messageService = {
       `/api/messages/unread-by-prestation`,
     ),
 
+  markInfosRead: (prestationId: string) =>
+    apiClient.patch<{ success: boolean }>(
+      `/api/messages/${prestationId}/infos-read`,
+    ),
+
   getTaskyInfo: () =>
     apiClient.get<{ success: boolean; data: Message[] }>(`/api/messages/tasky-info`),
 

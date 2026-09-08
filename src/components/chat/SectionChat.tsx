@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useAuthStore } from "@/stores/auth-store";
-import { useMessages, useSendMessage } from "@/hooks/useMessages";
+import { useMessages, useSendMessage, useMarkPrestationInfosRead } from "@/hooks/useMessages";
 import { colors } from "@/config/colors";
 
 const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
@@ -73,6 +73,7 @@ export default function SectionChat({ prestationId }: Props) {
   const { user } = useAuthStore();
   const { data, isLoading } = useMessages(prestationId);
   const sendMessage = useSendMessage(prestationId);
+  const markInfosRead = useMarkPrestationInfosRead(prestationId);
   const [contenu, setContenu] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("chat");
@@ -80,6 +81,7 @@ export default function SectionChat({ prestationId }: Props) {
 
   const chatMessages = data?.messages.filter((m) => !m.isSystem) ?? [];
   const systemMessages = data?.messages.filter((m) => m.isSystem) ?? [];
+  const unreadInfosCount = systemMessages.filter((m) => !m.lu).length;
   const messageGroups = groupByDate(chatMessages);
   const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
   const toggleDate = (key: string) => {
@@ -96,6 +98,13 @@ export default function SectionChat({ prestationId }: Props) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [chatMessages.length, activeTab]);
+
+  useEffect(() => {
+    if (activeTab === "infos" && unreadInfosCount > 0 && !markInfosRead.isPending) {
+      markInfosRead.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, unreadInfosCount]);
 
   const handleSend = () => {
     const text = contenu.trim();
@@ -167,6 +176,11 @@ export default function SectionChat({ prestationId }: Props) {
               d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span>Tasky-Infos</span>
+          {unreadInfosCount > 0 && (
+            <span className="min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+              {unreadInfosCount > 99 ? "99+" : unreadInfosCount}
+            </span>
+          )}
         </button>
       </div>
 

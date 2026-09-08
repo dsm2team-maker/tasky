@@ -24,8 +24,11 @@ const checkAccess = async (prestationId: string, userId: string) => {
 export const getMessages = async (prestationId: string, userId: string) => {
   const prestation = await checkAccess(prestationId, userId);
 
+  // Seuls les messages de chat classiques sont marqués lus ici : les messages système
+  // (Tasky-Infos) ne doivent l'être que lorsque l'onglet "Tasky-Infos" est réellement consulté
+  // (voir markPrestationInfosRead), sinon ils sont marqués lus avant même d'être vus.
   await prisma.message.updateMany({
-    where: { prestationId, OR: [{ auteurId: null }, { auteurId: { not: userId } }], lu: false },
+    where: { prestationId, isSystem: false, auteurId: { not: userId }, lu: false },
     data: { lu: true },
   });
 
@@ -49,6 +52,15 @@ export const getMessages = async (prestationId: string, userId: string) => {
     messages,
     participants: { client: clientUser, prestataire: prestataireUser },
   };
+};
+
+export const markPrestationInfosRead = async (prestationId: string, userId: string) => {
+  await checkAccess(prestationId, userId);
+
+  await prisma.message.updateMany({
+    where: { prestationId, isSystem: true, lu: false },
+    data: { lu: true },
+  });
 };
 
 export const getUnreadByPrestation = async (userId: string) => {

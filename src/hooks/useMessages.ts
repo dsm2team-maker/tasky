@@ -58,6 +58,24 @@ export const useMessages = (prestationId: string | undefined) => {
   });
 };
 
+export const useMarkPrestationInfosRead = (prestationId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => messageService.markInfosRead(prestationId),
+    onSuccess: () => {
+      queryClient.setQueryData<MessagesData>(queryKeys.messages(prestationId), (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          messages: old.messages.map((m) => (m.isSystem ? { ...m, lu: true } : m)),
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.messagesUnreadCount });
+      queryClient.invalidateQueries({ queryKey: queryKeys.messagesUnreadByPrestation });
+    },
+  });
+};
+
 export const useSendMessage = (prestationId: string) => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
