@@ -28,6 +28,8 @@ export const queryKeys = {
   messages:              (prestationId: string) => ["messages", prestationId] as const,
   messagesUnreadCount:   ["messages", "unread-count"] as const,
   messagesUnreadByPrestation: ["messages", "unread-by-prestation"] as const,
+  messagesTaskyInfo:          ["messages", "tasky-info"] as const,
+  messagesTaskyInfoUnreadCount: ["messages", "tasky-info", "unread-count"] as const,
 
   // ── Conversations directes ────────────────────────────────────────────────
   conversations:              ["conversations"] as const,

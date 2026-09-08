@@ -2,16 +2,20 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useMesPrestations } from "@/hooks/usePrestation";
-import { useUnreadByPrestation } from "@/hooks/useMessages";
+import { useUnreadByPrestation, useTaskyInfoUnreadCount } from "@/hooks/useMessages";
 import { useConversations, useUnreadByConversation } from "@/hooks/useConversations";
+import { Pagination } from "@/components/shared/Pagination";
 import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
 import { colors } from "@/config/colors";
 import { spacing } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
 import type { Prestation } from "@/services/prestation.service";
 import type { ConversationSummary } from "@/services/conversation.service";
+
+const PAGE_SIZE = 8;
 
 const statusLabel: Record<string, string> = {
   EN_ATTENTE_INSPECTION: "📦 Remise & Inspection",
@@ -72,6 +76,36 @@ function ConversationCard({ prestation, unread }: { prestation: Prestation; unre
   );
 }
 
+function TaskyInfoCard({ unread }: { unread: number }) {
+  return (
+    <Link href={routes.prestataire.messages.taskyInfo}>
+      <div
+        className={`bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl border ${unread > 0 ? "border-purple-300" : "border-purple-100"} shadow-sm p-5 hover:shadow-md transition-all cursor-pointer flex items-center gap-4`}
+      >
+        <div className="relative w-12 h-12 flex-shrink-0">
+          <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm ring-2 ring-purple-100">
+            <Image src="/images/logo-tasky.png" alt="Tasky" width={28} height={28} className="object-contain" />
+          </div>
+          {unread > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+              {unread > 99 ? "99+" : unread}
+            </span>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-purple-700 truncate">Tasky-Info</div>
+          <div className="text-sm text-purple-500 truncate">
+            Notifications sur vos devis et prestations
+          </div>
+        </div>
+
+        <span className="text-xs text-purple-400 flex-shrink-0">🔔 Voir →</span>
+      </div>
+    </Link>
+  );
+}
+
 function DirectConversationCard({ conversation, unread }: { conversation: ConversationSummary; unread: number }) {
   const other = conversation.other;
 
@@ -113,12 +147,20 @@ function DirectConversationCard({ conversation, unread }: { conversation: Conver
 export default function PrestataireMessagesPage() {
   useAuthGuard();
   const [isHydrated, setIsHydrated] = useState(false);
+  const [page, setPage] = useState(1);
   const { data: prestations, isLoading } = useMesPrestations();
   const { data: unreadMap } = useUnreadByPrestation();
   const { data: conversations, isLoading: isLoadingConversations } = useConversations();
   const { data: unreadConversationMap } = useUnreadByConversation();
+  const { data: taskyInfoUnread } = useTaskyInfoUnreadCount();
 
   useEffect(() => setIsHydrated(true), []);
+
+  const actives = prestations?.filter((p) => p.status !== "ANNULEE" && p.status !== "TERMINEE") ?? [];
+  const totalPages = Math.max(1, Math.ceil(actives.length / PAGE_SIZE));
+  const paginated = actives.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => setPage(1), [actives.length]);
 
   if (!isHydrated || isLoading || isLoadingConversations)
     return (
@@ -126,8 +168,6 @@ export default function PrestataireMessagesPage() {
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500" />
       </div>
     );
-
-  const actives = prestations?.filter((p) => p.status !== "ANNULEE") ?? [];
 
   return (
     <div className={`min-h-screen ${colors.background.gray}`}>
@@ -138,6 +178,10 @@ export default function PrestataireMessagesPage() {
           <p className={`text-sm ${colors.text.secondary} mt-1`}>
             {actives.length} conversation{actives.length > 1 ? "s" : ""} active{actives.length > 1 ? "s" : ""}
           </p>
+        </div>
+
+        <div className="mb-8">
+          <TaskyInfoCard unread={taskyInfoUnread ?? 0} />
         </div>
 
         {conversations && conversations.length > 0 && (
@@ -168,11 +212,14 @@ export default function PrestataireMessagesPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {actives.map((p) => (
-              <ConversationCard key={p.id} prestation={p} unread={unreadMap?.[p.id] ?? 0} />
-            ))}
-          </div>
+          <>
+            <div className="space-y-3">
+              {paginated.map((p) => (
+                <ConversationCard key={p.id} prestation={p} unread={unreadMap?.[p.id] ?? 0} />
+              ))}
+            </div>
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          </>
         )}
       </main>
     </div>

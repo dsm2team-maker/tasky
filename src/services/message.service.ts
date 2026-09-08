@@ -4,6 +4,7 @@ export interface Message {
   id: string;
   prestationId: string | null;
   conversationId?: string | null;
+  destinataireId?: string | null;
   auteurId: string | null;
   contenu: string;
   lu: boolean;
@@ -45,5 +46,13 @@ export const messageService = {
   getUnreadByPrestation: () =>
     apiClient.get<{ success: boolean; data: Record<string, number> }>(
       `/api/messages/unread-by-prestation`,
+    ),
+
+  getTaskyInfo: () =>
+    apiClient.get<{ success: boolean; data: Message[] }>(`/api/messages/tasky-info`),
+
+  getTaskyInfoUnreadCount: () =>
+    apiClient.get<{ success: boolean; data: { count: number } }>(
+      `/api/messages/tasky-info/unread-count`,
     ),
 };

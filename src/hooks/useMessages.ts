@@ -20,6 +20,28 @@ export const useUnreadByPrestation = () =>
     refetchInterval: 5_000,
   });
 
+export const useTaskyInfoUnreadCount = () =>
+  useQuery({
+    queryKey: queryKeys.messagesTaskyInfoUnreadCount,
+    queryFn: () => messageService.getTaskyInfoUnreadCount().then((r) => r.data.data.count),
+    staleTime: 0,
+    refetchInterval: 5_000,
+  });
+
+export const useTaskyInfoMessages = () => {
+  const queryClient = useQueryClient();
+  return useQuery({
+    queryKey: queryKeys.messagesTaskyInfo,
+    queryFn: async () => {
+      const result = await messageService.getTaskyInfo().then((r) => r.data.data);
+      queryClient.invalidateQueries({ queryKey: queryKeys.messagesUnreadCount });
+      queryClient.invalidateQueries({ queryKey: queryKeys.messagesTaskyInfoUnreadCount });
+      return result;
+    },
+    staleTime: 0,
+  });
+};
+
 export const useMessages = (prestationId: string | undefined) => {
   const queryClient = useQueryClient();
   return useQuery({

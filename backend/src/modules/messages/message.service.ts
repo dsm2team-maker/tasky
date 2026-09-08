@@ -103,9 +103,7 @@ export const getUnreadCount = async (userId: string) => {
     ...prestataireConversations.map((c) => c.id),
   ];
 
-  if (prestationIds.length === 0 && conversationIds.length === 0) return 0;
-
-  const [fromPrestations, fromConversations] = await Promise.all([
+  const [fromPrestations, fromConversations, fromTaskyInfo] = await Promise.all([
     prestationIds.length
       ? prisma.message.count({
           where: { prestationId: { in: prestationIds }, OR: [{ auteurId: null }, { auteurId: { not: userId } }], lu: false },
@@ -116,9 +114,10 @@ export const getUnreadCount = async (userId: string) => {
           where: { conversationId: { in: conversationIds }, OR: [{ auteurId: null }, { auteurId: { not: userId } }], lu: false },
         })
       : 0,
+    prisma.message.count({ where: { destinataireId: userId, lu: false } }),
   ]);
 
-  return fromPrestations + fromConversations;
+  return fromPrestations + fromConversations + fromTaskyInfo;
 };
 
 const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
@@ -146,6 +145,32 @@ export const sendMessage = async (
 export const sendSystemMessage = async (prestationId: string, contenu: string) => {
   return prisma.message.create({
     data: { prestationId, auteurId: null, contenu, isSystem: true },
+  });
+};
+
+// =============================================================================
+// TASKY-INFO (fil de notifications système, séparé des discussions personnelles)
+// =============================================================================
+
+export const sendSystemMessageToUser = async (destinataireId: string, contenu: string) => {
+  return prisma.message.create({
+    data: { destinataireId, auteurId: null, contenu, isSystem: true },
+  });
+};
+
+export const getUnreadTaskyInfoCount = async (userId: string) => {
+  return prisma.message.count({ where: { destinataireId: userId, lu: false } });
+};
+
+export const getTaskyInfoMessages = async (userId: string) => {
+  await prisma.message.updateMany({
+    where: { destinataireId: userId, lu: false },
+    data: { lu: true },
+  });
+
+  return prisma.message.findMany({
+    where: { destinataireId: userId },
+    orderBy: { createdAt: "desc" },
   });
 };
 

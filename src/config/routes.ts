@@ -56,6 +56,7 @@ export const routes = {
     messages: {
       list: "/client/messages",
       conversation: (id: string) => `/client/messages/${id}`,
+      taskyInfo: "/client/messages/tasky-info",
     },
     prestations: {
       list: "/client/prestations",
@@ -115,6 +116,7 @@ export const routes = {
     messages: {
       list: "/prestataire/messages",
       conversation: (id: string) => `/prestataire/messages/${id}`,
+      taskyInfo: "/prestataire/messages/tasky-info",
     },
     pointsNeutres: {
       list: "/prestataire/points-neutres",

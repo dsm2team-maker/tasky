@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useAuthStore } from "@/stores/auth-store";
 import { useProfile, usePrestataireCompetences } from "@/hooks/useProfile";
 import { useMesPrestations } from "@/hooks/usePrestation";
-import { useDemandesDisponibles, useMesStatsDevis, useMesDevisRefuses, useDismisserDevis } from "@/hooks/useDevis";
+import { useDemandesDisponibles, useMesStatsDevis } from "@/hooks/useDevis";
 import { useUnreadMessageCount } from "@/hooks/useMessages";
 import { Button } from "@/components/ui/Button";
 import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
@@ -105,8 +105,6 @@ export default function PrestataireDashboard() {
   const { data: demandesDisponibles } = useDemandesDisponibles();
   const { data: unreadCount } = useUnreadMessageCount();
   const { data: statsDevis } = useMesStatsDevis();
-  const { data: devisRefuses } = useMesDevisRefuses();
-  const dismisserDevis = useDismisserDevis();
 
   // ── Calculs activité ────────────────────────────────────────────────────────
   const COMMISSION = 0.15;
@@ -143,8 +141,7 @@ export default function PrestataireDashboard() {
   // ── Autres ──────────────────────────────────────────────────────────────────
   const topDemandes = (demandesDisponibles ?? []).slice(0, 3);
   const nbMessages = unreadCount ?? 0;
-  const nbDevisRefuses = devisRefuses?.length ?? 0;
-  const hasActions = nbMessages > 0 || aValider.length > 0 || prestationsEnRetard.length > 0 || nbDevisRefuses > 0;
+  const hasActions = nbMessages > 0 || aValider.length > 0 || prestationsEnRetard.length > 0;
 
   // ── Profil complet ──────────────────────────────────────────────────────────
   const hasBio = (profile?.prestataire?.bio?.length ?? 0) >= BIO_MIN;
@@ -266,26 +263,6 @@ export default function PrestataireDashboard() {
                   </div>
                 </Link>
               )}
-              {(devisRefuses ?? []).map((d) => (
-                <div key={d.id} className="flex items-center gap-3 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">
-                  <Link href={routes.prestataire.devis.list} className="flex items-center gap-3 flex-1 min-w-0">
-                    <span className="text-xl flex-shrink-0">❌</span>
-                    <span className="text-sm font-medium text-rose-700 truncate">
-                      Devis non retenu — <strong>{d.demande.titre}</strong>
-                      {d.demande.reference && ` (TSK-${String(d.demande.reference).padStart(6, "0")})`}
-                    </span>
-                  </Link>
-                  <button
-                    onClick={() => dismisserDevis.mutate(d.id)}
-                    disabled={dismisserDevis.isPending}
-                    title="Masquer"
-                    className="flex-shrink-0 text-xs text-rose-400 hover:text-rose-600 px-1"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-
               {aValider.map((p) => (
                 <Link key={p.id} href={`/prestataire/services/${p.id}`}>
                   <div className="flex items-center gap-3 bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 hover:bg-purple-100 transition-colors cursor-pointer">

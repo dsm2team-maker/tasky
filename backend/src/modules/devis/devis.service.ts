@@ -1,7 +1,7 @@
 import { prisma } from "../../lib/prisma";
 import { calculerScore } from "./matching.service";
 import { notifyQuoteReceived, notifyDevisRefuse, notifyDevisAccepte } from "../../services/notifications.service";
-import { sendSystemMessage } from "../messages/message.service";
+import { sendSystemMessage, sendSystemMessageToUser } from "../messages/message.service";
 
 // =============================================================================
 // GET DEMANDES DISPONIBLES (avec matching)
@@ -233,7 +233,7 @@ export const accepterDevis = async (userId: string, devisId: string) => {
     where: { id: devisId },
     include: {
       demande: true,
-      prestataire: { select: { user: { select: { email: true, firstName: true } } } },
+      prestataire: { select: { userId: true, user: { select: { email: true, firstName: true } } } },
     },
   });
   if (!devis) throw new Error("DEVIS_NOT_FOUND");
@@ -248,7 +248,7 @@ export const accepterDevis = async (userId: string, devisId: string) => {
     : await prisma.devis.findMany({
         where: { demandeId: devis.demandeId, id: { not: devisId }, status: "ENVOYE" },
         include: {
-          prestataire: { select: { user: { select: { email: true, firstName: true } } } },
+          prestataire: { select: { userId: true, user: { select: { email: true, firstName: true } } } },
         },
       });
 
@@ -331,6 +331,11 @@ export const accepterDevis = async (userId: string, devisId: string) => {
         devis.demande.reference,
         devis.demande.titre,
       );
+
+      sendSystemMessageToUser(
+        autre.prestataire.userId,
+        `❌ Tasky-Infos — Votre devis pour la demande "${devis.demande.titre}" (TSK-${String(devis.demande.reference).padStart(6, "0")}) n'a pas été retenu.`,
+      ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
     }
   }
 };
@@ -398,6 +403,11 @@ export const refuserDevis = async (userId: string, devisId: string) => {
       devis.demande.titre,
     );
   }
+
+  sendSystemMessageToUser(
+    devis.prestataire.userId,
+    `❌ Tasky-Infos — Votre devis pour la demande "${devis.demande.titre}"${devis.demande.reference ? ` (TSK-${String(devis.demande.reference).padStart(6, "0")})` : ""} n'a pas été retenu.`,
+  ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
 };
 
 // =============================================================================

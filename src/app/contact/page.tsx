@@ -9,6 +9,8 @@ import { spacing } from "@/config/design-tokens";
 import Logo from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { routes } from "@/config/routes";
+import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
+import HeaderClient from "@/components/headers/HeaderClient";
 
 const SUJETS = [
   "Question générale",
@@ -55,19 +57,17 @@ export default function ContactPage() {
 
   return (
     <div className={`min-h-screen ${colors.background.gray}`}>
-      {/* Header minimal */}
-      <header className={`bg-white shadow-sm border-b ${colors.border.light}`}>
-        <div className={`${spacing.container} h-16 flex items-center justify-between`}>
-          <Link href={isAuthenticated ? dashboardHref : "/"}>
-            <Logo />
-          </Link>
-          {isAuthenticated && (
-            <Link href={dashboardHref} className={`text-sm font-medium ${colors.text.secondary} hover:${colors.text.primary}`}>
-              ← Retour
+      {isAuthenticated ? (
+        user?.role === "PRESTATAIRE" ? <HeaderPrestataire /> : <HeaderClient />
+      ) : (
+        <header className={`bg-white shadow-sm border-b ${colors.border.light}`}>
+          <div className={`${spacing.container} h-16 flex items-center justify-between`}>
+            <Link href="/">
+              <Logo />
             </Link>
-          )}
-        </div>
-      </header>
+          </div>
+        </header>
+      )}
 
       <main className={`${spacing.container} py-12 max-w-2xl`}>
 

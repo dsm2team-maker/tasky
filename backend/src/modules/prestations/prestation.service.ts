@@ -1,5 +1,5 @@
 import { prisma } from "../../lib/prisma";
-import { sendSystemMessage } from "../messages/message.service";
+import { sendSystemMessage, sendSystemMessageToUser } from "../messages/message.service";
 import { notifyOrderCompleted, notifyPrestationContested } from "../../services/notifications.service";
 import { createTransferForPrestation } from "../payment/transfer.service";
 
@@ -12,10 +12,12 @@ import { createTransferForPrestation } from "../payment/transfer.service";
 const refuserDevisConcurrents = async (
   demandeId: string,
   prestataireGagnantId: string,
+  demandeTitre: string,
+  demandeReference: number,
 ) => {
   const autresDevis = await prisma.devis.findMany({
     where: { demandeId, prestataireId: { not: prestataireGagnantId }, status: "ENVOYE" },
-    select: { id: true, prestataireId: true },
+    select: { id: true, prestataireId: true, prestataire: { select: { userId: true } } },
   });
   if (autresDevis.length === 0) return;
 
@@ -23,6 +25,13 @@ const refuserDevisConcurrents = async (
     where: { id: { in: autresDevis.map((d) => d.id) } },
     data: { status: "REFUSE", estSelectionnable: false },
   });
+
+  for (const autre of autresDevis) {
+    sendSystemMessageToUser(
+      autre.prestataire.userId,
+      `❌ Tasky-Infos — Votre devis pour la demande "${demandeTitre}" (TSK-${String(demandeReference).padStart(6, "0")}) n'a pas été retenu.`,
+    ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+  }
 };
 
 // =============================================================================
@@ -266,6 +275,8 @@ export const validerEtatDesLieux = async (
     await refuserDevisConcurrents(
       prestation.demandeId,
       prestation.prestataireId,
+      prestation.demande.titre,
+      prestation.demande.reference,
     ).catch((e: any) => console.error("[refuserDevisConcurrents]", e.message));
   } else {
     // Client refuse → prestation ANNULEE, demande PUBLIEE
@@ -379,6 +390,8 @@ export const confirmerConformite = async (
   await refuserDevisConcurrents(
     prestation.demandeId,
     prestation.prestataireId,
+    prestation.demande.titre,
+    prestation.demande.reference,
   ).catch((e: any) => console.error("[refuserDevisConcurrents]", e.message));
 };
 
