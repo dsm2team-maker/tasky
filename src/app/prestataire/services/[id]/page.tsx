@@ -389,7 +389,7 @@ export default function PrestatairePrestationDetailPage() {
             className={`bg-white rounded-2xl ${spacing.card} border ${colors.border.light} shadow-sm`}
           >
             <h2 className={`${typography.h5.base} ${colors.text.primary} mb-3`}>
-              Marquer comme terminé
+              Travail terminé
             </h2>
             <p className={`text-sm ${colors.text.secondary} mb-4`}>
               Une fois marquée comme terminée, le client aura 3 jours pour
@@ -424,7 +424,7 @@ export default function PrestatairePrestationDetailPage() {
                 fullWidth
                 onClick={() => setConfirmTermine(true)}
               >
-                Marquer comme terminé
+                Travail terminé
               </Button>
             )}
           </div>
