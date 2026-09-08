@@ -167,13 +167,6 @@ export default function SectionChat({ prestationId }: Props) {
               d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span>Tasky-Infos</span>
-          {systemMessages.length > 0 && (
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${
-              activeTab === "infos" ? "bg-purple-200 text-purple-700" : "bg-purple-100 text-purple-400"
-            }`}>
-              {systemMessages.length}
-            </span>
-          )}
         </button>
       </div>
 
