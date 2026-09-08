@@ -215,7 +215,7 @@ export const startConversation = async (userId: string, prestataireId: string) =
 export const getConversations = async (userId: string) => {
   const [asClient, asPrestataire] = await Promise.all([
     prisma.conversation.findMany({
-      where: { client: { userId } },
+      where: { client: { userId }, messages: { some: {} } },
       include: {
         prestataire: { select: { id: true, user: { select: { firstName: true, lastName: true, avatar: true } } } },
         messages: { orderBy: { createdAt: "desc" }, take: 1 },
@@ -223,7 +223,7 @@ export const getConversations = async (userId: string) => {
       orderBy: { createdAt: "desc" },
     }),
     prisma.conversation.findMany({
-      where: { prestataire: { userId } },
+      where: { prestataire: { userId }, messages: { some: {} } },
       include: {
         client: { select: { id: true, user: { select: { firstName: true, lastName: true, avatar: true } } } },
         messages: { orderBy: { createdAt: "desc" }, take: 1 },

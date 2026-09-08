@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useListPrestataires } from "@/hooks/usePrestataire";
 import HeaderClient from "@/components/headers/HeaderClient";
+import { Pagination } from "@/components/shared/Pagination";
 import { colors } from "@/config/colors";
 import { spacing } from "@/config/design-tokens";
 import categoriesData from "@/data/categories.json";
@@ -12,6 +13,7 @@ import type { Categorie } from "@/types/categories.types";
 import type { PublicPrestataire } from "@/services/prestataire.service";
 
 const categories = categoriesData.categories as Categorie[];
+const PAGE_SIZE = 8;
 
 // ─── Étoiles ──────────────────────────────────────────────────────────────────
 
@@ -109,6 +111,7 @@ export default function RecherchePrestatairesPage() {
   const [nomDebounced, setNomDebounced] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [disponibilite, setDisponibilite] = useState("");
+  const [page, setPage] = useState(1);
 
   useEffect(() => setIsHydrated(true), []);
 
@@ -130,6 +133,11 @@ export default function RecherchePrestatairesPage() {
   };
 
   const { data: prestataires, isLoading } = useListPrestataires(filters);
+
+  useEffect(() => setPage(1), [villeDebounced, nomDebounced, categoryId, disponibilite]);
+
+  const totalPages = Math.max(1, Math.ceil((prestataires?.length ?? 0) / PAGE_SIZE));
+  const paginated = prestataires?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   if (!isHydrated)
     return (
@@ -154,7 +162,7 @@ export default function RecherchePrestatairesPage() {
         <div className="bg-white rounded-2xl border ${colors.border.light} shadow-sm p-4 mb-6 flex flex-col sm:flex-row gap-3">
           <input
             type="text"
-            placeholder="👤 Rechercher par nom..."
+            placeholder="👤 Rechercher par prénom..."
             value={nom}
             onChange={(e) => setNom(e.target.value)}
             className={`flex-1 px-4 py-2.5 rounded-xl border ${colors.border.light} text-sm focus:outline-none focus:ring-2 focus:ring-pink-300`}
@@ -213,11 +221,14 @@ export default function RecherchePrestatairesPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {prestataires.map((p) => (
-              <CardPrestataire key={p.id} p={p} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {paginated?.map((p) => (
+                <CardPrestataire key={p.id} p={p} />
+              ))}
+            </div>
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          </>
         )}
       </main>
     </div>

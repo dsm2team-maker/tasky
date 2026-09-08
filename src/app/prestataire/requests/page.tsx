@@ -273,11 +273,12 @@ export default function PrestataireRequestsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("TOUTES");
   const [villeFilter, setVilleFilter] = useState<string>("");
   const [postalFilterVille, setPostalFilterVille] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<"recent" | "ancien">("recent");
   const [page, setPage] = useState(1);
   const { data: demandes, isLoading, error } = useDemandesDisponibles();
 
   useEffect(() => setIsHydrated(true), []);
-  useEffect(() => setPage(1), [filter, categoryFilter, villeFilter]);
+  useEffect(() => setPage(1), [filter, categoryFilter, villeFilter, sortOrder]);
 
   if (!isHydrated)
     return (
@@ -286,13 +287,18 @@ export default function PrestataireRequestsPage() {
       </div>
     );
 
-  const filtered = demandes?.filter((d) => {
-    if (filter !== "TOUTES" && d.matching.label !== filter) return false;
-    if (categoryFilter !== "TOUTES" && d.categoryId !== categoryFilter) return false;
-    if (villeFilter && d.ville?.toLowerCase() !== villeFilter.toLowerCase())
-      return false;
-    return true;
-  });
+  const filtered = demandes
+    ?.filter((d) => {
+      if (filter !== "TOUTES" && d.matching.label !== filter) return false;
+      if (categoryFilter !== "TOUTES" && d.categoryId !== categoryFilter) return false;
+      if (villeFilter && d.ville?.toLowerCase() !== villeFilter.toLowerCase())
+        return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return sortOrder === "recent" ? diff : -diff;
+    });
   const totalPages = Math.max(1, Math.ceil((filtered?.length ?? 0) / PAGE_SIZE));
   const paginated = filtered?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -414,6 +420,20 @@ export default function PrestataireRequestsPage() {
                 ✕
               </button>
             )}
+          </div>
+
+          <div className="w-full sm:w-56">
+            <label className={`block text-xs font-medium ${colors.text.secondary} mb-1.5`}>
+              Trier par date
+            </label>
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as "recent" | "ancien")}
+              className={`w-full px-3 py-2 rounded-xl border ${colors.border.light} text-sm ${colors.text.secondary} bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300`}
+            >
+              <option value="recent">Plus récentes d'abord</option>
+              <option value="ancien">Plus anciennes d'abord</option>
+            </select>
           </div>
         </div>
 
