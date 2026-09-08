@@ -330,8 +330,13 @@ export default function ClientRequestsPage() {
       </div>
     );
 
+  // status ANNULEE n'existe jamais côté Demande : en cas de refus de l'état des lieux,
+  // la demande repart en PUBLIEE et peut recevoir une toute nouvelle prestation. On se
+  // base donc sur la prestation la plus récente (prestations triées par date desc côté API).
+  const isAnnulee = (d: Demande) => d.prestations?.[0]?.status === "ANNULEE";
+
   const filteredDemandes = demandes?.filter((d) =>
-    filter === "TOUTES" ? true : d.status === filter,
+    filter === "TOUTES" ? true : filter === "ANNULEE" ? isAnnulee(d) : d.status === filter,
   );
   const totalPages = Math.max(1, Math.ceil((filteredDemandes?.length ?? 0) / PAGE_SIZE));
   const paginatedDemandes = filteredDemandes?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -347,6 +352,7 @@ export default function ClientRequestsPage() {
     ANNULEE: 0,
   };
   demandes?.forEach((d) => {
+    if (isAnnulee(d)) counts.ANNULEE++;
     if (d.status in counts) counts[d.status as FilterValue]++;
   });
 

@@ -234,7 +234,7 @@ export const resolveSignalement = async (id: string, note: string) => {
     include: {
       demande: {
         include: {
-          prestation: { select: { id: true } },
+          prestations: { select: { id: true }, orderBy: { createdAt: "desc" }, take: 1 },
           client: { include: { user: { select: { email: true, firstName: true } } } },
         },
       },
@@ -253,7 +253,7 @@ export const resolveSignalement = async (id: string, note: string) => {
   });
 
   // Notifier le client via Tasky-Infos si une prestation est liée
-  const prestationId = signalement.demande?.prestation?.id;
+  const prestationId = signalement.demande?.prestations?.[0]?.id;
   if (prestationId) {
     const notifMessage = note
       ? `🔔 Tasky-Infos — Votre signalement a été traité par l'équipe Tasky.\n\nRéponse de l'admin : ${note}`

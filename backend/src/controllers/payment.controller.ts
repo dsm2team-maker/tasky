@@ -212,7 +212,7 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
         });
 
         await prisma.demande.updateMany({
-          where: { prestation: { id: prestationId } },
+          where: { prestations: { some: { id: prestationId } } },
           data: { status: "EN_COURS" },
         });
 

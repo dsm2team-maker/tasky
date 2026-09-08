@@ -75,6 +75,7 @@ export const getMyDemandes = async (userId: string) => {
     include: {
       category: { select: { id: true, nom: true, icon: true } },
       subCategory: { select: { id: true, nom: true } },
+      prestations: { select: { status: true }, orderBy: { createdAt: "desc" } },
       _count: { select: { devis: true } },
     },
     orderBy: { createdAt: "desc" },

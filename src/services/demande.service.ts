@@ -40,6 +40,7 @@ export interface Demande {
     | "TERMINEE"
     | "SUPPRIMEE"
     | "ANNULEE";
+  prestations?: { status: string }[];
   createdAt: string;
   _count?: { devis: number };
 }

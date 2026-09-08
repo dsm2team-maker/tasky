@@ -66,7 +66,7 @@ async function runAutoValidation(): Promise<number> {
   const staleDemandes = await prisma.demande.findMany({
     where: {
       status: "A_VALIDER",
-      prestation: { status: "TERMINEE" },
+      prestations: { some: { status: "TERMINEE" } },
     },
     select: { id: true, reference: true },
   });
@@ -77,7 +77,7 @@ async function runAutoValidation(): Promise<number> {
     const { count: updated } = await prisma.demande.updateMany({
       where: {
         status: "A_VALIDER",
-        prestation: { status: "TERMINEE" },
+        prestations: { some: { status: "TERMINEE" } },
       },
       data: { status: "TERMINEE" },
     });

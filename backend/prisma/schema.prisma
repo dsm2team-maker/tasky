@@ -184,7 +184,7 @@ model Demande {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   devis           Devis[]
-  prestation      Prestation?
+  prestations     Prestation[]
   signalements    Signalement[]
 
   @@map("demandes")
@@ -242,7 +242,10 @@ enum StatusDevis {
 
 model Prestation {
   id                    String           @id @default(cuid())
-  demandeId             String           @unique
+  // Pas @unique : une demande peut avoir plusieurs prestations dans son historique
+  // (ex: prestation ANNULEE suite à un refus d'état des lieux, puis une nouvelle
+  // prestation créée quand le client accepte un autre devis sur la même demande).
+  demandeId             String
   demande               Demande          @relation(fields: [demandeId], references: [id])
   prestataireId         String
   prestataire           Prestataire      @relation(fields: [prestataireId], references: [id])
