@@ -164,6 +164,7 @@ export async function confirmPaymentHandler(req: Request, res: Response) {
         demandeTitre:         prestation.demande.titre,
         montant:              prestation.montantFinal ?? prestation.montant,
         demandeId:            prestation.demandeId,
+        prestationId,
       });
     }
 

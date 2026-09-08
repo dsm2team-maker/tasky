@@ -66,52 +66,21 @@ export const notifyDevisRefuse = (
     },
   }));
 
-// ─── Messages ─────────────────────────────────────────────────────────────────
-
-// Chat lié à une prestation en cours — URL différente selon le rôle
-// (le client navigue par demande, le prestataire par prestation)
-export const notifyNewMessagePrestation = (
-  to: string,
-  firstName: string,
-  senderName: string,
-  messageCount: number,
-  variant: "client" | "prestataire",
-  demandeId: string,
+export const notifyDevisAccepte = (
+  prestataireEmail: string,
+  prestataireFirstName: string,
+  demandeReference: number,
+  demandeTitre: string,
   prestationId: string,
 ) =>
   safe(() => addEmailJob({
-    type: "new-message",
-    to,
+    type: "devis-accepte",
+    to: prestataireEmail,
     payload: {
-      firstName,
-      senderName,
-      messageCount,
-      conversationUrl:
-        variant === "client"
-          ? `${FRONTEND_URL}/client/requests/${demandeId}`
-          : `${FRONTEND_URL}/prestataire/services/${prestationId}`,
-      variant,
-    },
-  }));
-
-// Conversation directe (avant toute demande) — même route côté client et prestataire
-export const notifyNewMessageConversation = (
-  to: string,
-  firstName: string,
-  senderName: string,
-  messageCount: number,
-  variant: "client" | "prestataire",
-  conversationId: string,
-) =>
-  safe(() => addEmailJob({
-    type: "new-message",
-    to,
-    payload: {
-      firstName,
-      senderName,
-      messageCount,
-      conversationUrl: `${FRONTEND_URL}/${variant}/messages/${conversationId}`,
-      variant,
+      firstName: prestataireFirstName,
+      demandeReference: ref(demandeReference),
+      demandeTitre,
+      prestationUrl: `${FRONTEND_URL}/prestataire/services/${prestationId}`,
     },
   }));
 
@@ -121,7 +90,7 @@ export const notifyOrderConfirmed = (params: {
   clientEmail: string;    clientFirstName: string;
   prestataireEmail: string; prestataireFirstName: string;
   demandeReference: number; demandeTitre: string;
-  montant: number; demandeId: string;
+  montant: number; demandeId: string; prestationId: string;
 }) => {
   const common = { demandeReference: ref(params.demandeReference), demandeTitre: params.demandeTitre, montant: params.montant };
   safe(() => addEmailJob({ type: "order-confirmed", to: params.clientEmail, payload: {
@@ -130,7 +99,7 @@ export const notifyOrderConfirmed = (params: {
   }}));
   safe(() => addEmailJob({ type: "order-confirmed", to: params.prestataireEmail, payload: {
     ...common, firstName: params.prestataireFirstName, role: "prestataire",
-    prestationUrl: `${FRONTEND_URL}/prestataire/requests`,
+    prestationUrl: `${FRONTEND_URL}/prestataire/services/${params.prestationId}`,
   }}));
 };
 
@@ -150,29 +119,9 @@ export const notifyOrderCompleted = (params: {
   }}));
   safe(() => addEmailJob({ type: "order-completed", to: params.prestataireEmail, payload: {
     ...common, firstName: params.prestataireFirstName, role: "prestataire",
-    prestationUrl: `${FRONTEND_URL}/prestataire/requests`,
+    prestationUrl: `${FRONTEND_URL}/prestataire/services`,
   }}));
 };
-
-// ─── Demandes ─────────────────────────────────────────────────────────────────
-
-export const notifyDemandeCreated = (
-  clientEmail: string,
-  clientFirstName: string,
-  demandeReference: number,
-  demandeTitre: string,
-  demandeId: string,
-) =>
-  safe(() => addEmailJob({
-    type: "demande-created",
-    to: clientEmail,
-    payload: {
-      firstName: clientFirstName,
-      demandeReference: ref(demandeReference),
-      demandeTitre,
-      demandeUrl: `${FRONTEND_URL}/client/requests/${demandeId}`,
-    },
-  }));
 
 // ─── Signalements ─────────────────────────────────────────────────────────────
 

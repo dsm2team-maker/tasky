@@ -271,13 +271,13 @@ export default function PrestataireRequestsPage() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [filter, setFilter] = useState<MatchLabel | "TOUTES">("TOUTES");
   const [categoryFilter, setCategoryFilter] = useState<string>("TOUTES");
-  const [postalFilter, setPostalFilter] = useState<string>("");
+  const [villeFilter, setVilleFilter] = useState<string>("");
   const [postalFilterVille, setPostalFilterVille] = useState<string>("");
   const [page, setPage] = useState(1);
   const { data: demandes, isLoading, error } = useDemandesDisponibles();
 
   useEffect(() => setIsHydrated(true), []);
-  useEffect(() => setPage(1), [filter, categoryFilter, postalFilter]);
+  useEffect(() => setPage(1), [filter, categoryFilter, villeFilter]);
 
   if (!isHydrated)
     return (
@@ -289,7 +289,8 @@ export default function PrestataireRequestsPage() {
   const filtered = demandes?.filter((d) => {
     if (filter !== "TOUTES" && d.matching.label !== filter) return false;
     if (categoryFilter !== "TOUTES" && d.categoryId !== categoryFilter) return false;
-    if (postalFilter && d.codePostal !== postalFilter) return false;
+    if (villeFilter && d.ville?.toLowerCase() !== villeFilter.toLowerCase())
+      return false;
     return true;
   });
   const totalPages = Math.max(1, Math.ceil((filtered?.length ?? 0) / PAGE_SIZE));
@@ -394,17 +395,17 @@ export default function PrestataireRequestsPage() {
                 label="Code postal ou ville"
                 value={postalFilterVille}
                 onChange={setPostalFilterVille}
-                onCitySelect={(city, postalCode) => {
+                onCitySelect={(city) => {
                   setPostalFilterVille(city);
-                  setPostalFilter(postalCode);
+                  setVilleFilter(city);
                 }}
                 placeholder="Ex: Paris ou 75001"
               />
             </div>
-            {postalFilter && (
+            {villeFilter && (
               <button
                 onClick={() => {
-                  setPostalFilter("");
+                  setVilleFilter("");
                   setPostalFilterVille("");
                 }}
                 className={`mb-0.5 px-2.5 py-2 rounded-lg text-xs font-medium bg-white ${colors.text.secondary} border ${colors.border.light} hover:border-gray-300`}

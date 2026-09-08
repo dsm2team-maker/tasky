@@ -1,5 +1,4 @@
 import { prisma } from "../../lib/prisma";
-import { notifyNewMessagePrestation, notifyNewMessageConversation } from "../../services/notifications.service";
 
 const checkAccess = async (prestationId: string, userId: string) => {
   const prestation = await prisma.prestation.findUnique({
@@ -26,7 +25,7 @@ export const getMessages = async (prestationId: string, userId: string) => {
   const prestation = await checkAccess(prestationId, userId);
 
   await prisma.message.updateMany({
-    where: { prestationId, auteurId: { not: userId }, lu: false },
+    where: { prestationId, OR: [{ auteurId: null }, { auteurId: { not: userId } }], lu: false },
     data: { lu: true },
   });
 
@@ -73,7 +72,7 @@ export const getUnreadByPrestation = async (userId: string) => {
 
   const rows = await prisma.message.groupBy({
     by: ["prestationId"],
-    where: { prestationId: { in: ids }, auteurId: { not: userId }, lu: false },
+    where: { prestationId: { in: ids }, OR: [{ auteurId: null }, { auteurId: { not: userId } }], lu: false },
     _count: { id: true },
   });
 
@@ -109,12 +108,12 @@ export const getUnreadCount = async (userId: string) => {
   const [fromPrestations, fromConversations] = await Promise.all([
     prestationIds.length
       ? prisma.message.count({
-          where: { prestationId: { in: prestationIds }, auteurId: { not: userId }, lu: false },
+          where: { prestationId: { in: prestationIds }, OR: [{ auteurId: null }, { auteurId: { not: userId } }], lu: false },
         })
       : 0,
     conversationIds.length
       ? prisma.message.count({
-          where: { conversationId: { in: conversationIds }, auteurId: { not: userId }, lu: false },
+          where: { conversationId: { in: conversationIds }, OR: [{ auteurId: null }, { auteurId: { not: userId } }], lu: false },
         })
       : 0,
   ]);
@@ -130,7 +129,7 @@ export const sendMessage = async (
   userId: string,
   contenu: string,
 ) => {
-  const prestation = await checkAccess(prestationId, userId);
+  await checkAccess(prestationId, userId);
 
   if (!contenu || contenu.trim().length === 0) throw new Error("CONTENU_VIDE");
   if (contenu.trim().length > 1000) throw new Error("CONTENU_TROP_LONG");
@@ -140,26 +139,6 @@ export const sendMessage = async (
   const message = await prisma.message.create({
     data: { prestationId, auteurId: userId, contenu: contenu.trim() },
   });
-
-  const isClient = prestation.demande.client.userId === userId;
-  const sender = isClient ? prestation.demande.client.user : prestation.prestataire.user;
-  const recipient = isClient ? prestation.prestataire.user : prestation.demande.client.user;
-  const recipientUserId = isClient ? prestation.prestataire.userId : prestation.demande.client.userId;
-  const recipientVariant: "client" | "prestataire" = isClient ? "prestataire" : "client";
-
-  const messageCount = await prisma.message.count({
-    where: { prestationId, auteurId: { not: recipientUserId }, lu: false },
-  });
-
-  notifyNewMessagePrestation(
-    recipient.email,
-    recipient.firstName,
-    sender.firstName,
-    messageCount,
-    recipientVariant,
-    prestation.demandeId,
-    prestationId,
-  );
 
   return message;
 };
@@ -263,7 +242,7 @@ export const getConversationMessages = async (conversationId: string, userId: st
   const conversation = await checkConversationAccess(conversationId, userId);
 
   await prisma.message.updateMany({
-    where: { conversationId, auteurId: { not: userId }, lu: false },
+    where: { conversationId, OR: [{ auteurId: null }, { auteurId: { not: userId } }], lu: false },
     data: { lu: true },
   });
 
@@ -300,7 +279,7 @@ export const getUnreadByConversation = async (userId: string) => {
 
   const rows = await prisma.message.groupBy({
     by: ["conversationId"],
-    where: { conversationId: { in: ids }, auteurId: { not: userId }, lu: false },
+    where: { conversationId: { in: ids }, OR: [{ auteurId: null }, { auteurId: { not: userId } }], lu: false },
     _count: { id: true },
   });
 
@@ -312,7 +291,7 @@ export const sendConversationMessage = async (
   userId: string,
   contenu: string,
 ) => {
-  const conversation = await checkConversationAccess(conversationId, userId);
+  await checkConversationAccess(conversationId, userId);
 
   if (!contenu || contenu.trim().length === 0) throw new Error("CONTENU_VIDE");
   if (contenu.trim().length > 1000) throw new Error("CONTENU_TROP_LONG");
@@ -322,25 +301,6 @@ export const sendConversationMessage = async (
   const message = await prisma.message.create({
     data: { conversationId, auteurId: userId, contenu: contenu.trim() },
   });
-
-  const isClient = conversation.client.userId === userId;
-  const sender = isClient ? conversation.client.user : conversation.prestataire.user;
-  const recipient = isClient ? conversation.prestataire.user : conversation.client.user;
-  const recipientUserId = isClient ? conversation.prestataire.userId : conversation.client.userId;
-  const recipientVariant: "client" | "prestataire" = isClient ? "prestataire" : "client";
-
-  const messageCount = await prisma.message.count({
-    where: { conversationId, auteurId: { not: recipientUserId }, lu: false },
-  });
-
-  notifyNewMessageConversation(
-    recipient.email,
-    recipient.firstName,
-    sender.firstName,
-    messageCount,
-    recipientVariant,
-    conversationId,
-  );
 
   return message;
 };

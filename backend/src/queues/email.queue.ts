@@ -5,7 +5,6 @@ import { redisConnection } from "../config/redis.config";
 export type EmailJobType =
   | "verify-email"
   | "reset-password"
-  | "new-message"
   | "quote-received"
   | "order-confirmed"
   | "order-completed"
@@ -13,8 +12,8 @@ export type EmailJobType =
   | "email-change-otp" // OTP changement email → envoyé sur la nouvelle adresse
   | "email-change-alert" // Alerte sécurité → envoyé sur l'ancienne adresse
   | "devis-refuse" // Notification prestataire — devis non retenu
+  | "devis-accepte" // Notification prestataire — devis accepté
   | "delete-account-otp" // OTP suppression de compte
-  | "demande-created" // Confirmation client — demande publiée
   | "signalement-created" // Notification admin — nouveau signalement
   | "signalement-resolved" // Notification client — signalement traité
   | "prestation-contested" // Notification prestataire — prestation contestée
@@ -26,7 +25,6 @@ export type EmailJobType =
 
 interface VerifyEmailPayload      { firstName: string; verificationUrl: string; variant: string }
 interface ResetPasswordPayload    { firstName: string; resetUrl: string }
-interface NewMessagePayload       { firstName: string; senderName: string; messageCount: number; conversationUrl: string; variant: string }
 interface QuoteReceivedPayload    { firstName: string; demandeReference: string; demandeTitre: string; prestataireNom: string; montant: number; devisUrl: string }
 interface OrderConfirmedPayload   { firstName: string; demandeReference: string; demandeTitre: string; montant: number; role: "client" | "prestataire"; prestationUrl: string }
 interface OrderCompletedPayload   { firstName: string; demandeReference: string; demandeTitre: string; montant: number; role: "client" | "prestataire"; isAutoValidated: boolean; prestationUrl: string }
@@ -34,8 +32,8 @@ interface PhoneChangeOtpPayload   { firstName: string; otp: string; newPhone: st
 interface EmailChangeOtpPayload   { firstName: string; otp: string; newEmail: string }
 interface EmailChangeAlertPayload { firstName: string; newEmail: string }
 interface DevisRefusePayload      { firstName: string; demandeReference: string; demandeTitre: string; demandesUrl: string }
+interface DevisAcceptePayload     { firstName: string; demandeReference: string; demandeTitre: string; prestationUrl: string }
 interface DeleteAccountOtpPayload { firstName: string; otp: string }
-interface DemandeCreatedPayload   { firstName: string; demandeReference: string; demandeTitre: string; demandeUrl: string }
 interface SignalementCreatedPayload  { demandeReference: string; demandeTitre: string; auteurNom: string; message: string; signalementUrl: string }
 interface SignalementResolvedPayload { firstName: string; demandeReference: string; demandeTitre: string; note?: string; demandeUrl: string }
 interface PrestationContestedPayload { firstName: string; demandeReference: string; demandeTitre: string; motif: string; prestationUrl: string }
@@ -46,7 +44,6 @@ interface TransferCompletedPayload { firstName: string; demandeReference: string
 type EmailPayloadMap = {
   "verify-email":       VerifyEmailPayload;
   "reset-password":     ResetPasswordPayload;
-  "new-message":        NewMessagePayload;
   "quote-received":     QuoteReceivedPayload;
   "order-confirmed":    OrderConfirmedPayload;
   "order-completed":    OrderCompletedPayload;
@@ -54,8 +51,8 @@ type EmailPayloadMap = {
   "email-change-otp":   EmailChangeOtpPayload;
   "email-change-alert": EmailChangeAlertPayload;
   "devis-refuse":       DevisRefusePayload;
+  "devis-accepte":      DevisAcceptePayload;
   "delete-account-otp": DeleteAccountOtpPayload;
-  "demande-created":              DemandeCreatedPayload;
   "signalement-created":          SignalementCreatedPayload;
   "signalement-resolved":         SignalementResolvedPayload;
   "prestation-contested":         PrestationContestedPayload;

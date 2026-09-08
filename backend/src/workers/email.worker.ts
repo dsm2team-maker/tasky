@@ -4,16 +4,15 @@ import { resend, emailConfig } from "../config/resend.config";
 import { EmailJobData } from "../queues/email.queue";
 import { verifyEmailTemplate } from "../emails/verify-email.template";
 import { resetPasswordTemplate } from "../emails/reset-password.template";
-import { newMessageTemplate } from "../emails/new-message.template";
 import { phoneChangeOtpTemplate } from "../emails/phone-change-otp.template";
 import { emailChangeOtpTemplate } from "../emails/email-change-otp.template";
 import { emailChangeAlertTemplate } from "../emails/email-change-alert.template";
 import { devisRefuseTemplate } from "../emails/devis-refuse.template";
+import { devisAccepteTemplate } from "../emails/devis-accepte.template";
 import { deleteAccountOtpTemplate } from "../emails/delete-account-otp.template";
 import { quoteReceivedTemplate } from "../emails/quote-received.template";
 import { orderConfirmedTemplate } from "../emails/order-confirmed.template";
 import { orderCompletedTemplate } from "../emails/order-completed.template";
-import { demandeCreatedTemplate } from "../emails/demande-created.template";
 import { signalementCreatedTemplate } from "../emails/signalement-created.template";
 import { signalementResolvedTemplate } from "../emails/signalement-resolved.template";
 import { prestationContestedTemplate } from "../emails/prestation-contested.template";
@@ -45,20 +44,6 @@ const processEmailJob = async (job: Job<EmailJobData>) => {
       html = resetPasswordTemplate({
         firstName: payload.firstName,
         resetUrl: payload.resetUrl,
-      });
-      break;
-
-    case "new-message":
-      subject =
-        payload.messageCount > 1
-          ? `${payload.messageCount} nouveaux messages sur Tasky`
-          : `Nouveau message de ${payload.senderName} — Tasky`;
-      html = newMessageTemplate({
-        firstName: payload.firstName,
-        senderName: payload.senderName,
-        messageCount: payload.messageCount,
-        conversationUrl: payload.conversationUrl,
-        variant: payload.variant,
       });
       break;
 
@@ -98,6 +83,16 @@ const processEmailJob = async (job: Job<EmailJobData>) => {
         demandeReference: payload.demandeReference,
         demandeTitre: payload.demandeTitre,
         demandesUrl: payload.demandesUrl,
+      });
+      break;
+
+    case "devis-accepte":
+      subject = `Votre devis a été accepté — ${payload.demandeReference} — Tasky`;
+      html = devisAccepteTemplate({
+        firstName: payload.firstName,
+        demandeReference: payload.demandeReference,
+        demandeTitre: payload.demandeTitre,
+        prestationUrl: payload.prestationUrl,
       });
       break;
 
@@ -143,16 +138,6 @@ const processEmailJob = async (job: Job<EmailJobData>) => {
         role: payload.role,
         isAutoValidated: payload.isAutoValidated ?? false,
         prestationUrl: payload.prestationUrl,
-      });
-      break;
-
-    case "demande-created":
-      subject = `Votre demande a été publiée — ${payload.demandeReference} — Tasky`;
-      html = demandeCreatedTemplate({
-        firstName: payload.firstName,
-        demandeReference: payload.demandeReference,
-        demandeTitre: payload.demandeTitre,
-        demandeUrl: payload.demandeUrl,
       });
       break;
 

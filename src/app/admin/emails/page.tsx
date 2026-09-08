@@ -8,7 +8,6 @@ import { useAuthStore } from "@/stores/auth-store";
 const EMAIL_TYPES: { value: string; label: string; description: string }[] = [
   { value: "verify-email", label: "Vérification d'email", description: "Envoyé à l'inscription pour confirmer l'adresse email." },
   { value: "reset-password", label: "Réinitialisation mot de passe", description: "Envoyé lors d'une demande de mot de passe oublié." },
-  { value: "new-message", label: "Nouveau message", description: "Envoyé quand un utilisateur reçoit un ou plusieurs nouveaux messages." },
   { value: "quote-received", label: "Devis reçu", description: "Envoyé au client quand un prestataire soumet un devis." },
   { value: "order-confirmed", label: "Prestation confirmée", description: "Envoyé après paiement, quand la prestation démarre." },
   { value: "order-completed", label: "Prestation terminée", description: "Envoyé quand la prestation est validée (manuellement ou auto)." },
@@ -16,8 +15,8 @@ const EMAIL_TYPES: { value: string; label: string; description: string }[] = [
   { value: "email-change-otp", label: "OTP changement email", description: "Code de vérification envoyé sur la nouvelle adresse email." },
   { value: "email-change-alert", label: "Alerte changement email", description: "Alerte de sécurité envoyée sur l'ancienne adresse." },
   { value: "devis-refuse", label: "Devis refusé", description: "Envoyé au prestataire quand son devis n'est pas retenu." },
+  { value: "devis-accepte", label: "Devis accepté", description: "Envoyé au prestataire quand son devis est accepté par le client." },
   { value: "delete-account-otp", label: "OTP suppression de compte", description: "Code de vérification envoyé pour confirmer la suppression du compte." },
-  { value: "demande-created", label: "Demande publiée", description: "Envoyé au client quand sa demande est publiée." },
   { value: "signalement-created", label: "Nouveau signalement", description: "Envoyé aux admins quand un signalement est déposé." },
   { value: "signalement-resolved", label: "Signalement traité", description: "Envoyé au client quand son signalement est résolu." },
   { value: "prestation-contested", label: "Prestation contestée", description: "Envoyé au prestataire quand le client conteste la validation." },

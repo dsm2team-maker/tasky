@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import { calculerScore } from "./matching.service";
-import { notifyQuoteReceived, notifyDevisRefuse } from "../../services/notifications.service";
+import { notifyQuoteReceived, notifyDevisRefuse, notifyDevisAccepte } from "../../services/notifications.service";
 import { sendSystemMessage, sendSystemMessageConversation } from "../messages/message.service";
 
 // =============================================================================
@@ -231,7 +231,10 @@ export const accepterDevis = async (userId: string, devisId: string) => {
 
   const devis = await prisma.devis.findUnique({
     where: { id: devisId },
-    include: { demande: true },
+    include: {
+      demande: true,
+      prestataire: { select: { user: { select: { email: true, firstName: true } } } },
+    },
   });
   if (!devis) throw new Error("DEVIS_NOT_FOUND");
   if (devis.demande.clientId !== client.id) throw new Error("FORBIDDEN");
@@ -313,6 +316,14 @@ export const accepterDevis = async (userId: string, devisId: string) => {
   ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
 
   if (devis.demande.reference) {
+    notifyDevisAccepte(
+      devis.prestataire.user.email,
+      devis.prestataire.user.firstName,
+      devis.demande.reference,
+      devis.demande.titre,
+      prestationId,
+    );
+
     for (const autre of autresDevis) {
       notifyDevisRefuse(
         autre.prestataire.user.email,

@@ -321,7 +321,6 @@ export const getPaiements = async (page = 1) => {
 export const TEST_EMAIL_TYPES: EmailJobType[] = [
   "verify-email",
   "reset-password",
-  "new-message",
   "quote-received",
   "order-confirmed",
   "order-completed",
@@ -329,8 +328,8 @@ export const TEST_EMAIL_TYPES: EmailJobType[] = [
   "email-change-otp",
   "email-change-alert",
   "devis-refuse",
+  "devis-accepte",
   "delete-account-otp",
-  "demande-created",
   "signalement-created",
   "signalement-resolved",
   "prestation-contested",
@@ -345,8 +344,6 @@ const buildTestEmailPayload = (type: EmailJobType) => {
       return { firstName: "Test", verificationUrl: "https://tasky.fr/auth/verify?token=test-token", variant: "client" };
     case "reset-password":
       return { firstName: "Test", resetUrl: "https://tasky.fr/auth/reset-password?token=test-token" };
-    case "new-message":
-      return { firstName: "Test", senderName: "Jean Dupont", messageCount: 2, conversationUrl: "https://tasky.fr/client/messages/test-id", variant: "client" };
     case "quote-received":
       return { firstName: "Test", demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", prestataireNom: "Jean Dupont", montant: 150, devisUrl: "https://tasky.fr/client/requests/test-id" };
     case "order-confirmed":
@@ -361,10 +358,10 @@ const buildTestEmailPayload = (type: EmailJobType) => {
       return { firstName: "Test", newEmail: "nouvelle-adresse@example.com" };
     case "devis-refuse":
       return { firstName: "Test", demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", demandesUrl: "https://tasky.fr/prestataire/requests" };
+    case "devis-accepte":
+      return { firstName: "Test", demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", prestationUrl: "https://tasky.fr/prestataire/services/test-id" };
     case "delete-account-otp":
       return { firstName: "Test", otp: "123456" };
-    case "demande-created":
-      return { firstName: "Test", demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", demandeUrl: "https://tasky.fr/client/requests/test-id" };
     case "signalement-created":
       return { demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", auteurNom: "Jean Dupont", message: "La prestation ne correspond pas à ce qui était prévu.", signalementUrl: "https://tasky.fr/admin/signalements" };
     case "signalement-resolved":
