@@ -308,12 +308,15 @@ export const accepterDevis = async (userId: string, devisId: string) => {
     return { prestationId: newPrestation.id };
   });
 
-  await sendSystemMessage(
-    prestationId,
-    isModification
-      ? "✅ Tasky-Infos — Devis accepté. La prochaine étape est l'inspection de l'objet par le prestataire."
-      : "✅ Tasky-Infos — Devis accepté. La prestation démarrera dès que le paiement sera confirmé.",
-  ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+  const messageAcceptation = isModification
+    ? "✅ Tasky-Infos — Devis accepté. La prochaine étape est l'inspection de l'objet par le prestataire."
+    : devis.demande.typePrestation === "CREATION"
+      ? "✅ Tasky-Infos — Devis accepté. Convenez d'un état des lieux avec le client avant de démarrer la prestation, qui débutera dès que le paiement sera confirmé."
+      : "✅ Tasky-Infos — Devis accepté. La prestation démarrera dès que le paiement sera confirmé.";
+
+  await sendSystemMessage(prestationId, messageAcceptation).catch((e: any) =>
+    console.error("[Tasky-Infos]", e.message),
+  );
 
   if (devis.demande.reference) {
     notifyDevisAccepte(
