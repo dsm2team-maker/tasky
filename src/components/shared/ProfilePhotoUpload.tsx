@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import { colors } from "@/config/colors";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface ProfilePhotoUploadProps {
   photo: string | null;
@@ -16,6 +17,7 @@ export const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [justUploaded, setJustUploaded] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -36,6 +38,7 @@ export const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
     onPhotoChange(null);
     setJustUploaded(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    setConfirmRemove(false);
   };
 
   return (
@@ -65,7 +68,7 @@ export const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
           {photo && (
             <button
               type="button"
-              onClick={handleRemove}
+              onClick={() => setConfirmRemove(true)}
               className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition flex items-center justify-center text-white text-xs font-medium"
             >
               ✕ Retirer
@@ -108,6 +111,14 @@ export const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
           <span>✓</span> Photo ajoutée avec succès
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmRemove}
+        title="Retirer la photo de profil ?"
+        message="Votre photo de profil sera supprimée."
+        onCancel={() => setConfirmRemove(false)}
+        onConfirm={handleRemove}
+      />
     </div>
   );
 };
