@@ -10,6 +10,7 @@ import { emailChangeAlertTemplate } from "../emails/email-change-alert.template"
 import { devisRefuseTemplate } from "../emails/devis-refuse.template";
 import { devisAccepteTemplate } from "../emails/devis-accepte.template";
 import { deleteAccountOtpTemplate } from "../emails/delete-account-otp.template";
+import { accountDeletedTemplate } from "../emails/account-deleted.template";
 import { quoteReceivedTemplate } from "../emails/quote-received.template";
 import { orderConfirmedTemplate } from "../emails/order-confirmed.template";
 import { orderCompletedTemplate } from "../emails/order-completed.template";
@@ -101,6 +102,13 @@ const processEmailJob = async (job: Job<EmailJobData>) => {
       html = deleteAccountOtpTemplate({
         firstName: payload.firstName,
         otp: payload.otp,
+      });
+      break;
+
+    case "account-deleted":
+      subject = "Votre compte a bien été supprimé — Tasky";
+      html = accountDeletedTemplate({
+        firstName: payload.firstName,
       });
       break;
 

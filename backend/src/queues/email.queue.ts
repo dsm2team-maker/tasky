@@ -14,6 +14,7 @@ export type EmailJobType =
   | "devis-refuse" // Notification prestataire — devis non retenu
   | "devis-accepte" // Notification prestataire — devis accepté
   | "delete-account-otp" // OTP suppression de compte
+  | "account-deleted" // Confirmation — compte supprimé et anonymisé
   | "signalement-created" // Notification admin — nouveau signalement
   | "signalement-resolved" // Notification client — signalement traité
   | "prestation-contested" // Notification prestataire — prestation contestée
@@ -34,6 +35,7 @@ interface EmailChangeAlertPayload { firstName: string; newEmail: string }
 interface DevisRefusePayload      { firstName: string; demandeReference: string; demandeTitre: string; demandesUrl: string }
 interface DevisAcceptePayload     { firstName: string; demandeReference: string; demandeTitre: string; prestationUrl: string }
 interface DeleteAccountOtpPayload { firstName: string; otp: string }
+interface AccountDeletedPayload   { firstName: string }
 interface SignalementCreatedPayload  { demandeReference: string; demandeTitre: string; auteurNom: string; message: string; signalementUrl: string }
 interface SignalementResolvedPayload { firstName: string; demandeReference: string; demandeTitre: string; note?: string; demandeUrl: string }
 interface PrestationContestedPayload { firstName: string; demandeReference: string; demandeTitre: string; motif: string; prestationUrl: string }
@@ -53,6 +55,7 @@ type EmailPayloadMap = {
   "devis-refuse":       DevisRefusePayload;
   "devis-accepte":      DevisAcceptePayload;
   "delete-account-otp": DeleteAccountOtpPayload;
+  "account-deleted":    AccountDeletedPayload;
   "signalement-created":          SignalementCreatedPayload;
   "signalement-resolved":         SignalementResolvedPayload;
   "prestation-contested":         PrestationContestedPayload;

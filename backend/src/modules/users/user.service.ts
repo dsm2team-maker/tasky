@@ -489,6 +489,12 @@ export const confirmDeleteAccount = async (userId: string, otp: string) => {
     throw new Error(`OTP_INVALID:${remaining}`);
   }
 
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, firstName: true },
+  });
+  if (!user) throw new Error("USER_NOT_FOUND");
+
   // Anonymisation RGPD + désactivation
   // L'id complet est encodé dans l'email anonyme pour retrouver le compte en cas de litige
   const now = Date.now();
@@ -515,6 +521,19 @@ export const confirmDeleteAccount = async (userId: string, otp: string) => {
     }),
     prisma.refreshToken.deleteMany({ where: { userId } }),
   ]);
+
+  if (env.isDev) {
+    console.log(`✅ [DEV] Compte supprimé → confirmation à ${user.email}`);
+  } else {
+    addEmailJob(
+      {
+        type: "account-deleted",
+        to: user.email,
+        payload: { firstName: user.firstName },
+      },
+      EMAIL_PRIORITY.CRITICAL,
+    ).catch((e) => console.warn("[email] account-deleted:", e?.message));
+  }
 };
 
 // =============================================================================
