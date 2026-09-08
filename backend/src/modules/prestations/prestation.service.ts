@@ -1,20 +1,17 @@
 import { prisma } from "../../lib/prisma";
-import { sendSystemMessage, sendSystemMessageConversation } from "../messages/message.service";
+import { sendSystemMessage } from "../messages/message.service";
 import { notifyOrderCompleted, notifyPrestationContested } from "../../services/notifications.service";
 import { createTransferForPrestation } from "../payment/transfer.service";
 
 // =============================================================================
 // REFUSER LES DEVIS CONCURRENTS (demandes MODIFICATION) — appelé au moment où
 // le devis gagnant est définitivement confirmé (validation état des lieux ou
-// conformité). Les autres devis ENVOYE de la même demande passent à REFUSE et
-// leur prestataire reçoit un message Tasky-Infos dans sa conversation client.
+// conformité). Les autres devis ENVOYE de la même demande passent à REFUSE ;
+// leur prestataire le voit dans son tableau de bord / "Mes devis".
 // =============================================================================
 const refuserDevisConcurrents = async (
   demandeId: string,
-  clientId: string,
   prestataireGagnantId: string,
-  demandeTitre: string,
-  demandeReference: number,
 ) => {
   const autresDevis = await prisma.devis.findMany({
     where: { demandeId, prestataireId: { not: prestataireGagnantId }, status: "ENVOYE" },
@@ -26,14 +23,6 @@ const refuserDevisConcurrents = async (
     where: { id: { in: autresDevis.map((d) => d.id) } },
     data: { status: "REFUSE", estSelectionnable: false },
   });
-
-  for (const d of autresDevis) {
-    await sendSystemMessageConversation(
-      clientId,
-      d.prestataireId,
-      `❌ Tasky-Infos — Votre devis pour la demande "${demandeTitre}" (TSK-${String(demandeReference).padStart(6, "0")}) n'a pas été retenu.`,
-    ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
-  }
 };
 
 // =============================================================================
@@ -276,10 +265,7 @@ export const validerEtatDesLieux = async (
 
     await refuserDevisConcurrents(
       prestation.demandeId,
-      prestation.demande.clientId,
       prestation.prestataireId,
-      prestation.demande.titre,
-      prestation.demande.reference,
     ).catch((e: any) => console.error("[refuserDevisConcurrents]", e.message));
   } else {
     // Client refuse → prestation ANNULEE, demande PUBLIEE
@@ -392,10 +378,7 @@ export const confirmerConformite = async (
 
   await refuserDevisConcurrents(
     prestation.demandeId,
-    prestation.demande.clientId,
     prestation.prestataireId,
-    prestation.demande.titre,
-    prestation.demande.reference,
   ).catch((e: any) => console.error("[refuserDevisConcurrents]", e.message));
 };
 

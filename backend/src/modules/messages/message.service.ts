@@ -149,21 +149,6 @@ export const sendSystemMessage = async (prestationId: string, contenu: string) =
   });
 };
 
-export const sendSystemMessageConversation = async (
-  clientId: string,
-  prestataireId: string,
-  contenu: string,
-) => {
-  const conversation = await prisma.conversation.upsert({
-    where: { clientId_prestataireId: { clientId, prestataireId } },
-    update: {},
-    create: { clientId, prestataireId },
-  });
-  return prisma.message.create({
-    data: { conversationId: conversation.id, auteurId: null, contenu, isSystem: true },
-  });
-};
-
 // =============================================================================
 // CONVERSATIONS DIRECTES (client ↔ prestataire, avant toute demande/devis)
 // =============================================================================

@@ -1,7 +1,7 @@
 import { prisma } from "../../lib/prisma";
 import { calculerScore } from "./matching.service";
 import { notifyQuoteReceived, notifyDevisRefuse, notifyDevisAccepte } from "../../services/notifications.service";
-import { sendSystemMessage, sendSystemMessageConversation } from "../messages/message.service";
+import { sendSystemMessage } from "../messages/message.service";
 
 // =============================================================================
 // GET DEMANDES DISPONIBLES (avec matching)
@@ -331,11 +331,6 @@ export const accepterDevis = async (userId: string, devisId: string) => {
         devis.demande.reference,
         devis.demande.titre,
       );
-      await sendSystemMessageConversation(
-        client.id,
-        autre.prestataireId,
-        `❌ Tasky-Infos — Votre devis pour la demande "${devis.demande.titre}" (TSK-${String(devis.demande.reference).padStart(6, "0")}) n'a pas été retenu.`,
-      ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
     }
   }
 };
@@ -402,11 +397,6 @@ export const refuserDevis = async (userId: string, devisId: string) => {
       devis.demande.reference,
       devis.demande.titre,
     );
-    await sendSystemMessageConversation(
-      client.id,
-      devis.prestataireId,
-      `❌ Tasky-Infos — Votre devis pour la demande "${devis.demande.titre}" (TSK-${String(devis.demande.reference).padStart(6, "0")}) n'a pas été retenu.`,
-    ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
   }
 };
 
