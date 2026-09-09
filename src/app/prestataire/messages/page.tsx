@@ -156,7 +156,10 @@ export default function PrestataireMessagesPage() {
 
   useEffect(() => setIsHydrated(true), []);
 
-  const actives = prestations?.filter((p) => p.status !== "ANNULEE" && p.status !== "TERMINEE") ?? [];
+  const actives =
+    prestations?.filter(
+      (p) => (p.status !== "ANNULEE" && p.status !== "TERMINEE") || (unreadMap?.[p.id] ?? 0) > 0,
+    ) ?? [];
   const totalPages = Math.max(1, Math.ceil(actives.length / PAGE_SIZE));
   const paginated = actives.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
