@@ -872,6 +872,11 @@ export default function ClientRequestDetailPage() {
             >
               ⚠️ Signaler un problème à Tasky
             </button>
+            <p className="text-xs text-gray-500 mt-2 text-center px-4">
+              Un paiement ou une validation qui bloque, une étape que vous ne comprenez pas,
+              une difficulté avec le prestataire ou avec Tasky&nbsp;? Dites-le-nous&nbsp;:
+              l'équipe examine chaque signalement et vous recontacte.
+            </p>
           </div>
         )}
         {signalSent && (
