@@ -14,9 +14,7 @@ import HeaderClient from "@/components/headers/HeaderClient";
 
 const SUJETS = [
   "Question générale",
-  "Litige en cours",
   "Problème technique",
-  "Signalement",
   "Autre",
 ];
 
@@ -89,7 +87,12 @@ export default function ContactPage() {
             <div className="mb-8">
               <h1 className={`text-2xl font-bold ${colors.text.primary} mb-1`}>Nous contacter</h1>
               <p className={`text-sm ${colors.text.secondary}`}>
-                Une question, un litige, un problème technique ? On vous répond rapidement.
+                Une question, un problème technique, une remarque ? On vous répond rapidement.
+              </p>
+              <p className={`text-xs ${colors.text.muted} mt-2`}>
+                Un problème sur une prestation en cours (retard, désaccord, paiement bloqué…) ?
+                Utilisez le bouton <strong>« Signaler un problème »</strong> depuis la demande concernée :
+                votre signalement y est suivi et rattaché au dossier.
               </p>
             </div>
 
@@ -132,9 +135,7 @@ export default function ContactPage() {
                       }`}
                     >
                       {s === "Question générale" && "💬 "}
-                      {s === "Litige en cours" && "⚖️ "}
                       {s === "Problème technique" && "🔧 "}
-                      {s === "Signalement" && "🚨 "}
                       {s === "Autre" && "📝 "}
                       {s}
                     </button>

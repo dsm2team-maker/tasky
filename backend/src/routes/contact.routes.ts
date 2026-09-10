@@ -9,9 +9,7 @@ const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "dsm2team@gmail.com";
 
 const SUJETS = [
   "Question générale",
-  "Litige en cours",
   "Problème technique",
-  "Signalement",
   "Autre",
 ];
 
