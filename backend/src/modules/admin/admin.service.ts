@@ -226,7 +226,20 @@ export const getSignalements = async (page = 1) => {
     prisma.signalement.count(),
   ]);
 
-  return { signalements, total, pages: Math.ceil(total / take) };
+  const auteurs = await prisma.user.findMany({
+    where: { id: { in: signalements.map((s) => s.auteurId) } },
+    select: { id: true, firstName: true, lastName: true, role: true },
+  });
+  const auteurById = new Map(auteurs.map((a) => [a.id, a]));
+
+  return {
+    signalements: signalements.map((s) => ({
+      ...s,
+      auteur: auteurById.get(s.auteurId) ?? null,
+    })),
+    total,
+    pages: Math.ceil(total / take),
+  };
 };
 
 export const resolveSignalement = async (id: string, note: string) => {
@@ -253,25 +266,30 @@ export const resolveSignalement = async (id: string, note: string) => {
     data: { statut: "RESOLU", message: messageAdmin },
   });
 
-  // Notifier le client via Tasky-Infos si une prestation est liée
+  // Notifier l'auteur du signalement (client ou prestataire)
+  const auteur = await prisma.user.findUnique({
+    where: { id: signalement.auteurId },
+    select: { id: true, email: true, firstName: true },
+  });
+
   const prestationId = signalement.demande?.prestations?.[0]?.id;
-  if (prestationId) {
+  if (auteur && prestationId) {
     const notifMessage = note
       ? `🔔 Tasky-Infos — Votre signalement a été traité par l'équipe Tasky.\n\nRéponse de l'admin : ${note}`
       : `🔔 Tasky-Infos — Votre signalement a été traité et marqué comme résolu par l'équipe Tasky.`;
 
     await sendSystemMessageToUser(
-      signalement.demande.client.userId,
+      auteur.id,
       notifMessage,
       prestationId,
     ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
   }
 
   const demande = signalement.demande;
-  if (demande) {
+  if (auteur && demande) {
     notifySignalementResolved(
-      demande.client.user.email,
-      demande.client.user.firstName,
+      auteur.email,
+      auteur.firstName,
       demande.reference,
       demande.titre,
       demande.id,

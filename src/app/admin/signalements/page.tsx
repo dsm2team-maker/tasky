@@ -72,13 +72,14 @@ export default function AdminSignalementsPage() {
         </div>
       )}
 
-      <div className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-gray-800 rounded-2xl border border-gray-700 overflow-x-auto">
+        <table className="w-full min-w-[1000px] text-sm">
           <thead>
             <tr className="border-b border-gray-700 text-gray-400 text-xs uppercase">
               <th className="text-left px-4 py-3">Référence</th>
               <th className="text-left px-4 py-3">Demande</th>
               <th className="text-left px-4 py-3">Client</th>
+              <th className="text-left px-4 py-3">Auteur</th>
               <th className="text-left px-4 py-3">Motif</th>
               <th className="text-left px-4 py-3">Statut</th>
               <th className="text-left px-4 py-3">Date</th>
@@ -87,9 +88,9 @@ export default function AdminSignalementsPage() {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-500">Chargement…</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-gray-500">Chargement…</td></tr>
             ) : data?.signalements.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-500">Aucun signalement</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-gray-500">Aucun signalement</td></tr>
             ) : data?.signalements.map((s: any) => {
               const sc = statutColor[s.statut] ?? "bg-gray-700 text-gray-400";
               return (
@@ -104,6 +105,22 @@ export default function AdminSignalementsPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-300 text-xs">
                     {s.demande?.client?.user?.firstName} {s.demande?.client?.user?.lastName}
+                  </td>
+                  <td className="px-4 py-3 text-xs">
+                    {s.auteur ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-gray-300">{s.auteur.firstName} {s.auteur.lastName}</span>
+                        <span className={`px-1.5 py-0.5 rounded-full font-semibold ${
+                          s.auteur.role === "PRESTATAIRE"
+                            ? "bg-emerald-900 text-emerald-300"
+                            : "bg-pink-900 text-pink-300"
+                        }`}>
+                          {s.auteur.role === "PRESTATAIRE" ? "Prestataire" : "Client"}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-600">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-xs text-gray-300 max-w-[200px] truncate" title={s.message}>{s.message ?? "—"}</div>

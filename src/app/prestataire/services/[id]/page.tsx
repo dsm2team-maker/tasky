@@ -16,6 +16,7 @@ import SectionChat from "@/components/chat/SectionChat";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { apiClient } from "@/lib/api-client";
 import { colors } from "@/config/colors";
 import { spacing, typography } from "@/config/design-tokens";
 
@@ -64,6 +65,11 @@ export default function PrestatairePrestationDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [confirmTermine, setConfirmTermine] = useState(false);
   const [modal, setModal] = useState<"etat" | "conforme" | "termine" | null>(null);
+  const [showSignalModal, setShowSignalModal] = useState(false);
+  const [signalMessage, setSignalMessage] = useState("");
+  const [signalError, setSignalError] = useState("");
+  const [signalSent, setSignalSent] = useState(false);
+  const [signalPending, setSignalPending] = useState(false);
 
   const { data: prestation, isLoading } = usePrestationDetail(id);
   const creerEtatDesLieux = useCreerEtatDesLieux();
@@ -455,6 +461,28 @@ export default function PrestatairePrestationDetailPage() {
           </div>
         )}
 
+        {/* Bouton signalement — visible tant que la prestation est active */}
+        {["EN_COURS", "A_VALIDER", "EN_ATTENTE_PAIEMENT", "EN_ATTENTE_INSPECTION"].includes(prestation.status) && !signalSent && (
+          <div className="my-6">
+            <button
+              onClick={() => setShowSignalModal(true)}
+              className="w-full flex items-center justify-center gap-2 text-sm text-red-500 hover:text-red-600 border border-red-200 hover:border-red-300 bg-red-50 hover:bg-red-100 rounded-2xl py-3 transition-colors"
+            >
+              ⚠️ Signaler un problème à Tasky
+            </button>
+            <p className="text-xs text-gray-500 mt-2 text-center px-4">
+              Un retard, un désaccord avec le client, un paiement bloqué, une étape peu claire ?
+              Dites-le-nous : l'équipe examine chaque signalement et vous recontacte.
+            </p>
+          </div>
+        )}
+        {signalSent && (
+          <div className="my-6 bg-orange-50 border border-orange-200 rounded-2xl px-4 py-3 flex items-center gap-2">
+            <span className="text-orange-500">✅</span>
+            <p className="text-sm text-orange-700 font-medium">Votre signalement a bien été transmis à l'équipe Tasky. Nous reviendrons vers vous rapidement.</p>
+          </div>
+        )}
+
         {/* Messagerie */}
         <SectionChat prestationId={id} />
 
@@ -518,6 +546,63 @@ export default function PrestatairePrestationDetailPage() {
             <Button variant="secondary" fullWidth onClick={() => setModal(null)}>
               Envoyer un message
             </Button>
+          </div>
+        </Modal>
+
+        {/* Modal signalement */}
+        <Modal
+          isOpen={showSignalModal}
+          onClose={() => { setShowSignalModal(false); setSignalMessage(""); setSignalError(""); }}
+          title="Signaler un problème"
+          icon="⚠️"
+          headerVariant="error"
+        >
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500">
+              Décrivez précisément le problème. L'équipe Tasky examinera votre signalement et vous contactera.
+            </p>
+            <textarea
+              value={signalMessage}
+              onChange={(e) => { setSignalMessage(e.target.value); setSignalError(""); }}
+              placeholder="Ex : Le client ne répond plus pour convenir du RDV, impossible d'avancer…"
+              rows={5}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-red-300 resize-none"
+            />
+            {signalError && <p className="text-xs text-red-500">{signalError}</p>}
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowSignalModal(false); setSignalMessage(""); setSignalError(""); }}
+                className="flex-1 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                disabled={signalPending}
+                onClick={async () => {
+                  if (signalMessage.trim().length < 10) {
+                    setSignalError("Veuillez décrire le problème (minimum 10 caractères).");
+                    return;
+                  }
+                  setSignalPending(true);
+                  try {
+                    await apiClient.post("/api/signalements", {
+                      demandeId: prestation.demande.id,
+                      message: signalMessage.trim(),
+                    });
+                    setSignalSent(true);
+                    setShowSignalModal(false);
+                    setSignalMessage("");
+                  } catch (e: any) {
+                    setSignalError(e.response?.data?.message ?? "Erreur lors de l'envoi.");
+                  } finally {
+                    setSignalPending(false);
+                  }
+                }}
+                className="flex-1 py-2 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-sm font-semibold transition-colors"
+              >
+                {signalPending ? "Envoi…" : "Envoyer le signalement"}
+              </button>
+            </div>
           </div>
         </Modal>
 

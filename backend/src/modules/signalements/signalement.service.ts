@@ -11,11 +11,24 @@ export const creerSignalement = async (
 
   const demande = await prisma.demande.findUnique({
     where: { id: demandeId },
-    include: { client: { include: { user: { select: { firstName: true, lastName: true } } } } },
+    include: {
+      client: { include: { user: { select: { firstName: true, lastName: true } } } },
+      prestations: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        include: {
+          prestataire: { include: { user: { select: { firstName: true, lastName: true } } } },
+        },
+      },
+    },
   });
 
   if (!demande) throw new Error("DEMANDE_NOT_FOUND");
-  if (demande.client.userId !== userId) throw new Error("FORBIDDEN");
+
+  const prestation = demande.prestations[0];
+  const isClient = demande.client.userId === userId;
+  const isPrestataire = prestation?.prestataire.userId === userId;
+  if (!isClient && !isPrestataire) throw new Error("FORBIDDEN");
 
   const statuts_autorises = ["EN_COURS", "A_VALIDER", "EN_ATTENTE_PAIEMENT", "EN_ATTENTE_INSPECTION"];
   if (!statuts_autorises.includes(demande.status))
@@ -40,11 +53,14 @@ export const creerSignalement = async (
     where: { role: "ADMIN" },
     select: { email: true },
   });
+  const auteurNom = isClient
+    ? `${demande.client.user.firstName} ${demande.client.user.lastName} (Client)`
+    : `${prestation!.prestataire.user.firstName} ${prestation!.prestataire.user.lastName} (Prestataire)`;
   notifySignalementCreated(
     admins.map((a) => a.email),
     demande.reference,
     demande.titre,
-    `${demande.client.user.firstName} ${demande.client.user.lastName}`,
+    auteurNom,
     message.trim(),
   );
 
