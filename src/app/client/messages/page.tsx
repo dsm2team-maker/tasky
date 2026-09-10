@@ -190,8 +190,8 @@ export default function ClientMessagesPage() {
 
         {conversations && conversations.length > 0 && (
           <div className="mb-8">
-            <h2 className={`text-sm font-bold ${colors.text.secondary} uppercase tracking-wide mb-3`}>
-              Discussions directes
+            <h2 className={`text-sm font-bold ${colors.text.secondary} uppercase tracking-wide mb-3 flex items-center gap-1.5`}>
+              <span>💬</span> Premiers échanges
             </h2>
             <div className="space-y-3">
               {conversations.map((c) => (
@@ -201,8 +201,8 @@ export default function ClientMessagesPage() {
           </div>
         )}
 
-        <h2 className={`text-sm font-bold ${colors.text.secondary} uppercase tracking-wide mb-3`}>
-          Prestations en cours
+        <h2 className={`text-sm font-bold ${colors.text.secondary} uppercase tracking-wide mb-3 flex items-center gap-1.5`}>
+          <span>🛠️</span> Prestations en cours
         </h2>
 
         {actives.length === 0 ? (
