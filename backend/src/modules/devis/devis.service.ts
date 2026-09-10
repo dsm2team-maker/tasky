@@ -46,14 +46,21 @@ export const getDemandesDisponibles = async (userId: string) => {
     orderBy: { createdAt: "desc" },
   });
 
-  const devisExistants = await prisma.devis.findMany({
-    where: { prestataireId: prestataire.id },
-    select: { demandeId: true },
-  });
+  const [devisExistants, demandesIgnorees] = await Promise.all([
+    prisma.devis.findMany({
+      where: { prestataireId: prestataire.id },
+      select: { demandeId: true },
+    }),
+    prisma.demandeIgnoree.findMany({
+      where: { prestataireId: prestataire.id },
+      select: { demandeId: true },
+    }),
+  ]);
   const demandesAvecDevis = new Set(devisExistants.map((d) => d.demandeId));
+  const demandesAIgnorer = new Set(demandesIgnorees.map((d) => d.demandeId));
 
   const results = demandes
-    .filter((d) => !demandesAvecDevis.has(d.id))
+    .filter((d) => !demandesAvecDevis.has(d.id) && !demandesAIgnorer.has(d.id))
     .map((demande) => {
       const score = calculerScore(
         {
@@ -73,6 +80,23 @@ export const getDemandesDisponibles = async (userId: string) => {
     .sort((a, b) => b!.matching.score - a!.matching.score);
 
   return results;
+};
+
+// =============================================================================
+// IGNORER UNE DEMANDE (le prestataire ne veut pas y répondre)
+// =============================================================================
+export const ignorerDemande = async (userId: string, demandeId: string) => {
+  const prestataire = await prisma.prestataire.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  if (!prestataire) throw new Error("PRESTATAIRE_NOT_FOUND");
+
+  await prisma.demandeIgnoree.upsert({
+    where: { demandeId_prestataireId: { demandeId, prestataireId: prestataire.id } },
+    update: {},
+    create: { demandeId, prestataireId: prestataire.id },
+  });
 };
 
 // =============================================================================
@@ -184,6 +208,8 @@ export const envoyerDevis = async (
     sendSystemMessageToUser(
       clientUser.id,
       `📨 Tasky-Infos — Nouveau devis reçu de ${devis.prestataire.user.firstName} ${devis.prestataire.user.lastName} pour votre demande "${demande.titre}"${demande.reference ? ` (TSK-${String(demande.reference).padStart(6, "0")})` : ""}.`,
+      undefined,
+      demandeId,
     ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
   }
 
@@ -313,9 +339,14 @@ export const accepterDevis = async (userId: string, devisId: string) => {
     return { prestationId: newPrestation.id };
   });
 
+  const refDevis = devis.demande.reference
+    ? ` (TSK-${String(devis.demande.reference).padStart(6, "0")})`
+    : "";
+  const nomPrestataire = devis.prestataire.user.firstName;
+
   const messageAcceptationClient = isModification
-    ? "✅ Tasky-Infos — Votre devis a été accepté. La prochaine étape est l'inspection de l'objet par le prestataire."
-    : "✅ Tasky-Infos — Vous avez accepté le devis. La prestation démarrera dès que le paiement sera confirmé.";
+    ? `✅ Tasky-Infos — Vous avez accepté le devis de ${nomPrestataire} pour votre demande "${devis.demande.titre}"${refDevis}. Prochaine étape : l'inspection de l'objet par le prestataire.`
+    : `✅ Tasky-Infos — Vous avez accepté le devis de ${nomPrestataire} pour votre demande "${devis.demande.titre}"${refDevis}. La prestation démarrera dès que le paiement sera confirmé.`;
 
   const messageAcceptationPrestataire = isModification
     ? "✅ Tasky-Infos — Le client a accepté votre devis. La prochaine étape est l'inspection de l'objet."

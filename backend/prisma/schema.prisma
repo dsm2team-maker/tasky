@@ -94,6 +94,7 @@ model Prestataire {
   reviews                Review[]
   portfolio              PortfolioImage[]
   conversations          Conversation[]
+  demandesIgnorees       DemandeIgnoree[]
 
   @@map("prestataires")
 }
@@ -186,8 +187,22 @@ model Demande {
   devis           Devis[]
   prestations     Prestation[]
   signalements    Signalement[]
+  ignoreesPar     DemandeIgnoree[]
+  messages        Message[]
 
   @@map("demandes")
+}
+
+model DemandeIgnoree {
+  id            String      @id @default(cuid())
+  demandeId     String
+  demande       Demande     @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  prestataireId String
+  prestataire   Prestataire @relation(fields: [prestataireId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([demandeId, prestataireId])
+  @@map("demandes_ignorees")
 }
 
 enum TypePrestation {
@@ -323,6 +338,8 @@ model Message {
   id             String        @id @default(cuid())
   prestationId   String?
   prestation     Prestation?   @relation(fields: [prestationId], references: [id])
+  demandeId      String?
+  demande        Demande?      @relation(fields: [demandeId], references: [id])
   conversationId String?
   conversation   Conversation? @relation(fields: [conversationId], references: [id])
   destinataireId String?

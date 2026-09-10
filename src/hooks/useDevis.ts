@@ -68,6 +68,16 @@ export const useEnvoyerDevis = () => {
   });
 };
 
+export const useIgnorerDemande = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (demandeId: string) => devisService.ignorerDemande(demandeId).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.devisDisponibles });
+    },
+  });
+};
+
 export const useDevisDemande = (demandeId: string) =>
   useQuery({
     queryKey: queryKeys.devis(demandeId),

@@ -3,10 +3,12 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
-import { useDemandesDisponibles } from "@/hooks/useDevis";
+import { useDemandesDisponibles, useIgnorerDemande } from "@/hooks/useDevis";
 import HeaderPrestataire from "@/components/headers/HeaderPrestataire";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/shared/Pagination";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 import { colors } from "@/config/colors";
 import { spacing } from "@/config/design-tokens";
 import { routes } from "@/config/routes";
@@ -67,8 +69,24 @@ const typeConfig: Record<string, string> = {
 
 function CardDemande({ demande }: { demande: DemandeDisponible }) {
   const [showScore, setShowScore] = useState(false);
+  const [confirmIgnore, setConfirmIgnore] = useState(false);
+  const ignorerDemande = useIgnorerDemande();
+  const { success: toastSuccess, error: toastError } = useToast();
   const match = matchConfig[demande.matching.label];
   const urgence = urgenceConfig[demande.urgence] || urgenceConfig.NORMAL;
+
+  const handleIgnorer = () => {
+    ignorerDemande.mutate(demande.id, {
+      onSuccess: () => {
+        toastSuccess("Demande ignorée");
+        setConfirmIgnore(false);
+      },
+      onError: () => {
+        toastError("Erreur lors du masquage de la demande");
+        setConfirmIgnore(false);
+      },
+    });
+  };
 
   const scoreDetails = [
     { label: "Catégorie", pts: demande.matching.details.categorie, max: 40 },
@@ -259,7 +277,24 @@ function CardDemande({ demande }: { demande: DemandeDisponible }) {
             📝 Envoyer un devis
           </Button>
         </Link>
+        <button
+          onClick={() => setConfirmIgnore(true)}
+          title="Pas intéressé"
+          className={`px-3 rounded-xl border ${colors.border.light} text-sm ${colors.text.muted} hover:bg-gray-50 hover:text-red-500 hover:border-red-200 transition-colors flex-shrink-0`}
+        >
+          🚫
+        </button>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmIgnore}
+        title="Ignorer cette demande ?"
+        message="Si vous ignorez cette demande, vous ne la reverrez plus dans votre liste. Vous pourrez toujours y répondre si vous y accédez par un autre moyen."
+        confirmLabel="Ignorer"
+        isLoading={ignorerDemande.isPending}
+        onCancel={() => setConfirmIgnore(false)}
+        onConfirm={handleIgnorer}
+      />
     </div>
   );
 }

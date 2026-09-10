@@ -113,14 +113,21 @@ export default function ClientTaskyInfoPage() {
                               {emoji && <span className="mr-1.5">{emoji}</span>}
                               {text}
                             </p>
-                            {msg.prestation && (
+                            {msg.prestation ? (
                               <Link
                                 href={routes.client.requests.detail(msg.prestation.demandeId)}
                                 className="inline-block mt-2 text-xs font-semibold text-purple-600 hover:text-purple-700"
                               >
                                 Voir la prestation →
                               </Link>
-                            )}
+                            ) : msg.demande ? (
+                              <Link
+                                href={routes.client.requests.detail(msg.demande.id)}
+                                className="inline-block mt-2 text-xs font-semibold text-purple-600 hover:text-purple-700"
+                              >
+                                Voir la demande →
+                              </Link>
+                            ) : null}
                           </div>
                           <span className="text-[10px] text-gray-400 px-1 mt-1 block">
                             {new Date(msg.createdAt).toLocaleString("fr-FR", {

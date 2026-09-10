@@ -148,9 +148,21 @@ export const sendMessage = async (
 // TASKY-INFO (fil de notifications système, séparé des discussions personnelles)
 // =============================================================================
 
-export const sendSystemMessageToUser = async (destinataireId: string, contenu: string, prestationId?: string) => {
+export const sendSystemMessageToUser = async (
+  destinataireId: string,
+  contenu: string,
+  prestationId?: string,
+  demandeId?: string,
+) => {
   return prisma.message.create({
-    data: { destinataireId, auteurId: null, contenu, isSystem: true, ...(prestationId && { prestationId }) },
+    data: {
+      destinataireId,
+      auteurId: null,
+      contenu,
+      isSystem: true,
+      ...(prestationId && { prestationId }),
+      ...(demandeId && { demandeId }),
+    },
   });
 };
 
@@ -166,7 +178,10 @@ export const getTaskyInfoMessages = async (userId: string) => {
 
   return prisma.message.findMany({
     where: { destinataireId: userId },
-    include: { prestation: { select: { id: true, demandeId: true } } },
+    include: {
+      prestation: { select: { id: true, demandeId: true } },
+      demande: { select: { id: true } },
+    },
     orderBy: { createdAt: "desc" },
   });
 };

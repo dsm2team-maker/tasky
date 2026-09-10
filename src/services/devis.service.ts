@@ -111,6 +111,9 @@ export const devisService = {
       data,
     ),
 
+  ignorerDemande: (demandeId: string) =>
+    apiClient.post<{ success: boolean }>(`/api/demandes/${demandeId}/ignorer`, {}),
+
   // Client
   getDevisDemande: (demandeId: string) =>
     apiClient.get<{

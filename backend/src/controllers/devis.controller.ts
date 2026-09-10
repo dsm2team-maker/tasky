@@ -12,6 +12,7 @@ import {
   getMesDevisRefuses,
   getMesDevis,
   dismisserDevis,
+  ignorerDemande,
 } from "../modules/devis/devis.service";
 
 export const getDemandesDisponiblesHandler = async (req: AuthRequest, res: Response) => {
@@ -27,6 +28,15 @@ export const getDemandeDetailHandler = async (req: AuthRequest, res: Response) =
   try {
     const demande = await getDemandeDetail(req.user!.userId, req.params.id);
     return res.json({ success: true, data: demande });
+  } catch (error) {
+    return handleError(error, res);
+  }
+};
+
+export const ignorerDemandeHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    await ignorerDemande(req.user!.userId, req.params.id);
+    return res.json({ success: true });
   } catch (error) {
     return handleError(error, res);
   }

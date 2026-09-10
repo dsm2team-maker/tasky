@@ -10,6 +10,7 @@ import {
   getDemandeDetailHandler,
   envoyerDevisHandler,
   getDevisDemandeHandler,
+  ignorerDemandeHandler,
 } from "../controllers/devis.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 
@@ -27,6 +28,7 @@ router.get("/:id", authMiddleware, getDemandeHandler);
 router.get("/:id/detail", authMiddleware, getDemandeDetailHandler);
 router.get("/:id/devis", authMiddleware, getDevisDemandeHandler);
 router.post("/:id/devis", authMiddleware, envoyerDevisHandler);
+router.post("/:id/ignorer", authMiddleware, ignorerDemandeHandler);
 router.delete("/:id", authMiddleware, deleteDemandeHandler);
 
 export default router;

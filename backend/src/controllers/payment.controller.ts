@@ -136,16 +136,22 @@ export async function confirmPaymentHandler(req: Request, res: Response) {
       select: { id: true, email: true, firstName: true },
     });
 
-    await prisma.$transaction([
-      prisma.prestation.update({
-        where: { id: prestationId },
-        data: { status: "EN_COURS", stripeChargeId },
-      }),
-      prisma.demande.update({
-        where: { id: prestation.demandeId },
-        data: { status: "EN_COURS" },
-      }),
-    ]);
+    // Transition atomique : seul l'appel qui fait réellement passer le statut
+    // EN_ATTENTE_PAIEMENT -> EN_COURS envoie les notifications. Évite le doublon
+    // quand ce handler et le webhook Stripe s'exécutent en parallèle.
+    const transition = await prisma.prestation.updateMany({
+      where: { id: prestationId, status: "EN_ATTENTE_PAIEMENT" },
+      data: { status: "EN_COURS", stripeChargeId },
+    });
+
+    if (transition.count === 0) {
+      return res.json({ success: true, message: "Déjà traité" });
+    }
+
+    await prisma.demande.update({
+      where: { id: prestation.demandeId },
+      data: { status: "EN_COURS" },
+    });
 
     const clientUser = prestation.demande.client.user as any;
 
@@ -214,15 +220,17 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
         },
       });
 
-      if (prestation?.status === "EN_ATTENTE_PAIEMENT") {
-        const stripeChargeId =
-          typeof pi.latest_charge === "string" ? pi.latest_charge : pi.latest_charge?.id ?? null;
+      const stripeChargeId =
+        typeof pi.latest_charge === "string" ? pi.latest_charge : pi.latest_charge?.id ?? null;
 
-        await prisma.prestation.update({
-          where: { id: prestationId },
-          data: { status: "EN_COURS", stripeChargeId },
-        });
+      // Transition atomique : seul l'appel qui fait réellement passer le statut
+      // envoie les notifications, pour éviter le doublon avec /api/payment/confirm.
+      const transition = await prisma.prestation.updateMany({
+        where: { id: prestationId, status: "EN_ATTENTE_PAIEMENT" },
+        data: { status: "EN_COURS", stripeChargeId },
+      });
 
+      if (transition.count > 0 && prestation) {
         await prisma.demande.updateMany({
           where: { prestations: { some: { id: prestationId } } },
           data: { status: "EN_COURS" },
