@@ -22,7 +22,11 @@ export default function ScrollSyncTable({
     check();
     const ro = new ResizeObserver(check);
     ro.observe(el);
-    return () => ro.disconnect();
+    window.addEventListener("resize", check);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", check);
+    };
   }, []);
 
   const sync = (src: "top" | "body") => (e: UIEvent<HTMLDivElement>) => {
@@ -37,13 +41,18 @@ export default function ScrollSyncTable({
         <div
           ref={topRef}
           onScroll={sync("top")}
-          className="overflow-x-auto border-b border-gray-700"
+          className="scroll-x-visible overflow-x-scroll overflow-y-hidden border-b border-gray-700"
+          style={{ height: 14 }}
           aria-hidden="true"
         >
           <div style={{ width: minWidth, height: 1 }} />
         </div>
       )}
-      <div ref={bodyRef} onScroll={sync("body")} className="overflow-x-auto">
+      <div
+        ref={bodyRef}
+        onScroll={sync("body")}
+        className="scroll-x-visible overflow-x-auto"
+      >
         {children}
       </div>
     </div>
