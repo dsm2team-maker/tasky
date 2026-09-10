@@ -2,6 +2,7 @@ import { prisma } from "../../lib/prisma";
 import { splitMontant } from "../../config/commission.config";
 import { addEmailJob, EmailJobData, EmailJobType } from "../../queues/email.queue";
 import { notifyAccountStatus, notifySignalementResolved } from "../../services/notifications.service";
+import { sendSystemMessageToUser } from "../messages/message.service";
 
 // ─── Dashboard KPIs ───────────────────────────────────────────────────────────
 
@@ -259,13 +260,11 @@ export const resolveSignalement = async (id: string, note: string) => {
       ? `🔔 Tasky-Infos — Votre signalement a été traité par l'équipe Tasky.\n\nRéponse de l'admin : ${note}`
       : `🔔 Tasky-Infos — Votre signalement a été traité et marqué comme résolu par l'équipe Tasky.`;
 
-    await prisma.message.create({
-      data: {
-        prestationId,
-        contenu: notifMessage,
-        isSystem: true,
-      },
-    });
+    await sendSystemMessageToUser(
+      signalement.demande.client.userId,
+      notifMessage,
+      prestationId,
+    ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
   }
 
   const demande = signalement.demande;

@@ -3,6 +3,7 @@ import { getStripe } from "../config/stripe.config";
 import env from "../config/env.config";
 import { prisma } from "../lib/prisma";
 import { notifyOrderConfirmed } from "../services/notifications.service";
+import { sendSystemMessageToUser } from "../modules/messages/message.service";
 import { splitMontant } from "../config/commission.config";
 
 // POST /api/payment/create-intent
@@ -132,7 +133,7 @@ export async function confirmPaymentHandler(req: Request, res: Response) {
     // Charger prestataire pour l'email
     const prestataireUser = await prisma.user.findFirst({
       where: { prestataire: { id: prestation.prestataireId } },
-      select: { email: true, firstName: true },
+      select: { id: true, email: true, firstName: true },
     });
 
     await prisma.$transaction([
@@ -144,16 +145,23 @@ export async function confirmPaymentHandler(req: Request, res: Response) {
         where: { id: prestation.demandeId },
         data: { status: "EN_COURS" },
       }),
-      prisma.message.create({
-        data: {
-          prestationId,
-          contenu: "✅ Paiement reçu. La prestation est maintenant en cours.",
-          isSystem: true,
-        },
-      }),
     ]);
 
     const clientUser = prestation.demande.client.user as any;
+
+    await sendSystemMessageToUser(
+      clientUser.id,
+      "✅ Paiement effectué. La prestation est maintenant en cours.",
+      prestationId,
+    ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+
+    if (prestataireUser) {
+      await sendSystemMessageToUser(
+        prestataireUser.id,
+        "✅ Paiement reçu. La prestation est maintenant en cours.",
+        prestationId,
+      ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+    }
     if (prestataireUser) {
       notifyOrderConfirmed({
         clientEmail:          clientUser.email,
@@ -199,7 +207,11 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
     if (prestationId) {
       const prestation = await prisma.prestation.findUnique({
         where: { id: prestationId },
-        select: { status: true },
+        select: {
+          status: true,
+          demande: { select: { client: { select: { userId: true } } } },
+          prestataire: { select: { userId: true } },
+        },
       });
 
       if (prestation?.status === "EN_ATTENTE_PAIEMENT") {
@@ -216,13 +228,17 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
           data: { status: "EN_COURS" },
         });
 
-        await prisma.message.create({
-          data: {
-            prestationId,
-            contenu: "✅ Paiement reçu. La prestation est maintenant en cours.",
-            isSystem: true,
-          },
-        });
+        await sendSystemMessageToUser(
+          prestation.demande.client.userId,
+          "✅ Paiement effectué. La prestation est maintenant en cours.",
+          prestationId,
+        ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+
+        await sendSystemMessageToUser(
+          prestation.prestataire.userId,
+          "✅ Paiement reçu. La prestation est maintenant en cours.",
+          prestationId,
+        ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
       }
     }
   }

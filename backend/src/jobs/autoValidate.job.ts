@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma";
 import { notifyOrderCompleted } from "../services/notifications.service";
 import { recalculerStatsPrestataire } from "../modules/prestations/prestation.service";
 import { createTransferForPrestation } from "../modules/payment/transfer.service";
+import { sendSystemMessageToUser } from "../modules/messages/message.service";
 
 export async function runAutoValidationNow(): Promise<number> {
   return runAutoValidation();
@@ -28,13 +29,17 @@ async function runAutoValidation(): Promise<number> {
         where: { id: p.id },
         data: { status: "TERMINEE", validatedAt: now },
       });
-      await prisma.message.create({
-        data: {
-          prestationId: p.id,
-          contenu: "✅ Tasky-Infos — Prestation validée automatiquement.\n\nLe délai de 3 jours est écoulé sans contestation du client. La prestation est maintenant terminée.",
-          isSystem: true,
-        },
-      });
+      await sendSystemMessageToUser(
+        p.demande.client.user.id,
+        "✅ Prestation validée automatiquement.\n\nLe délai de 3 jours est écoulé sans contestation de votre part. La prestation est maintenant terminée.",
+        p.id,
+      ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+
+      await sendSystemMessageToUser(
+        p.prestataire.user.id,
+        "✅ Prestation validée automatiquement.\n\nLe délai de 3 jours est écoulé sans contestation du client. La prestation est maintenant terminée, le paiement sera versé prochainement.",
+        p.id,
+      ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
       console.log(`✅ Prestation ${p.id} → TERMINEE`);
 
       await createTransferForPrestation(p.id);

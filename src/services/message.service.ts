@@ -10,6 +10,7 @@ export interface Message {
   lu: boolean;
   isSystem: boolean;
   createdAt: string;
+  prestation?: { id: string; demandeId: string } | null;
 }
 
 export interface Participant {
@@ -46,11 +47,6 @@ export const messageService = {
   getUnreadByPrestation: () =>
     apiClient.get<{ success: boolean; data: Record<string, number> }>(
       `/api/messages/unread-by-prestation`,
-    ),
-
-  markInfosRead: (prestationId: string) =>
-    apiClient.patch<{ success: boolean }>(
-      `/api/messages/${prestationId}/infos-read`,
     ),
 
   getTaskyInfo: () =>

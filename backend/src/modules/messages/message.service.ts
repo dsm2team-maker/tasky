@@ -24,16 +24,15 @@ const checkAccess = async (prestationId: string, userId: string) => {
 export const getMessages = async (prestationId: string, userId: string) => {
   const prestation = await checkAccess(prestationId, userId);
 
-  // Seuls les messages de chat classiques sont marqués lus ici : les messages système
-  // (Tasky-Infos) ne doivent l'être que lorsque l'onglet "Tasky-Infos" est réellement consulté
-  // (voir markPrestationInfosRead), sinon ils sont marqués lus avant même d'être vus.
   await prisma.message.updateMany({
     where: { prestationId, isSystem: false, auteurId: { not: userId }, lu: false },
     data: { lu: true },
   });
 
+  // isSystem: false — les notifications Tasky-Infos vivent désormais uniquement dans le
+  // fil global (destinataireId), pas dans la discussion classique de la prestation.
   const messages = await prisma.message.findMany({
-    where: { prestationId },
+    where: { prestationId, isSystem: false },
     orderBy: { createdAt: "asc" },
   });
 
@@ -52,15 +51,6 @@ export const getMessages = async (prestationId: string, userId: string) => {
     messages,
     participants: { client: clientUser, prestataire: prestataireUser },
   };
-};
-
-export const markPrestationInfosRead = async (prestationId: string, userId: string) => {
-  await checkAccess(prestationId, userId);
-
-  await prisma.message.updateMany({
-    where: { prestationId, isSystem: true, lu: false },
-    data: { lu: true },
-  });
 };
 
 export const getUnreadByPrestation = async (userId: string) => {
@@ -84,7 +74,7 @@ export const getUnreadByPrestation = async (userId: string) => {
 
   const rows = await prisma.message.groupBy({
     by: ["prestationId"],
-    where: { prestationId: { in: ids }, OR: [{ auteurId: null }, { auteurId: { not: userId } }], lu: false },
+    where: { prestationId: { in: ids }, isSystem: false, OR: [{ auteurId: null }, { auteurId: { not: userId } }], lu: false },
     _count: { id: true },
   });
 
@@ -118,7 +108,7 @@ export const getUnreadCount = async (userId: string) => {
   const [fromPrestations, fromConversations, fromTaskyInfo] = await Promise.all([
     prestationIds.length
       ? prisma.message.count({
-          where: { prestationId: { in: prestationIds }, OR: [{ auteurId: null }, { auteurId: { not: userId } }], lu: false },
+          where: { prestationId: { in: prestationIds }, isSystem: false, OR: [{ auteurId: null }, { auteurId: { not: userId } }], lu: false },
         })
       : 0,
     conversationIds.length
@@ -154,19 +144,13 @@ export const sendMessage = async (
   return message;
 };
 
-export const sendSystemMessage = async (prestationId: string, contenu: string) => {
-  return prisma.message.create({
-    data: { prestationId, auteurId: null, contenu, isSystem: true },
-  });
-};
-
 // =============================================================================
 // TASKY-INFO (fil de notifications système, séparé des discussions personnelles)
 // =============================================================================
 
-export const sendSystemMessageToUser = async (destinataireId: string, contenu: string) => {
+export const sendSystemMessageToUser = async (destinataireId: string, contenu: string, prestationId?: string) => {
   return prisma.message.create({
-    data: { destinataireId, auteurId: null, contenu, isSystem: true },
+    data: { destinataireId, auteurId: null, contenu, isSystem: true, ...(prestationId && { prestationId }) },
   });
 };
 
@@ -182,6 +166,7 @@ export const getTaskyInfoMessages = async (userId: string) => {
 
   return prisma.message.findMany({
     where: { destinataireId: userId },
+    include: { prestation: { select: { id: true, demandeId: true } } },
     orderBy: { createdAt: "desc" },
   });
 };

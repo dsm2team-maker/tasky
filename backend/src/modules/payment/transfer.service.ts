@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import { getStripe } from "../../config/stripe.config";
-import { sendSystemMessage } from "../messages/message.service";
+import { sendSystemMessageToUser } from "../messages/message.service";
 import { splitMontant } from "../../config/commission.config";
 import { notifyTransferCompleted } from "../../services/notifications.service";
 
@@ -23,6 +23,7 @@ export const createTransferForPrestation = async (prestationId: string): Promise
         demandeId: true,
         prestataire: {
           select: {
+            userId: true,
             stripeAccountId: true,
             stripePayoutsEnabled: true,
             user: { select: { email: true, firstName: true } },
@@ -47,9 +48,10 @@ export const createTransferForPrestation = async (prestationId: string): Promise
           status: "SKIPPED",
         },
       });
-      await sendSystemMessage(
-        prestationId,
+      await sendSystemMessageToUser(
+        prestation.prestataire.userId,
         "Le versement de votre paiement est en attente : finalisez votre configuration de paiement dans vos paramètres pour le recevoir.",
+        prestationId,
       ).catch((e) => console.warn("[transfer] system message:", e?.message));
       return;
     }

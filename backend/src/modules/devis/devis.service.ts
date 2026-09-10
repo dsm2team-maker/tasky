@@ -1,7 +1,7 @@
 import { prisma } from "../../lib/prisma";
 import { calculerScore } from "./matching.service";
 import { notifyQuoteReceived, notifyDevisRefuse, notifyDevisAccepte } from "../../services/notifications.service";
-import { sendSystemMessage, sendSystemMessageToUser } from "../messages/message.service";
+import { sendSystemMessageToUser } from "../messages/message.service";
 
 // =============================================================================
 // GET DEMANDES DISPONIBLES (avec matching)
@@ -165,10 +165,10 @@ export const envoyerDevis = async (
     },
   });
 
-  // Email au client — nouveau devis reçu
+  // Email + Tasky-Info au client — nouveau devis reçu
   const clientUser = await prisma.user.findFirst({
     where: { client: { demandes: { some: { id: demandeId } } } },
-    select: { email: true, firstName: true },
+    select: { id: true, email: true, firstName: true },
   });
   if (clientUser) {
     notifyQuoteReceived(
@@ -180,6 +180,11 @@ export const envoyerDevis = async (
       data.montant,
       demandeId,
     );
+
+    sendSystemMessageToUser(
+      clientUser.id,
+      `📨 Tasky-Infos — Nouveau devis reçu de ${devis.prestataire.user.firstName} ${devis.prestataire.user.lastName} pour votre demande "${demande.titre}"${demande.reference ? ` (TSK-${String(demande.reference).padStart(6, "0")})` : ""}.`,
+    ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
   }
 
   return devis;
@@ -308,13 +313,20 @@ export const accepterDevis = async (userId: string, devisId: string) => {
     return { prestationId: newPrestation.id };
   });
 
-  const messageAcceptation = isModification
-    ? "✅ Tasky-Infos — Devis accepté. La prochaine étape est l'inspection de l'objet par le prestataire."
-    : devis.demande.typePrestation === "CREATION"
-      ? "✅ Tasky-Infos — Devis accepté. Convenez d'un état des lieux avec le client avant de démarrer la prestation, qui débutera dès que le paiement sera confirmé."
-      : "✅ Tasky-Infos — Devis accepté. La prestation démarrera dès que le paiement sera confirmé.";
+  const messageAcceptationClient = isModification
+    ? "✅ Tasky-Infos — Votre devis a été accepté. La prochaine étape est l'inspection de l'objet par le prestataire."
+    : "✅ Tasky-Infos — Vous avez accepté le devis. La prestation démarrera dès que le paiement sera confirmé.";
 
-  await sendSystemMessage(prestationId, messageAcceptation).catch((e: any) =>
+  const messageAcceptationPrestataire = isModification
+    ? "✅ Tasky-Infos — Le client a accepté votre devis. La prochaine étape est l'inspection de l'objet."
+    : devis.demande.typePrestation === "CREATION"
+      ? "✅ Tasky-Infos — Le client a accepté votre devis. Convenez d'un état des lieux avec lui avant de démarrer la prestation, qui débutera dès que le paiement sera confirmé."
+      : "✅ Tasky-Infos — Le client a accepté votre devis. La prestation démarrera dès que le paiement sera confirmé.";
+
+  await sendSystemMessageToUser(userId, messageAcceptationClient, prestationId).catch((e: any) =>
+    console.error("[Tasky-Infos]", e.message),
+  );
+  await sendSystemMessageToUser(devis.prestataire.userId, messageAcceptationPrestataire, prestationId).catch((e: any) =>
     console.error("[Tasky-Infos]", e.message),
   );
 

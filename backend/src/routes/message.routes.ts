@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getMessagesHandler, sendMessageHandler, getUnreadCountHandler, getUnreadByPrestationHandler, markPrestationInfosReadHandler, getTaskyInfoMessagesHandler, getUnreadTaskyInfoCountHandler } from "../controllers/message.controller";
+import { getMessagesHandler, sendMessageHandler, getUnreadCountHandler, getUnreadByPrestationHandler, getTaskyInfoMessagesHandler, getUnreadTaskyInfoCountHandler } from "../controllers/message.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
@@ -10,6 +10,5 @@ router.get("/tasky-info/unread-count", authMiddleware, getUnreadTaskyInfoCountHa
 router.get("/tasky-info", authMiddleware, getTaskyInfoMessagesHandler);
 router.get("/:prestationId", authMiddleware, getMessagesHandler);
 router.post("/:prestationId", authMiddleware, sendMessageHandler);
-router.patch("/:prestationId/infos-read", authMiddleware, markPrestationInfosReadHandler);
 
 export default router;

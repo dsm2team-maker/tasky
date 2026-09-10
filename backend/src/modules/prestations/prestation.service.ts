@@ -1,5 +1,5 @@
 import { prisma } from "../../lib/prisma";
-import { sendSystemMessage, sendSystemMessageToUser } from "../messages/message.service";
+import { sendSystemMessageToUser } from "../messages/message.service";
 import { notifyOrderCompleted, notifyPrestationContested } from "../../services/notifications.service";
 import { createTransferForPrestation } from "../payment/transfer.service";
 
@@ -189,7 +189,7 @@ export const creerEtatDesLieux = async (
 
   const prestation = await prisma.prestation.findUnique({
     where: { id: prestationId },
-    include: { demande: true, etatDesLieux: true },
+    include: { demande: { include: { client: { select: { userId: true } } } }, etatDesLieux: true },
   });
   if (!prestation) throw new Error("PRESTATION_NOT_FOUND");
   if (prestation.prestataireId !== prestataire.id) throw new Error("FORBIDDEN");
@@ -216,11 +216,12 @@ export const creerEtatDesLieux = async (
     });
   }
 
-  await sendSystemMessage(
-    prestationId,
+  await sendSystemMessageToUser(
+    prestation.demande.client.userId,
     data.montantRevise
-      ? "📋 Tasky-Infos — Le prestataire a soumis un état des lieux avec révision de montant. Le client doit l'examiner."
-      : "📋 Tasky-Infos — Le prestataire a soumis un état des lieux. Le client doit l'examiner.",
+      ? "📋 Tasky-Infos — Le prestataire a soumis un état des lieux avec révision de montant. Vous devez l'examiner."
+      : "📋 Tasky-Infos — Le prestataire a soumis un état des lieux. Vous devez l'examiner.",
+    prestationId,
   ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
 
   return etatDesLieux;
@@ -239,7 +240,7 @@ export const validerEtatDesLieux = async (
 
   const prestation = await prisma.prestation.findUnique({
     where: { id: prestationId },
-    include: { demande: true, etatDesLieux: true },
+    include: { demande: true, etatDesLieux: true, prestataire: { select: { userId: true } } },
   });
   if (!prestation) throw new Error("PRESTATION_NOT_FOUND");
   if (prestation.demande.clientId !== client.id) throw new Error("FORBIDDEN");
@@ -267,9 +268,10 @@ export const validerEtatDesLieux = async (
       }),
     ]);
 
-    await sendSystemMessage(
+    await sendSystemMessageToUser(
+      prestation.prestataire.userId,
+      "✅ Tasky-Infos — État des lieux accepté par le client. En attente du paiement pour démarrer la prestation.",
       prestationId,
-      "✅ Tasky-Infos — État des lieux accepté. En attente du paiement pour démarrer la prestation.",
     ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
 
     await refuserDevisConcurrents(
@@ -319,9 +321,10 @@ export const validerEtatDesLieux = async (
       });
     });
 
-    await sendSystemMessage(
+    await sendSystemMessageToUser(
+      prestation.prestataire.userId,
+      "❌ Tasky-Infos — État des lieux refusé par le client. La prestation est annulée, la demande est à nouveau disponible.",
       prestationId,
-      "❌ Tasky-Infos — État des lieux refusé. La prestation est annulée, la demande est à nouveau disponible.",
     ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
 
     await recalculerStatsPrestataire(prestation.prestataireId).catch((e: any) =>
@@ -346,7 +349,7 @@ export const confirmerConformite = async (
 
   const prestation = await prisma.prestation.findUnique({
     where: { id: prestationId },
-    include: { demande: true, etatDesLieux: true },
+    include: { demande: { include: { client: { select: { userId: true } } } }, etatDesLieux: true },
   });
   if (!prestation) throw new Error("PRESTATION_NOT_FOUND");
   if (prestation.prestataireId !== prestataire.id) throw new Error("FORBIDDEN");
@@ -382,9 +385,10 @@ export const confirmerConformite = async (
     });
   });
 
-  await sendSystemMessage(
+  await sendSystemMessageToUser(
+    prestation.demande.client.userId,
+    "✅ Tasky-Infos — Le prestataire a confirmé que l'objet est conforme. En attente du paiement pour démarrer la prestation.",
     prestationId,
-    "✅ Tasky-Infos — Objet conforme. En attente du paiement pour démarrer la prestation.",
   ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
 
   await refuserDevisConcurrents(
@@ -405,7 +409,7 @@ export const passerEnCours = async (userId: string, prestationId: string) => {
 
   const prestation = await prisma.prestation.findUnique({
     where: { id: prestationId },
-    include: { demande: true },
+    include: { demande: true, prestataire: { select: { userId: true } } },
   });
   if (!prestation) throw new Error("PRESTATION_NOT_FOUND");
   if (prestation.demande.clientId !== client.id) throw new Error("FORBIDDEN");
@@ -427,9 +431,10 @@ export const passerEnCours = async (userId: string, prestationId: string) => {
     }),
   ]);
 
-  await sendSystemMessage(
-    prestationId,
+  await sendSystemMessageToUser(
+    prestation.prestataire.userId,
     `💳 Tasky-Infos — Paiement confirmé par le client. La prestation est maintenant en cours ! Date limite de livraison : ${dateEcheanceFinal.toLocaleDateString("fr-FR")}.`,
+    prestationId,
   ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
 };
 
@@ -445,7 +450,7 @@ export const marquerTermine = async (userId: string, prestationId: string) => {
 
   const prestation = await prisma.prestation.findUnique({
     where: { id: prestationId },
-    include: { demande: true, etatDesLieux: true },
+    include: { demande: { include: { client: { select: { userId: true } } } }, etatDesLieux: true },
   });
   if (!prestation) throw new Error("PRESTATION_NOT_FOUND");
   if (prestation.prestataireId !== prestataire.id) throw new Error("FORBIDDEN");
@@ -472,9 +477,10 @@ export const marquerTermine = async (userId: string, prestationId: string) => {
     }),
   ]);
 
-  await sendSystemMessage(
+  await sendSystemMessageToUser(
+    prestation.demande.client.userId,
+    "🔔 Tasky-Infos — Le prestataire a marqué la prestation comme terminée. Convenez d'un rendez-vous pour la remise de l'objet, puis validez depuis la page de la demande.",
     prestationId,
-    "🔔 Tasky-Infos — Prestation marquée comme terminée. Convenez d'un rendez-vous pour la remise de l'objet, puis le client devra valider depuis la page de la demande.",
   ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
 };
 
@@ -511,9 +517,16 @@ export const validerPrestation = async (
     }),
   ]);
 
-  await sendSystemMessage(
+  await sendSystemMessageToUser(
+    prestation.demande.client.userId,
+    "🎉 Tasky-Infos — Prestation validée ! Merci d'avoir utilisé Tasky.",
     prestationId,
+  ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+
+  await sendSystemMessageToUser(
+    prestation.prestataire.userId,
     "🎉 Tasky-Infos — Prestation validée par le client ! Le paiement sera libéré sous 1 à 2 jours ouvrés.",
+    prestationId,
   ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
 
   await createTransferForPrestation(prestationId);
@@ -569,14 +582,19 @@ export const contesterPrestation = async (
       where: { id: prestation.demandeId },
       data: { status: "EN_COURS" },
     }),
-    prisma.message.create({
-      data: {
-        prestationId,
-        contenu: `⚠️ Tasky-Infos — Prestation contestée par le client.\n\nMotif : ${motif.trim()}`,
-        isSystem: true,
-      },
-    }),
   ]);
+
+  await sendSystemMessageToUser(
+    userId,
+    `⚠️ Tasky-Infos — Votre contestation a bien été envoyée au prestataire.\n\nMotif : ${motif.trim()}`,
+    prestationId,
+  ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+
+  await sendSystemMessageToUser(
+    prestation.prestataire.userId,
+    `⚠️ Tasky-Infos — Prestation contestée par le client.\n\nMotif : ${motif.trim()}`,
+    prestationId,
+  ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
 
   notifyPrestationContested(
     prestation.prestataire.user.email,
