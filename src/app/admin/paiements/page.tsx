@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { adminService } from "@/services/admin.service";
+import ScrollSyncTable from "@/components/admin/ScrollSyncTable";
 
 const statusColor: Record<string, string> = {
   EN_COURS: "bg-blue-900 text-blue-300",
@@ -65,7 +66,7 @@ export default function AdminPaiementsPage() {
         </div>
       )}
 
-      <div className="bg-gray-800 rounded-2xl border border-gray-700 overflow-x-auto">
+      <ScrollSyncTable className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden" minWidth={1080}>
         <table className="w-full min-w-[1080px] text-sm">
           <thead>
             <tr className="border-b border-gray-700 text-gray-400 text-xs uppercase">
@@ -145,7 +146,7 @@ export default function AdminPaiementsPage() {
             })}
           </tbody>
         </table>
-      </div>
+      </ScrollSyncTable>
 
       {data && data.pages > 1 && (
         <div className="flex justify-center gap-2 mt-6">
