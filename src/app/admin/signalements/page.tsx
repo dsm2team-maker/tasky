@@ -15,6 +15,7 @@ export default function AdminSignalementsPage() {
   const [page, setPage] = useState(1);
   const [resolveId, setResolveId] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  const [detail, setDetail] = useState<any>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -40,6 +41,90 @@ export default function AdminSignalementsPage() {
           <p className="text-gray-400 text-sm mt-1">{data?.total ?? 0} signalements au total</p>
         </div>
       </div>
+
+      {/* Modal détail signalement */}
+      {detail && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-2xl border border-gray-700 p-6 w-full max-w-lg mx-4 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-white">Détail du signalement</h2>
+              <span className="text-xs font-mono text-gray-500">
+                TSK-{String(detail.demande?.reference ?? 0).padStart(6, "0")}
+              </span>
+            </div>
+
+            <div className="space-y-3 text-sm">
+              <div>
+                <div className="text-xs text-gray-500 uppercase mb-0.5">Demande</div>
+                <div className="text-white">{detail.demande?.titre ?? "—"}</div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-xs text-gray-500 uppercase mb-0.5">Client</div>
+                  <div className="text-gray-300">
+                    {detail.demande?.client?.user?.firstName} {detail.demande?.client?.user?.lastName}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 uppercase mb-0.5">Auteur</div>
+                  {detail.auteur ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-gray-300">{detail.auteur.firstName} {detail.auteur.lastName}</span>
+                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                        detail.auteur.role === "PRESTATAIRE"
+                          ? "bg-emerald-900 text-emerald-300"
+                          : "bg-pink-900 text-pink-300"
+                      }`}>
+                        {detail.auteur.role === "PRESTATAIRE" ? "Prestataire" : "Client"}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-600">—</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-xs text-gray-500 uppercase mb-0.5">Statut</div>
+                  <span className={`text-xs px-2 py-1 rounded-full font-semibold ${statutColor[detail.statut] ?? "bg-gray-700 text-gray-400"}`}>
+                    {detail.statut === "EN_ATTENTE" ? "En attente" : detail.statut === "EN_COURS" ? "En cours" : "Résolu"}
+                  </span>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 uppercase mb-0.5">Date</div>
+                  <div className="text-gray-300">{new Date(detail.createdAt).toLocaleString("fr-FR")}</div>
+                </div>
+              </div>
+
+              <div>
+                <div className="text-xs text-gray-500 uppercase mb-0.5">Message</div>
+                <div className="text-gray-200 whitespace-pre-wrap bg-gray-900 rounded-xl p-3 border border-gray-700">
+                  {detail.message}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              {detail.statut !== "RESOLU" && (
+                <button
+                  onClick={() => { setResolveId(detail.id); setNote(""); setDetail(null); }}
+                  className="flex-1 bg-emerald-700 hover:bg-emerald-600 py-2 rounded-xl text-sm font-semibold transition-colors"
+                >
+                  Résoudre
+                </button>
+              )}
+              <button
+                onClick={() => setDetail(null)}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded-xl text-sm transition-colors"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal résolution */}
       {resolveId && (
@@ -95,7 +180,11 @@ export default function AdminSignalementsPage() {
             ) : data?.signalements.map((s: any) => {
               const sc = statutColor[s.statut] ?? "bg-gray-700 text-gray-400";
               return (
-                <tr key={s.id} className="border-b border-gray-700/50 hover:bg-gray-700/30 transition-colors">
+                <tr
+                  key={s.id}
+                  onClick={() => setDetail(s)}
+                  className="border-b border-gray-700/50 hover:bg-gray-700/30 transition-colors cursor-pointer"
+                >
                   <td className="px-4 py-3">
                     <span className="text-xs font-mono text-gray-300">
                       TSK-{String(s.demande?.reference ?? 0).padStart(6, "0")}
@@ -134,17 +223,23 @@ export default function AdminSignalementsPage() {
                   <td className="px-4 py-3 text-gray-400 text-xs">
                     {new Date(s.createdAt).toLocaleDateString("fr-FR")}
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    {s.statut !== "RESOLU" ? (
+                  <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-2">
                       <button
-                        onClick={() => { setResolveId(s.id); setNote(""); }}
-                        className="text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-800 px-3 py-1 rounded-lg transition-colors"
+                        onClick={() => setDetail(s)}
+                        className="text-xs text-gray-400 hover:text-white border border-gray-600 px-3 py-1 rounded-lg transition-colors"
                       >
-                        Résoudre
+                        Voir
                       </button>
-                    ) : (
-                      <span className="text-xs text-gray-600">—</span>
-                    )}
+                      {s.statut !== "RESOLU" && (
+                        <button
+                          onClick={() => { setResolveId(s.id); setNote(""); }}
+                          className="text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-800 px-3 py-1 rounded-lg transition-colors"
+                        >
+                          Résoudre
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
