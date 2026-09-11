@@ -273,7 +273,7 @@ export const resolveSignalement = async (id: string, note: string) => {
   });
 
   const prestationId = signalement.demande?.prestations?.[0]?.id;
-  if (auteur && prestationId) {
+  if (auteur) {
     const notifMessage = note
       ? `🔔 Tasky-Infos — Votre signalement a été traité par l'équipe Tasky.\n\nRéponse de l'admin : ${note}`
       : `🔔 Tasky-Infos — Votre signalement a été traité et marqué comme résolu par l'équipe Tasky.`;
@@ -282,6 +282,7 @@ export const resolveSignalement = async (id: string, note: string) => {
       auteur.id,
       notifMessage,
       prestationId,
+      prestationId ? undefined : signalement.demandeId,
     ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
   }
 
@@ -353,6 +354,7 @@ export const TEST_EMAIL_TYPES: EmailJobType[] = [
   "account-status",
   "connect-onboarding-complete",
   "transfer-completed",
+  "transfer-failed",
 ];
 
 const buildTestEmailPayload = (type: EmailJobType) => {
@@ -391,6 +393,8 @@ const buildTestEmailPayload = (type: EmailJobType) => {
       return { firstName: "Test", earningsUrl: "https://tasky.fr/prestataire/earnings" };
     case "transfer-completed":
       return { firstName: "Test", demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", montant: 127.5, earningsUrl: "https://tasky.fr/prestataire/earnings" };
+    case "transfer-failed":
+      return { demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", prestataireNom: "Jean Dupont", montant: 127.5, failureReason: "Le compte Stripe du prestataire a été restreint.", paiementsUrl: "https://tasky.fr/admin/paiements" };
   }
 };
 

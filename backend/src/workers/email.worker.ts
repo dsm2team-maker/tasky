@@ -20,6 +20,7 @@ import { prestationContestedTemplate } from "../emails/prestation-contested.temp
 import { accountStatusTemplate } from "../emails/account-status.template";
 import { connectOnboardingCompleteTemplate } from "../emails/connect-onboarding-complete.template";
 import { transferCompletedTemplate } from "../emails/transfer-completed.template";
+import { transferFailedTemplate } from "../emails/transfer-failed.template";
 import { prisma } from "../lib/prisma";
 
 const processEmailJob = async (job: Job<EmailJobData>) => {
@@ -210,6 +211,18 @@ const processEmailJob = async (job: Job<EmailJobData>) => {
         demandeTitre: payload.demandeTitre,
         montant: payload.montant,
         earningsUrl: payload.earningsUrl,
+      });
+      break;
+
+    case "transfer-failed":
+      subject = `⚠️ Échec de virement — ${payload.demandeReference} — Tasky`;
+      html = transferFailedTemplate({
+        demandeReference: payload.demandeReference,
+        demandeTitre: payload.demandeTitre,
+        prestataireNom: payload.prestataireNom,
+        montant: payload.montant,
+        failureReason: payload.failureReason,
+        paiementsUrl: payload.paiementsUrl,
       });
       break;
 

@@ -2,7 +2,7 @@ import { prisma } from "../../lib/prisma";
 import { getStripe } from "../../config/stripe.config";
 import { sendSystemMessageToUser } from "../messages/message.service";
 import { splitMontant } from "../../config/commission.config";
-import { notifyTransferCompleted } from "../../services/notifications.service";
+import { notifyTransferCompleted, notifyTransferFailed } from "../../services/notifications.service";
 
 // Point d'accroche unique du transfert — appelé depuis validerPrestation() et
 // runAutoValidation(), jamais directement. Ne lève jamais d'exception : un échec
@@ -26,7 +26,7 @@ export const createTransferForPrestation = async (prestationId: string): Promise
             userId: true,
             stripeAccountId: true,
             stripePayoutsEnabled: true,
-            user: { select: { email: true, firstName: true } },
+            user: { select: { email: true, firstName: true, lastName: true } },
           },
         },
         demande: { select: { reference: true, titre: true } },
@@ -95,17 +95,37 @@ export const createTransferForPrestation = async (prestationId: string): Promise
       );
     } catch (err: any) {
       console.error("[transfer] stripe.transfers.create failed:", err);
+      const failureReason = err?.message ?? "Erreur inconnue";
       await prisma.transfer.upsert({
         where: { prestationId },
-        update: { status: "FAILED", failureReason: err?.message ?? "Erreur inconnue" },
+        update: { status: "FAILED", failureReason },
         create: {
           prestationId,
           prestataireId: prestation.prestataireId,
           amount: montantPrestataire,
           status: "FAILED",
-          failureReason: err?.message ?? "Erreur inconnue",
+          failureReason,
         },
       });
+
+      await sendSystemMessageToUser(
+        prestation.prestataire.userId,
+        "⚠️ Votre virement a rencontré un problème technique. Notre équipe a été prévenue et s'en occupe.",
+        prestationId,
+      ).catch((e) => console.warn("[transfer] system message:", e?.message));
+
+      const admins = await prisma.user.findMany({
+        where: { role: "ADMIN" },
+        select: { email: true },
+      });
+      notifyTransferFailed(
+        admins.map((a) => a.email),
+        prestation.demande.reference,
+        prestation.demande.titre,
+        `${prestation.prestataire.user.firstName} ${prestation.prestataire.user.lastName}`,
+        montantPrestataire,
+        failureReason,
+      );
     }
   } catch (err: any) {
     console.error("[transfer] createTransferForPrestation failed:", err);

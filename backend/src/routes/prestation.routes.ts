@@ -5,7 +5,6 @@ import {
   creerEtatDesLieuxHandler,
   confirmerConformiteHandler,
   validerEtatDesLieuxHandler,
-  passerEnCoursHandler,
   marquerTermineHandler,
   validerPrestationHandler,
   contesterPrestationHandler,
@@ -18,7 +17,6 @@ const router = Router();
 
 // ─── Client ───────────────────────────────────────────────────────────────────
 router.get("/client", authMiddleware, getMesPrestationsClientHandler);
-router.patch("/:id/payer", authMiddleware, passerEnCoursHandler);
 router.post("/:id/review", authMiddleware, creerReviewHandler);
 router.patch("/:id/valider", authMiddleware, validerPrestationHandler);
 router.patch("/:id/contester", authMiddleware, contesterPrestationHandler);

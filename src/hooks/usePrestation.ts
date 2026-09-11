@@ -54,17 +54,6 @@ export const useConfirmerConformite = () => {
   });
 };
 
-export const usePasserEnCours = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => prestationService.passerEnCours(id).then((r) => r.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.prestationsClient });
-      queryClient.invalidateQueries({ queryKey: queryKeys.demandes });
-    },
-  });
-};
-
 // ─── Client ───────────────────────────────────────────────────────────────────
 
 export const useMesPrestationsClient = () =>

@@ -2,6 +2,7 @@ import { prisma } from "../../lib/prisma";
 import { sendSystemMessageToUser } from "../messages/message.service";
 import { notifyOrderCompleted, notifyPrestationContested } from "../../services/notifications.service";
 import { createTransferForPrestation } from "../payment/transfer.service";
+import { creerSignalement } from "../signalements/signalement.service";
 
 // =============================================================================
 // REFUSER LES DEVIS CONCURRENTS (demandes MODIFICATION) — appelé au moment où
@@ -400,45 +401,6 @@ export const confirmerConformite = async (
 };
 
 // =============================================================================
-// PASSER EN COURS (stub Stripe) — EN_ATTENTE_PAIEMENT → EN_COURS
-// À remplacer par le webhook Stripe en production
-// =============================================================================
-export const passerEnCours = async (userId: string, prestationId: string) => {
-  const client = await prisma.client.findUnique({ where: { userId } });
-  if (!client) throw new Error("CLIENT_NOT_FOUND");
-
-  const prestation = await prisma.prestation.findUnique({
-    where: { id: prestationId },
-    include: { demande: true, prestataire: { select: { userId: true } } },
-  });
-  if (!prestation) throw new Error("PRESTATION_NOT_FOUND");
-  if (prestation.demande.clientId !== client.id) throw new Error("FORBIDDEN");
-  if (prestation.status !== "EN_ATTENTE_PAIEMENT")
-    throw new Error("PRESTATION_NOT_EN_ATTENTE_PAIEMENT");
-
-  const delaiJours = (prestation.demande as any).delaiJours ?? 7;
-  const dateEcheanceFinal = new Date();
-  dateEcheanceFinal.setDate(dateEcheanceFinal.getDate() + delaiJours);
-
-  await prisma.$transaction([
-    prisma.prestation.update({
-      where: { id: prestationId },
-      data: { status: "EN_COURS", dateEcheanceFinal },
-    }),
-    prisma.demande.update({
-      where: { id: prestation.demandeId },
-      data: { status: "EN_COURS" },
-    }),
-  ]);
-
-  await sendSystemMessageToUser(
-    prestation.prestataire.userId,
-    `💳 Tasky-Infos — Paiement confirmé par le client. La prestation est maintenant en cours ! Date limite de livraison : ${dateEcheanceFinal.toLocaleDateString("fr-FR")}.`,
-    prestationId,
-  ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
-};
-
-// =============================================================================
 // MARQUER TERMINÉ (Prestataire) — EN_COURS requis
 // =============================================================================
 export const marquerTermine = async (userId: string, prestationId: string) => {
@@ -572,6 +534,12 @@ export const contesterPrestation = async (
     throw new Error("PRESTATION_NOT_A_VALIDER");
   if (!motif || motif.trim().length < 10)
     throw new Error("MOTIF_TROP_COURT");
+
+  await creerSignalement(
+    userId,
+    prestation.demandeId,
+    `Contestation de prestation — ${motif.trim()}`,
+  ).catch((e: any) => console.error("[Signalement]", e.message));
 
   await prisma.$transaction([
     prisma.prestation.update({

@@ -136,12 +136,16 @@ export async function confirmPaymentHandler(req: Request, res: Response) {
       select: { id: true, email: true, firstName: true },
     });
 
+    const delaiJours = prestation.demande.delaiJours ?? 7;
+    const dateEcheanceFinal = new Date();
+    dateEcheanceFinal.setDate(dateEcheanceFinal.getDate() + delaiJours);
+
     // Transition atomique : seul l'appel qui fait réellement passer le statut
     // EN_ATTENTE_PAIEMENT -> EN_COURS envoie les notifications. Évite le doublon
     // quand ce handler et le webhook Stripe s'exécutent en parallèle.
     const transition = await prisma.prestation.updateMany({
       where: { id: prestationId, status: "EN_ATTENTE_PAIEMENT" },
-      data: { status: "EN_COURS", stripeChargeId },
+      data: { status: "EN_COURS", stripeChargeId, dateEcheanceFinal },
     });
 
     if (transition.count === 0) {
@@ -215,19 +219,33 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
         where: { id: prestationId },
         select: {
           status: true,
-          demande: { select: { client: { select: { userId: true } } } },
-          prestataire: { select: { userId: true } },
+          montant: true,
+          montantFinal: true,
+          demande: {
+            select: {
+              id: true,
+              reference: true,
+              titre: true,
+              delaiJours: true,
+              client: { select: { userId: true, user: { select: { email: true, firstName: true } } } },
+            },
+          },
+          prestataire: { select: { userId: true, user: { select: { email: true, firstName: true } } } },
         },
       });
 
       const stripeChargeId =
         typeof pi.latest_charge === "string" ? pi.latest_charge : pi.latest_charge?.id ?? null;
 
+      const delaiJours = prestation?.demande.delaiJours ?? 7;
+      const dateEcheanceFinal = new Date();
+      dateEcheanceFinal.setDate(dateEcheanceFinal.getDate() + delaiJours);
+
       // Transition atomique : seul l'appel qui fait réellement passer le statut
       // envoie les notifications, pour éviter le doublon avec /api/payment/confirm.
       const transition = await prisma.prestation.updateMany({
         where: { id: prestationId, status: "EN_ATTENTE_PAIEMENT" },
-        data: { status: "EN_COURS", stripeChargeId },
+        data: { status: "EN_COURS", stripeChargeId, dateEcheanceFinal },
       });
 
       if (transition.count > 0 && prestation) {
@@ -247,6 +265,18 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
           "✅ Paiement reçu. La prestation est maintenant en cours.",
           prestationId,
         ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+
+        notifyOrderConfirmed({
+          clientEmail:          prestation.demande.client.user.email,
+          clientFirstName:      prestation.demande.client.user.firstName,
+          prestataireEmail:     prestation.prestataire.user.email,
+          prestataireFirstName: prestation.prestataire.user.firstName,
+          demandeReference:     prestation.demande.reference,
+          demandeTitre:         prestation.demande.titre,
+          montant:              prestation.montantFinal ?? prestation.montant,
+          demandeId:            prestation.demande.id,
+          prestationId,
+        });
       }
     }
   }

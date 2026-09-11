@@ -19,6 +19,7 @@ dotenv.config();
 
 import "./workers/email.worker";
 import { startAutoValidateJob } from "./jobs/autoValidate.job";
+import { startExpireDevisJob } from "./jobs/expireDevis.job";
 
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
@@ -100,6 +101,7 @@ app.use("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   startAutoValidateJob();
+  startExpireDevisJob();
 });
 
 export default app;

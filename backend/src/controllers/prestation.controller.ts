@@ -7,7 +7,6 @@ import {
   creerEtatDesLieux,
   confirmerConformite,
   validerEtatDesLieux,
-  passerEnCours,
   marquerTermine,
   validerPrestation,
   contesterPrestation,
@@ -67,15 +66,6 @@ export const confirmerConformiteHandler = async (req: AuthRequest, res: Response
   try {
     await confirmerConformite(req.user!.userId, req.params.id);
     return res.json({ success: true, message: "Objet confirmé conforme — en attente du paiement client" });
-  } catch (error) {
-    return handleError(error, res);
-  }
-};
-
-export const passerEnCoursHandler = async (req: AuthRequest, res: Response) => {
-  try {
-    await passerEnCours(req.user!.userId, req.params.id);
-    return res.json({ success: true, message: "Paiement confirmé — prestation démarrée" });
   } catch (error) {
     return handleError(error, res);
   }

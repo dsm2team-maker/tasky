@@ -133,6 +133,8 @@ export const deleteDemande = async (userId: string, demandeId: string) => {
     "EN_ATTENTE_INSPECTION",
     "EN_ATTENTE_PAIEMENT",
     "EN_COURS",
+    "A_VALIDER",
+    "TERMINEE",
   ];
   if (statusesBloquants.includes(demande.status))
     throw new Error("DEMANDE_EN_COURS");

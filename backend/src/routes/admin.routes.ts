@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authMiddleware } from "../middleware/auth.middleware";
+import { authMiddleware, requireRole } from "../middleware/auth.middleware";
 import {
   getDashboardStatsHandler,
   getUsersHandler,
@@ -18,6 +18,7 @@ import {
 const router = Router();
 
 router.use(authMiddleware);
+router.use(requireRole("ADMIN"));
 
 router.get("/dashboard", getDashboardStatsHandler);
 router.get("/users", getUsersHandler);

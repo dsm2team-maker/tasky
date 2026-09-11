@@ -20,7 +20,8 @@ export type EmailJobType =
   | "prestation-contested" // Notification prestataire — prestation contestée
   | "account-status" // Notification utilisateur — suspension/réactivation
   | "connect-onboarding-complete" // Notification prestataire — Stripe Connect activé
-  | "transfer-completed"; // Notification prestataire — virement envoyé
+  | "transfer-completed" // Notification prestataire — virement envoyé
+  | "transfer-failed"; // Notification admin — échec du virement
 
 // ─── Payloads typés par type d'email ─────────────────────────────────────────
 
@@ -42,6 +43,7 @@ interface PrestationContestedPayload { firstName: string; demandeReference: stri
 interface AccountStatusPayload    { firstName: string; suspended: boolean; reason?: string; supportUrl: string }
 interface ConnectOnboardingCompletePayload { firstName: string; earningsUrl: string }
 interface TransferCompletedPayload { firstName: string; demandeReference: string; demandeTitre: string; montant: number; earningsUrl: string }
+interface TransferFailedPayload   { demandeReference: string; demandeTitre: string; prestataireNom: string; montant: number; failureReason: string; paiementsUrl: string }
 
 type EmailPayloadMap = {
   "verify-email":       VerifyEmailPayload;
@@ -62,6 +64,7 @@ type EmailPayloadMap = {
   "account-status":               AccountStatusPayload;
   "connect-onboarding-complete":  ConnectOnboardingCompletePayload;
   "transfer-completed":           TransferCompletedPayload;
+  "transfer-failed":              TransferFailedPayload;
 };
 
 export type EmailJobData<T extends EmailJobType = EmailJobType> = {

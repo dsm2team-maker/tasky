@@ -229,3 +229,27 @@ export const notifyTransferCompleted = (
       earningsUrl: `${FRONTEND_URL}/prestataire/settings/paiement`,
     },
   }));
+
+export const notifyTransferFailed = (
+  adminEmails: string[],
+  demandeReference: number,
+  demandeTitre: string,
+  prestataireNom: string,
+  montant: number,
+  failureReason: string,
+) => {
+  for (const to of adminEmails) {
+    safe(() => addEmailJob({
+      type: "transfer-failed",
+      to,
+      payload: {
+        demandeReference: ref(demandeReference),
+        demandeTitre,
+        prestataireNom,
+        montant,
+        failureReason,
+        paiementsUrl: `${FRONTEND_URL}/admin/paiements`,
+      },
+    }, EMAIL_PRIORITY.CRITICAL));
+  }
+};
