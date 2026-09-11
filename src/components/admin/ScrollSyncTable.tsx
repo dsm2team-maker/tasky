@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState, ReactNode, UIEvent } from "react";
+import { useRef, ReactNode, UIEvent } from "react";
 
 export default function ScrollSyncTable({
   children,
@@ -13,21 +13,6 @@ export default function ScrollSyncTable({
 }) {
   const topRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
-  const [overflowing, setOverflowing] = useState(false);
-
-  useEffect(() => {
-    const el = bodyRef.current;
-    if (!el) return;
-    const check = () => setOverflowing(el.scrollWidth > el.clientWidth + 1);
-    check();
-    const ro = new ResizeObserver(check);
-    ro.observe(el);
-    window.addEventListener("resize", check);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", check);
-    };
-  }, []);
 
   const sync = (src: "top" | "body") => (e: UIEvent<HTMLDivElement>) => {
     const from = e.currentTarget;
@@ -37,17 +22,15 @@ export default function ScrollSyncTable({
 
   return (
     <div className={className}>
-      {overflowing && (
-        <div
-          ref={topRef}
-          onScroll={sync("top")}
-          className="scroll-x-visible overflow-x-scroll overflow-y-hidden border-b border-gray-700"
-          style={{ height: 14 }}
-          aria-hidden="true"
-        >
-          <div style={{ width: minWidth, height: 1 }} />
-        </div>
-      )}
+      <div
+        ref={topRef}
+        onScroll={sync("top")}
+        className="scroll-x-visible overflow-x-auto overflow-y-hidden border-b border-gray-700"
+        style={{ height: 14 }}
+        aria-hidden="true"
+      >
+        <div style={{ width: minWidth, height: 1 }} />
+      </div>
       <div
         ref={bodyRef}
         onScroll={sync("body")}
