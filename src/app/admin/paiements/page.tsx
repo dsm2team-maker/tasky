@@ -66,7 +66,7 @@ export default function AdminPaiementsPage() {
         </div>
       )}
 
-      <ScrollSyncTable className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden" minWidth={1080}>
+      <ScrollSyncTable className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
         <table className="w-full min-w-[1080px] text-sm">
           <thead>
             <tr className="border-b border-gray-700 text-gray-400 text-xs uppercase">

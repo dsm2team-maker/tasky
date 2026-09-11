@@ -73,7 +73,7 @@ export default function AdminSignalementsPage() {
         </div>
       )}
 
-      <ScrollSyncTable className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden" minWidth={1000}>
+      <ScrollSyncTable className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
         <table className="w-full min-w-[1000px] text-sm">
           <thead>
             <tr className="border-b border-gray-700 text-gray-400 text-xs uppercase">
