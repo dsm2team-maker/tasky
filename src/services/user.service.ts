@@ -13,6 +13,7 @@ export interface UserProfile {
   firstName: string;
   lastName: string;
   city: string | null;
+  codePostal: string | null;
   avatar: string | null;
   phoneMasked: string | null;
   role: "CLIENT" | "PRESTATAIRE" | "ADMIN";
@@ -46,6 +47,7 @@ export interface UpdateProfilePayload {
   firstName?: string;
   lastName?: string;
   city?: string | null;
+  codePostal?: string | null;
 }
 
 export interface UpdatePrestatairePayload {

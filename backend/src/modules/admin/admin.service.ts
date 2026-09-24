@@ -386,7 +386,7 @@ const buildTestEmailPayload = (type: EmailJobType) => {
     case "signalement-resolved":
       return { firstName: "Test", demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", note: "Le prestataire a été recontacté, le problème est résolu.", demandeUrl: "https://tasky.fr/client/requests/test-id" };
     case "prestation-contested":
-      return { firstName: "Test", demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", motif: "Le travail n'a pas été terminé correctement.", prestationUrl: "https://tasky.fr/prestataire/requests" };
+      return { firstName: "Test", demandeReference: "TSK-000123", demandeTitre: "Réparation plomberie", motif: "Le travail n'a pas été terminé correctement.", prestationUrl: "https://tasky.fr/prestataire/services/test-id" };
     case "account-status":
       return { firstName: "Test", suspended: true, reason: "Non-respect des CGU.", supportUrl: "https://tasky.fr/contact" };
     case "connect-onboarding-complete":

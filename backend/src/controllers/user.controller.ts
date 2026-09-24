@@ -150,7 +150,7 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
 
 // =============================================
 // PATCH /api/users/profile
-// Modifier firstName, lastName, city
+// Modifier firstName, lastName, city, codePostal
 // =============================================
 export const updateMyProfile = async (req: AuthRequest, res: Response) => {
   try {
@@ -160,7 +160,7 @@ export const updateMyProfile = async (req: AuthRequest, res: Response) => {
         .status(401)
         .json({ success: false, message: "Non authentifié" });
 
-    const { firstName, lastName, city } = req.body;
+    const { firstName, lastName, city, codePostal } = req.body;
 
     if (
       firstName !== undefined &&
@@ -190,8 +190,18 @@ export const updateMyProfile = async (req: AuthRequest, res: Response) => {
         message: "Ville invalide (minimum 2 caractères)",
       });
     }
+    if (
+      codePostal !== undefined &&
+      codePostal !== null &&
+      (typeof codePostal !== "string" || !/^\d{5}$/.test(codePostal.trim()))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Code postal invalide (5 chiffres)",
+      });
+    }
 
-    const updated = await updateProfile(userId, { firstName, lastName, city });
+    const updated = await updateProfile(userId, { firstName, lastName, city, codePostal });
     return res.json({
       success: true,
       message: "Profil mis à jour",

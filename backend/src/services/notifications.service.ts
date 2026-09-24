@@ -175,6 +175,7 @@ export const notifyPrestationContested = (
   demandeReference: number,
   demandeTitre: string,
   motif: string,
+  prestationId: string,
 ) =>
   safe(() => addEmailJob({
     type: "prestation-contested",
@@ -184,7 +185,7 @@ export const notifyPrestationContested = (
       demandeReference: ref(demandeReference),
       demandeTitre,
       motif,
-      prestationUrl: `${FRONTEND_URL}/prestataire/requests`,
+      prestationUrl: `${FRONTEND_URL}/prestataire/services/${prestationId}`,
     },
   }, EMAIL_PRIORITY.CRITICAL));
 

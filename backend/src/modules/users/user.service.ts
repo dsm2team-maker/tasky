@@ -13,6 +13,7 @@ interface UpdateProfileData {
   firstName?: string;
   lastName?: string;
   city?: string;
+  codePostal?: string | null;
 }
 
 // =============================================================================
@@ -28,6 +29,7 @@ export const getProfile = async (userId: string) => {
       lastName: true,
       phone: true,
       city: true,
+      codePostal: true,
       avatar: true,
       role: true,
       emailVerified: true,
@@ -85,12 +87,14 @@ export const updateProfile = async (
         ...(data.firstName !== undefined && { firstName: data.firstName }),
         ...(data.lastName !== undefined && { lastName: data.lastName }),
         ...(data.city !== undefined && { city: data.city }),
+        ...(data.codePostal !== undefined && { codePostal: data.codePostal }),
       },
       select: {
         id: true,
         firstName: true,
         lastName: true,
         city: true,
+        codePostal: true,
         avatar: true,
         updatedAt: true,
       },
@@ -513,6 +517,7 @@ export const confirmDeleteAccount = async (userId: string, otp: string) => {
         phone: anonPhone,
         avatar: null,
         city: null,
+        codePostal: null,
       },
     }),
     prisma.verificationToken.update({

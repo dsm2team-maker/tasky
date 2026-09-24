@@ -60,6 +60,7 @@ export const useUpdateProfile = () => {
         firstName: data.firstName,
         lastName: data.lastName,
         city: data.city,
+        codePostal: data.codePostal,
       });
     },
   });

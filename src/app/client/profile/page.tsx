@@ -37,6 +37,7 @@ const profileSchema = z.object({
     .max(50, "Maximum 50 caractères")
     .regex(/^[a-zA-ZÀ-ÿ '-]+$/, "Caractères invalides"),
   city: z.string().optional(),
+  codePostal: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -86,6 +87,7 @@ export default function ClientProfilePage() {
     handleSubmit,
     reset,
     control,
+    setValue,
     formState: { errors, isDirty },
   } = useForm<ProfileFormData>({ resolver: zodResolver(profileSchema) });
 
@@ -95,6 +97,7 @@ export default function ClientProfilePage() {
         firstName: profile.firstName,
         lastName: profile.lastName,
         city: profile.city || "",
+        codePostal: profile.codePostal || "",
       });
   }, [profile, reset]);
 
@@ -109,6 +112,7 @@ export default function ClientProfilePage() {
         firstName: data.firstName,
         lastName: data.lastName,
         city: data.city || null,
+        codePostal: data.codePostal || null,
       },
       {
         onSuccess: () => {
@@ -392,20 +396,34 @@ export default function ClientProfilePage() {
                   />
                 </div>
 
-                <Controller
-                  name="city"
-                  control={control}
-                  render={({ field }) => (
-                    <CityInput
-                      label="Ville"
-                      value={field.value || ""}
-                      onChange={field.onChange}
-                      error={errors.city?.message}
-                      disabled={!isEditing}
-                      placeholder="Ex: Paris ou 75001"
-                    />
-                  )}
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Controller
+                    name="city"
+                    control={control}
+                    render={({ field }) => (
+                      <CityInput
+                        label="Ville"
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onCitySelect={(city, postalCode) => {
+                          setValue("city", city, { shouldDirty: true });
+                          setValue("codePostal", postalCode, { shouldDirty: true });
+                        }}
+                        error={errors.city?.message}
+                        disabled={!isEditing}
+                        placeholder="Ex: Paris 14e ou 75014"
+                      />
+                    )}
+                  />
+                  <Input
+                    label="Code postal"
+                    placeholder="75014"
+                    disabled={!isEditing}
+                    readOnly
+                    className={isEditing ? "bg-gray-50 cursor-not-allowed" : undefined}
+                    {...register("codePostal")}
+                  />
+                </div>
 
                 {isEditing && (
                   <div className="flex items-center justify-between pt-2">

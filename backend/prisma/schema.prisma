@@ -21,6 +21,7 @@ model User {
   lastName      String
   phone         String    @unique
   city          String?
+  codePostal    String?
   avatar        String?
   emailVerified Boolean   @default(false)
   isActive      Boolean   @default(true)

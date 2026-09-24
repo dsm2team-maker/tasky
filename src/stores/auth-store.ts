@@ -9,6 +9,7 @@ interface User {
   firstName: string;
   lastName: string;
   city?: string | null;
+  codePostal?: string | null;
   phone?: string | null;
   avatar?: string | null;
   emailVerified: boolean;

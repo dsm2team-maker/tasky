@@ -16,7 +16,7 @@ export const getDemandesDisponibles = async (userId: string) => {
       stripePayoutsEnabled: true,
       bio: true,
       pointDepotAdresse: true,
-      user: { select: { city: true } },
+      user: { select: { city: true, codePostal: true } },
       competences: {
         select: {
           categoryId: true,
@@ -68,6 +68,7 @@ export const getDemandesDisponibles = async (userId: string) => {
           subCategoryId: demande.subCategoryId,
           interventionIds: demande.interventionIds,
           ville: demande.ville,
+          codePostal: demande.codePostal,
         },
         prestataire,
       );

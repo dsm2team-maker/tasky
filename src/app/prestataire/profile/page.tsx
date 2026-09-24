@@ -68,6 +68,7 @@ const profileSchema = z.object({
     .max(50)
     .regex(/^[a-zA-ZÀ-ÿ '-]+$/, "Caractères invalides"),
   city: z.string().optional(),
+  codePostal: z.string().optional(),
 });
 type ProfileFormData = z.infer<typeof profileSchema>;
 
@@ -117,6 +118,7 @@ export default function PrestataireProfilePage() {
     handleSubmit,
     reset,
     control,
+    setValue,
     formState: { errors, isDirty },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -128,6 +130,7 @@ export default function PrestataireProfilePage() {
         firstName: profile.firstName,
         lastName: profile.lastName,
         city: profile.city || "",
+        codePostal: profile.codePostal || "",
       });
       if (profile.prestataire?.bio) setBioValue(profile.prestataire.bio);
     }
@@ -182,6 +185,7 @@ export default function PrestataireProfilePage() {
         firstName: data.firstName,
         lastName: data.lastName,
         city: data.city || null,
+        codePostal: data.codePostal || null,
       },
       {
         onSuccess: () => {
@@ -774,20 +778,36 @@ export default function PrestataireProfilePage() {
                     {...register("lastName")}
                   />
                 </div>
-                <Controller
-                  name="city"
-                  control={control}
-                  render={({ field }) => (
-                    <CityInput
-                      label="Ville"
-                      value={field.value || ""}
-                      onChange={field.onChange}
-                      error={errors.city?.message}
-                      disabled={!isEditingInfo}
-                      placeholder="Ex: Lyon ou 69001"
-                    />
-                  )}
-                />
+                <div className="grid grid-cols-2 gap-3">
+                  <Controller
+                    name="city"
+                    control={control}
+                    render={({ field }) => (
+                      <CityInput
+                        label="Ville"
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onCitySelect={(city: string, postalCode: string) => {
+                          setValue("city", city, { shouldDirty: true });
+                          setValue("codePostal", postalCode, {
+                            shouldDirty: true,
+                          });
+                        }}
+                        error={errors.city?.message}
+                        disabled={!isEditingInfo}
+                        placeholder="Ex: Lyon ou 69001"
+                      />
+                    )}
+                  />
+                  <Input
+                    label="Code postal"
+                    placeholder="69001"
+                    disabled={!isEditingInfo}
+                    readOnly
+                    className="bg-gray-50 cursor-not-allowed"
+                    {...register("codePostal")}
+                  />
+                </div>
                 {isEditingInfo && (
                   <div className="flex items-center justify-between pt-2">
                     {isDirty && (

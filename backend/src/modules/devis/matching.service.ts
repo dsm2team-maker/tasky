@@ -22,6 +22,7 @@ interface DemandeForMatching {
   subCategoryId?: string | null;
   interventionIds: string[];
   ville?: string | null;
+  codePostal?: string | null;
 }
 
 interface PrestataireForMatching {
@@ -31,7 +32,7 @@ interface PrestataireForMatching {
   stripePayoutsEnabled: boolean;
   bio: string | null;
   pointDepotAdresse: string | null;
-  user: { city?: string | null };
+  user: { city?: string | null; codePostal?: string | null };
   competences: {
     categoryId: string;
     subCategoryId?: string | null;
@@ -96,10 +97,17 @@ export const calculerScore = (
   }
 
   // Ville (10 pts)
-  if (
-    demande.ville &&
-    prestataire.user.city?.toLowerCase() === demande.ville.toLowerCase()
-  ) {
+  // Le code postal distingue les arrondissements (Paris/Lyon/Marseille) qu'un simple nom
+  // de ville identique ("Paris" == "Paris") ne permet pas de différencier. On ne l'utilise
+  // que si les deux parties l'ont renseigné ; sinon on retombe sur la comparaison par nom
+  // de ville pour rester compatible avec les données existantes.
+  const villeMatch =
+    demande.codePostal && prestataire.user.codePostal
+      ? prestataire.user.codePostal === demande.codePostal
+      : !!demande.ville &&
+        prestataire.user.city?.toLowerCase() === demande.ville.toLowerCase();
+
+  if (villeMatch) {
     details.ville = 10;
     score += 10;
   }
