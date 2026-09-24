@@ -34,6 +34,7 @@ export const registerClientSchema = z
       .min(2, "Le prénom doit contenir au moins 2 caractères"),
     lastName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
     city: z.string().min(2, "La ville est requise"),
+    codePostal: z.string().optional(),
     phone: phoneSchema,
     email: emailSchema,
     password: passwordSchema,

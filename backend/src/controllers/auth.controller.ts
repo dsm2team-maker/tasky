@@ -14,6 +14,7 @@ const registerClientSchema = z.object({
   firstName: z.string().min(2, "Prénom trop court"),
   lastName: z.string().min(2, "Nom trop court"),
   city: z.string().min(2, "Ville requise"),
+  codePostal: z.string().regex(/^\d{5}$/, "Code postal invalide").optional(),
   phone: z.string().optional(),
 });
 
@@ -23,6 +24,7 @@ const registerPrestataireSchema = z.object({
   firstName: z.string().min(2, "Prénom trop court"),
   lastName: z.string().min(2, "Nom trop court"),
   city: z.string().min(2, "Ville requise"),
+  codePostal: z.string().regex(/^\d{5}$/, "Code postal invalide").optional(),
   phone: z.string().min(10, "Téléphone invalide"),
   competences: z.array(z.string()).max(3, "Maximum 3 compétences"),
   cguAccepted: z.boolean().refine((val) => val === true, { message: "Vous devez accepter les CGU" }),
@@ -41,7 +43,7 @@ export const registerClient = async (req: Request, res: Response) => {
     if (!validation.success)
       return res.status(400).json({ success: false, message: "Données invalides", errors: validation.error.flatten().fieldErrors });
 
-    const { email, password, firstName, lastName, city, phone } = validation.data;
+    const { email, password, firstName, lastName, city, codePostal, phone } = validation.data;
 
     if (await prisma.user.findUnique({ where: { email } }))
       return res.status(409).json({ success: false, message: "Un compte existe déjà avec cet email" });
@@ -51,7 +53,7 @@ export const registerClient = async (req: Request, res: Response) => {
 
     const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const user = await prisma.$transaction(async (tx: any) => {
-      const u = await tx.user.create({ data: { email, password: hashedPassword, role: "CLIENT", firstName, lastName, city, phone } });
+      const u = await tx.user.create({ data: { email, password: hashedPassword, role: "CLIENT", firstName, lastName, city, codePostal, phone } });
       await tx.client.create({ data: { userId: u.id } });
       return u;
     });
@@ -66,7 +68,7 @@ export const registerClient = async (req: Request, res: Response) => {
 
     return res.status(201).json({
       success: true, message: "Compte client créé avec succès",
-      data: { user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName, city: user.city, phone: user.phone, emailVerified: user.emailVerified, createdAt: user.createdAt }, tokens: { accessToken, refreshToken } },
+      data: { user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName, city: user.city, codePostal: user.codePostal, phone: user.phone, emailVerified: user.emailVerified, createdAt: user.createdAt }, tokens: { accessToken, refreshToken } },
     });
   } catch (error) {
     console.error("Erreur registerClient:", error);
@@ -82,7 +84,7 @@ export const registerPrestataire = async (req: Request, res: Response) => {
     if (!validation.success)
       return res.status(400).json({ success: false, message: "Données invalides", errors: validation.error.flatten().fieldErrors });
 
-    const { email, password, firstName, lastName, city, phone, competences } = validation.data;
+    const { email, password, firstName, lastName, city, codePostal, phone, competences } = validation.data;
 
     if (await prisma.user.findUnique({ where: { email } }))
       return res.status(409).json({ success: false, message: "Un compte existe déjà avec cet email" });
@@ -98,7 +100,7 @@ export const registerPrestataire = async (req: Request, res: Response) => {
 
     const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const user = await prisma.$transaction(async (tx: any) => {
-      const u = await tx.user.create({ data: { email, password: hashedPassword, role: "PRESTATAIRE", firstName, lastName, city, phone } });
+      const u = await tx.user.create({ data: { email, password: hashedPassword, role: "PRESTATAIRE", firstName, lastName, city, codePostal, phone } });
       const prestataire = await tx.prestataire.create({ data: { userId: u.id } });
       await tx.competence.createMany({ data: competences.map((categoryId) => ({ prestataireId: prestataire.id, categoryId })) });
       return u;
@@ -114,7 +116,7 @@ export const registerPrestataire = async (req: Request, res: Response) => {
 
     return res.status(201).json({
       success: true, message: "Compte prestataire créé avec succès",
-      data: { user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName, city: user.city, phone: user.phone, emailVerified: user.emailVerified, createdAt: user.createdAt }, tokens: { accessToken, refreshToken } },
+      data: { user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName, city: user.city, codePostal: user.codePostal, phone: user.phone, emailVerified: user.emailVerified, createdAt: user.createdAt }, tokens: { accessToken, refreshToken } },
     });
   } catch (error) {
     console.error("Erreur registerPrestataire:", error);

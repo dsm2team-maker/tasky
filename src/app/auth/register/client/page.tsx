@@ -13,6 +13,7 @@ import { usePhoneValidation } from "@/hooks/usePhoneValidation";
 import { usePhoneInput } from "@/hooks/usePhoneInput";
 
 import { ProfilePhotoUpload } from "@/components/shared/ProfilePhotoUpload";
+import { CityInput } from "@/components/shared/CityInput";
 import { Input } from "@/components/ui/Input";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Button } from "@/components/ui/Button";
@@ -73,6 +74,7 @@ export default function RegisterClient() {
     handleSubmit,
     watch,
     control,
+    setValue,
     formState: { errors },
   } = useForm<RegisterClientInput>({
     resolver: zodResolver(registerClientSchema),
@@ -93,6 +95,7 @@ export default function RegisterClient() {
         firstName: data.firstName,
         lastName: data.lastName,
         city: data.city,
+        codePostal: data.codePostal,
         phone: data.phone,
       });
 
@@ -215,34 +218,32 @@ export default function RegisterClient() {
           />
         </div>
 
-        <Input
-          label="Ville"
-          type="text"
-          placeholder="Paris"
-          error={errors.city?.message}
-          {...register("city")}
-          icon={
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+        <div className="grid grid-cols-2 gap-3">
+          <Controller
+            name="city"
+            control={control}
+            render={({ field }) => (
+              <CityInput
+                label="Ville"
+                value={field.value || ""}
+                onChange={field.onChange}
+                onCitySelect={(city: string, postalCode: string) => {
+                  setValue("city", city, { shouldValidate: true });
+                  setValue("codePostal", postalCode);
+                }}
+                error={errors.city?.message}
+                placeholder="Ex: Paris ou 75001"
               />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-          }
-        />
+            )}
+          />
+          <Input
+            label="Code postal"
+            placeholder="75001"
+            readOnly
+            className="bg-gray-50 cursor-not-allowed"
+            {...register("codePostal")}
+          />
+        </div>
 
         <Controller
           name="phone"
