@@ -101,7 +101,7 @@ export const contesterPrestationHandler = async (req: AuthRequest, res: Response
 export const creerReviewHandler = async (req: AuthRequest, res: Response) => {
   try {
     const { rating, comment } = req.body;
-    if (!rating || typeof rating !== "number")
+    if (!rating || typeof rating !== "number" || !Number.isInteger(rating))
       return res.status(400).json({ success: false, message: "Note (1-5) requise" });
 
     const review = await creerReview(req.user!.userId, req.params.id, { rating, comment });

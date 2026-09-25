@@ -22,10 +22,22 @@ import { connectOnboardingCompleteTemplate } from "../emails/connect-onboarding-
 import { transferCompletedTemplate } from "../emails/transfer-completed.template";
 import { transferFailedTemplate } from "../emails/transfer-failed.template";
 import { prisma } from "../lib/prisma";
+import { escapeHtml } from "../utils/html.utils";
+
+// Tous les champs des payloads email sont des strings/numbers/booleans simples (voir EmailPayloadMap) —
+// on échappe chaque string avant de les passer aux templates, qui interpolent sans échapper eux-mêmes.
+const escapePayload = (payload: Record<string, unknown>): Record<string, unknown> => {
+  const escaped: Record<string, unknown> = {};
+  for (const key of Object.keys(payload)) {
+    const value = payload[key];
+    escaped[key] = typeof value === "string" ? escapeHtml(value) : value;
+  }
+  return escaped;
+};
 
 const processEmailJob = async (job: Job<EmailJobData>) => {
   const { type, to } = job.data;
-  const payload = job.data.payload as any;
+  const payload = escapePayload(job.data.payload as unknown as Record<string, unknown>) as any;
   console.log(`📧 Traitement job: ${type} → ${to}`);
 
   let subject = "";

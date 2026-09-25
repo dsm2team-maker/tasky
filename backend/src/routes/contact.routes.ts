@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { resend, emailConfig } from "../config/resend.config";
 import { contactTemplate } from "../emails/contact.template";
 import { authMiddleware, AuthRequest } from "../middleware/auth.middleware";
+import { escapeHtml } from "../utils/html.utils";
 
 const router = Router();
 
@@ -32,12 +33,12 @@ router.post("/", authMiddleware, async (req: AuthRequest, res: Response) => {
       replyTo: user.email,
       subject: `[Tasky Contact] ${sujet}${reference ? ` — ${reference}` : ""} — ${firstName}`,
       html: contactTemplate({
-        firstName,
-        email: user.email,
+        firstName: escapeHtml(firstName),
+        email: escapeHtml(user.email),
         role,
         sujet,
-        reference: reference?.trim() || "",
-        message: message.trim(),
+        reference: escapeHtml(reference?.trim() || ""),
+        message: escapeHtml(message.trim()),
       }),
     });
 

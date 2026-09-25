@@ -100,6 +100,75 @@ export const uploadAvatar = async (req: AuthRequest, res: Response) => {
 };
 
 // =============================================
+// UPLOAD PHOTO (générique — pièces jointes de demande, etc.)
+// POST /api/users/photo
+// Body: { imageData: "data:image/jpeg;base64,..." }
+// Distinct de /avatar : ne touche jamais à user.avatar et ne supprime aucun
+// fichier existant (plusieurs photos indépendantes peuvent coexister).
+// =============================================
+export const uploadPhoto = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const { imageData } = req.body;
+
+    if (!imageData) {
+      return res.status(400).json({ success: false, message: "Image requise" });
+    }
+
+    const matches = imageData.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
+    if (!matches) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Format d'image invalide" });
+    }
+
+    const mimeType = matches[1];
+    const base64Data = matches[2];
+    const buffer = Buffer.from(base64Data, "base64");
+
+    if (buffer.length > 5 * 1024 * 1024) {
+      return res
+        .status(400)
+        .json({ success: false, message: "L'image ne doit pas dépasser 5 Mo" });
+    }
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(mimeType)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Format accepté : JPG, PNG ou WEBP" });
+    }
+
+    const ext = mimeType.split("/")[1].replace("jpeg", "jpg");
+    const fileName = `photo-${userId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(AVATAR_BUCKET)
+      .upload(fileName, buffer, { contentType: mimeType, upsert: false });
+
+    if (uploadError) {
+      console.error("Erreur upload Supabase:", uploadError);
+      return res
+        .status(500)
+        .json({ success: false, message: "Erreur lors de l'upload" });
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(fileName);
+
+    return res.status(200).json({
+      success: true,
+      message: "Photo envoyée avec succès",
+      data: { photoUrl: publicUrl },
+    });
+  } catch (error) {
+    console.error("Erreur uploadPhoto:", error);
+    return res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+};
+
+// =============================================
 // SUPPRIMER AVATAR
 // DELETE /api/users/avatar
 // =============================================

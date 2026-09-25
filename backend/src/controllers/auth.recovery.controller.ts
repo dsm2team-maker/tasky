@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { authService } from "../modules/auth/auth.service";
 import { recoverEmailSendOtp, recoverEmailVerifyOtp } from "../modules/users/user.service";
-import { handleOtpError } from "../utils/errorHandler";
+import { handleError, handleOtpError } from "../utils/errorHandler";
 
 // ─── Mot de passe oublié ──────────────────────────────────────────────────────
 
@@ -12,8 +12,10 @@ export const forgotPassword = async (req: Request, res: Response) => {
     await authService.sendResetPasswordEmail(email);
     return res.status(200).json({ success: true, message: "Si ce compte existe, un email a été envoyé." });
   } catch (error: any) {
+    // Réponse identique que le compte existe ou non — évite l'énumération d'emails
     if (error.message === "USER_NOT_FOUND")
-      return res.status(404).json({ success: false, message: "Aucun compte trouvé avec cette adresse email." });
+      return res.status(200).json({ success: true, message: "Si ce compte existe, un email a été envoyé." });
+    console.error("Erreur forgotPassword:", error);
     return res.status(500).json({ success: false, message: "Erreur serveur" });
   }
 };
@@ -26,8 +28,8 @@ export const resetPassword = async (req: Request, res: Response) => {
     if (!token || !password) return res.status(400).json({ success: false, message: "Données invalides" });
     await authService.resetPassword(token, password);
     return res.status(200).json({ success: true, message: "Mot de passe réinitialisé avec succès." });
-  } catch (error: any) {
-    return res.status(400).json({ success: false, message: error.message || "Token invalide ou expiré" });
+  } catch (error) {
+    return handleError(error, res);
   }
 };
 

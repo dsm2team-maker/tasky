@@ -179,6 +179,7 @@ export const routes = {
     users: {
       profile: "/api/users/profile",
       avatar: "/api/users/avatar",
+      photo: "/api/users/photo",
       requestPhoneChange: "/api/users/profile/request-phone-change",
       verifyPhoneOtp: "/api/users/profile/verify-phone-otp",
       requestEmailChange: "/api/users/profile/request-email-change",

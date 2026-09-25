@@ -1,4 +1,5 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import {
   createDemandeHandler,
   getMyDemandesHandler,
@@ -16,8 +17,17 @@ import { authMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
 
+// Anti-spam dédié — limite la création de demandes, plus strict que le rate-limiter global
+const createDemandeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Trop de demandes créées, réessayez plus tard" },
+});
+
 // ─── Demandes client ──────────────────────────────────────────────────────────
-router.post("/", authMiddleware, createDemandeHandler);
+router.post("/", authMiddleware, createDemandeLimiter, createDemandeHandler);
 router.get("/", authMiddleware, getMyDemandesHandler);
 
 // ─── Prestataire — doit être AVANT /:id ──────────────────────────────────────

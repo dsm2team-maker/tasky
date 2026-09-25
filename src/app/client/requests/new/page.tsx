@@ -125,9 +125,9 @@ export default function NewDemandePage() {
       const reader = new FileReader();
       reader.onload = async (ev) => {
         const imageData = ev.target?.result as string;
-        const res = await apiClient.post("/api/users/avatar", { imageData });
-        if (res.data.data?.avatarUrl) {
-          setPhotos((prev) => [...prev, res.data.data.avatarUrl]);
+        const res = await apiClient.post("/api/users/photo", { imageData });
+        if (res.data.data?.photoUrl) {
+          setPhotos((prev) => [...prev, res.data.data.photoUrl]);
         }
         setUploading(false);
       };

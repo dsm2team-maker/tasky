@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   uploadAvatar,
+  uploadPhoto,
   deleteAvatar,
   getMyProfile,
   updateMyProfile,
@@ -22,6 +23,9 @@ const router = Router();
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 router.post("/avatar", authMiddleware, uploadAvatar);
 router.delete("/avatar", authMiddleware, deleteAvatar);
+
+// ─── Photo générique (pièces jointes de demande, etc.) ────────────────────────
+router.post("/photo", authMiddleware, uploadPhoto);
 
 // ─── Profil commun (client + prestataire) ────────────────────────────────────
 router.get("/profile", authMiddleware, getMyProfile);

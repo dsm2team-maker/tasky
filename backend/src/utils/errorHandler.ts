@@ -14,6 +14,9 @@ const ERROR_MAP: Record<string, [number, string]> = {
   PHONE_ALREADY_USED:        [409, "Ce numéro est déjà associé à un autre compte"],
   NO_PHONE:                  [400, "Aucun numéro de téléphone enregistré"],
   HAS_ACTIVE_PRESTATIONS:    [409, "Impossible — vous avez des prestations actives en cours"],
+  "Token invalide":          [400, "Token invalide"],
+  "Token expiré":            [400, "Token expiré"],
+  "Token déjà utilisé":      [400, "Token déjà utilisé"],
 
   // OTP
   OTP_EXPIRED_OR_NOT_FOUND:  [400, "Code expiré ou introuvable. Renvoyez un nouveau code"],

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { authService } from "../modules/auth/auth.service";
+import { handleError } from "../utils/errorHandler";
 
 // ─── Vérification email ───────────────────────────────────────────────────────
 
@@ -10,8 +11,8 @@ export const verifyEmail = async (req: Request, res: Response) => {
     if (!token) return res.status(400).json({ success: false, message: "Token manquant" });
     await authService.verifyEmailToken(token);
     return res.status(200).json({ success: true, message: "Email vérifié avec succès !" });
-  } catch (error: any) {
-    return res.status(400).json({ success: false, message: error.message || "Token invalide ou expiré" });
+  } catch (error) {
+    return handleError(error, res);
   }
 };
 

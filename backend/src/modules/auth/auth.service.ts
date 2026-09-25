@@ -129,6 +129,7 @@ export const authService = {
         where: { token },
         data: { used: true },
       }),
+      prisma.refreshToken.deleteMany({ where: { userId: record.userId } }),
     ]);
   },
 
