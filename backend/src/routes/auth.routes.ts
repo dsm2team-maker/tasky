@@ -7,13 +7,27 @@ import { authMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
 
-// Anti brute-force dédié — bien plus strict que le rate-limiter global (1000 req/15min partagé sur toute l'API)
+// Anti brute-force dédié — nécessite app.set("trust proxy") (index.ts), sinon req.ip est
+// l'IP du proxy Railway et tous les utilisateurs partagent le même compteur.
+const loginMessage = { success: false, message: "Trop de tentatives de connexion, réessayez dans 15 minutes" };
+
+// Par couple IP + compte ciblé : ralentit le brute-force d'un compte sans bloquer les autres
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, message: "Trop de tentatives de connexion, réessayez dans 15 minutes" },
+  keyGenerator: (req) => `${req.ip}:${String(req.body?.email ?? "").trim().toLowerCase()}`,
+  message: loginMessage,
+});
+
+// Par IP seule : empêche une même IP de balayer de nombreux comptes
+const loginIpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: loginMessage,
 });
 
 // Inscription
@@ -21,7 +35,7 @@ router.post("/register/client", registerClient);
 router.post("/register/prestataire", registerPrestataire);
 
 // Connexion
-router.post("/login", loginLimiter, login);
+router.post("/login", loginIpLimiter, loginLimiter, login);
 router.post("/refresh", refreshToken);
 
 // Verification email

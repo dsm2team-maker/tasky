@@ -88,11 +88,15 @@ export const getUsers = async (
 };
 
 export const suspendUser = async (userId: string) => {
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data: { isActive: false },
-    select: { email: true, firstName: true },
-  });
+  // Révoque aussi les sessions : l'access token en cours est rejeté par authMiddleware (isActive)
+  const [user] = await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: { isActive: false },
+      select: { email: true, firstName: true },
+    }),
+    prisma.refreshToken.deleteMany({ where: { userId } }),
+  ]);
   notifyAccountStatus(user.email, user.firstName, true);
 };
 

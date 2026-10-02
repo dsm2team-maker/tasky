@@ -205,14 +205,24 @@ export const refreshToken = async (req: Request, res: Response) => {
     }
 
     const user = storedToken.user;
+    // Compte suspendu ou supprimé : plus de renouvellement de session (SEC-005)
+    if (!user.isActive || user.deletedAt) {
+      await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
+      return res.status(403).json({ success: false, message: "Votre compte a été désactivé. Contactez le support." });
+    }
+
     const payload = { userId: user.id, email: user.email, role: user.role as "CLIENT" | "PRESTATAIRE" | "ADMIN" };
     const newAccessToken = generateAccessToken(payload);
     const newRefreshToken = generateRefreshToken(payload);
 
-    await prisma.$transaction([
-      prisma.refreshToken.delete({ where: { token } }),
-      prisma.refreshToken.create({ data: { token: newRefreshToken, userId: user.id, expiresAt: getRefreshTokenExpiry() } }),
-    ]);
+    // Rotation à usage unique : deux appels concurrents avec le même token → un seul gagne
+    const rotated = await prisma.$transaction(async (tx) => {
+      const { count } = await tx.refreshToken.deleteMany({ where: { token } });
+      if (count === 0) return false;
+      await tx.refreshToken.create({ data: { token: newRefreshToken, userId: user.id, expiresAt: getRefreshTokenExpiry() } });
+      return true;
+    });
+    if (!rotated) return res.status(401).json({ success: false, message: "Refresh token invalide ou expiré" });
 
     return res.status(200).json({ success: true, data: { tokens: { accessToken: newAccessToken, refreshToken: newRefreshToken } } });
   } catch (error) {
