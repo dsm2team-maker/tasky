@@ -7,7 +7,7 @@
 
 ---
 
-## Suivi des corrections — Phase 1 (02/10/2026, non commitée)
+## Suivi des corrections — Phase 1 (02/10/2026, commits 0fa0251 → ad8f27c)
 
 Vérifications : `tsc --noEmit` backend et front OK ; `npm test` backend : 10/10.
 Aucune modification de schéma Prisma (le mode d'application du schéma en prod n'est pas confirmé, cf. SEC-026).
