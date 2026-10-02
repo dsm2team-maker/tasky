@@ -2,6 +2,7 @@ import { prisma } from "../../lib/prisma";
 import { getStripe } from "../../config/stripe.config";
 import { env } from "../../config/env.config";
 import { notifyConnectOnboardingComplete } from "../../services/notifications.service";
+import { reconcilePendingTransfers } from "./transfer.service";
 
 const getPrestataireByUserId = async (userId: string) => {
   const prestataire = await prisma.prestataire.findUnique({
@@ -106,5 +107,12 @@ export const syncConnectAccountStatus = async (account: {
 
   if (status === "COMPLETE" && prestataire.stripeOnboardingStatus !== "COMPLETE") {
     notifyConnectOnboardingComplete(prestataire.user.email, prestataire.user.firstName);
+  }
+
+  // Virements activés : verser immédiatement les transferts restés en attente (SKIPPED)
+  if (account.payouts_enabled) {
+    await reconcilePendingTransfers({ prestataireId: prestataire.id }).catch((e) =>
+      console.error("[connect] réconciliation transferts:", e?.message),
+    );
   }
 };

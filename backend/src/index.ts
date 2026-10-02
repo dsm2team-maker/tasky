@@ -20,6 +20,7 @@ dotenv.config();
 import "./workers/email.worker";
 import { startAutoValidateJob } from "./jobs/autoValidate.job";
 import { startExpireDevisJob } from "./jobs/expireDevis.job";
+import { startReconcileTransfersJob } from "./jobs/reconcileTransfers.job";
 
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
@@ -27,6 +28,10 @@ import prestatairesRoutes from "./routes/prestataires.routes";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Derrière le proxy Railway : nombre de proxys de confiance devant l'app, pour que req.ip
+// soit l'IP réelle du client (rate limiting). À valider en staging via les logs de req.ip.
+app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS ?? 1));
 
 app.use(helmet());
 app.use(morgan("dev"));
@@ -102,6 +107,7 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   startAutoValidateJob();
   startExpireDevisJob();
+  startReconcileTransfersJob();
 });
 
 export default app;

@@ -5,6 +5,13 @@ import { prisma } from "../lib/prisma";
 import { notifyOrderConfirmed } from "../services/notifications.service";
 import { sendSystemMessageToUser } from "../modules/messages/message.service";
 import { splitMontant } from "../config/commission.config";
+import {
+  expectedAmountCentimes,
+  verifyPaymentIntentForPrestation,
+} from "../modules/payment/payment.verification";
+import { blockTransferForDispute } from "../modules/payment/transfer.service";
+
+const STRIPE_MIN_AMOUNT_CENTIMES = 50;
 
 // POST /api/payment/create-intent
 export async function createPaymentIntentHandler(req: Request, res: Response) {
@@ -41,16 +48,23 @@ export async function createPaymentIntentHandler(req: Request, res: Response) {
     }
 
     const montant = prestation.montantFinal ?? prestation.montant;
-    const montantCentimes = Math.round(montant * 100);
+    const montantCentimes = expectedAmountCentimes(prestation);
+    if (montantCentimes < STRIPE_MIN_AMOUNT_CENTIMES) {
+      return res.status(400).json({ success: false, message: "Montant inférieur au minimum de paiement (0,50 €)" });
+    }
     const client = prestation.demande.client.user;
     const prestataire = prestation.prestataire.user;
 
     const stripe = getStripe();
 
-    // Réutiliser le PaymentIntent existant si déjà créé
+    // Réutiliser le PaymentIntent existant si déjà créé (en resynchronisant le montant)
     if (prestation.stripePaymentIntentId) {
       const existing = await stripe.paymentIntents.retrieve(prestation.stripePaymentIntentId);
       if (existing.status !== "succeeded" && existing.status !== "canceled") {
+        if (existing.amount !== montantCentimes) {
+          const updated = await stripe.paymentIntents.update(existing.id, { amount: montantCentimes });
+          return res.json({ success: true, clientSecret: updated.client_secret, montant });
+        }
         return res.json({ success: true, clientSecret: existing.client_secret, montant });
       }
     }
@@ -117,6 +131,10 @@ export async function confirmPaymentHandler(req: Request, res: Response) {
 
     // Vérifier auprès de Stripe que le paiement est bien réussi
     const stripe = getStripe();
+    if (prestation.stripePaymentIntentId !== paymentIntentId) {
+      return res.status(400).json({ success: false, message: "Paiement invalide pour cette prestation" });
+    }
+
     const pi = await stripe.paymentIntents.retrieve(paymentIntentId, { expand: ["latest_charge"] });
 
     if (pi.status !== "succeeded") {
@@ -125,6 +143,12 @@ export async function confirmPaymentHandler(req: Request, res: Response) {
 
     if (prestation.status !== "EN_ATTENTE_PAIEMENT") {
       return res.json({ success: true, message: "Déjà traité" });
+    }
+
+    const verification = verifyPaymentIntentForPrestation(pi, prestation);
+    if (!verification.ok) {
+      console.error(`[payment/confirm] PI ${pi.id} refusé pour prestation ${prestationId}: ${verification.reason}`);
+      return res.status(400).json({ success: false, message: "Paiement invalide pour cette prestation" });
     }
 
     const latestCharge = pi.latest_charge as any;
@@ -144,7 +168,7 @@ export async function confirmPaymentHandler(req: Request, res: Response) {
     // EN_ATTENTE_PAIEMENT -> EN_COURS envoie les notifications. Évite le doublon
     // quand ce handler et le webhook Stripe s'exécutent en parallèle.
     const transition = await prisma.prestation.updateMany({
-      where: { id: prestationId, status: "EN_ATTENTE_PAIEMENT" },
+      where: { id: prestationId, status: "EN_ATTENTE_PAIEMENT", stripePaymentIntentId: pi.id },
       data: { status: "EN_COURS", stripeChargeId, dateEcheanceFinal },
     });
 
@@ -210,76 +234,100 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
     return res.status(400).json({ success: false, message: `Webhook error: ${err.message}` });
   }
 
-  if (event.type === "payment_intent.succeeded") {
-    const pi = event.data.object as any;
-    const prestationId = pi.metadata?.prestationId;
-
-    if (prestationId) {
-      const prestation = await prisma.prestation.findUnique({
-        where: { id: prestationId },
-        select: {
-          status: true,
-          montant: true,
-          montantFinal: true,
-          demande: {
-            select: {
-              id: true,
-              reference: true,
-              titre: true,
-              delaiJours: true,
-              client: { select: { userId: true, user: { select: { email: true, firstName: true } } } },
-            },
-          },
-          prestataire: { select: { userId: true, user: { select: { email: true, firstName: true } } } },
-        },
-      });
-
-      const stripeChargeId =
-        typeof pi.latest_charge === "string" ? pi.latest_charge : pi.latest_charge?.id ?? null;
-
-      const delaiJours = prestation?.demande.delaiJours ?? 7;
-      const dateEcheanceFinal = new Date();
-      dateEcheanceFinal.setDate(dateEcheanceFinal.getDate() + delaiJours);
-
-      // Transition atomique : seul l'appel qui fait réellement passer le statut
-      // envoie les notifications, pour éviter le doublon avec /api/payment/confirm.
-      const transition = await prisma.prestation.updateMany({
-        where: { id: prestationId, status: "EN_ATTENTE_PAIEMENT" },
-        data: { status: "EN_COURS", stripeChargeId, dateEcheanceFinal },
-      });
-
-      if (transition.count > 0 && prestation) {
-        await prisma.demande.updateMany({
-          where: { prestations: { some: { id: prestationId } } },
-          data: { status: "EN_COURS" },
-        });
-
-        await sendSystemMessageToUser(
-          prestation.demande.client.userId,
-          "✅ Paiement effectué. La prestation est maintenant en cours.",
-          prestationId,
-        ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
-
-        await sendSystemMessageToUser(
-          prestation.prestataire.userId,
-          "✅ Paiement reçu. La prestation est maintenant en cours.",
-          prestationId,
-        ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
-
-        notifyOrderConfirmed({
-          clientEmail:          prestation.demande.client.user.email,
-          clientFirstName:      prestation.demande.client.user.firstName,
-          prestataireEmail:     prestation.prestataire.user.email,
-          prestataireFirstName: prestation.prestataire.user.firstName,
-          demandeReference:     prestation.demande.reference,
-          demandeTitre:         prestation.demande.titre,
-          montant:              prestation.montantFinal ?? prestation.montant,
-          demandeId:            prestation.demande.id,
-          prestationId,
-        });
-      }
+  try {
+    if (event.type === "payment_intent.succeeded") {
+      await handlePaymentIntentSucceeded(event.data.object as any);
+    } else if (event.type === "charge.dispute.created") {
+      await handleDisputeCreated(event.data.object as any);
     }
+  } catch (err) {
+    // 500 → Stripe rejouera l'événement (les transitions sont idempotentes)
+    console.error(`[webhook] erreur de traitement ${event.type} (${event.id}):`, err);
+    return res.status(500).json({ received: false });
   }
 
   return res.json({ received: true });
+}
+
+async function handlePaymentIntentSucceeded(pi: any) {
+  const prestationId = pi.metadata?.prestationId;
+  if (!prestationId) return;
+
+  const prestation = await prisma.prestation.findUnique({
+    where: { id: prestationId },
+    select: {
+      id: true,
+      stripePaymentIntentId: true,
+      status: true,
+      montant: true,
+      montantFinal: true,
+      demande: {
+        select: {
+          id: true,
+          reference: true,
+          titre: true,
+          delaiJours: true,
+          client: { select: { userId: true, user: { select: { email: true, firstName: true } } } },
+        },
+      },
+      prestataire: { select: { userId: true, user: { select: { email: true, firstName: true } } } },
+    },
+  });
+  if (!prestation || prestation.status !== "EN_ATTENTE_PAIEMENT") return;
+
+  const verification = verifyPaymentIntentForPrestation(pi, prestation);
+  if (!verification.ok) {
+    console.error(`[webhook] PI ${pi.id} ignoré pour prestation ${prestationId}: ${verification.reason}`);
+    return;
+  }
+
+  const stripeChargeId =
+    typeof pi.latest_charge === "string" ? pi.latest_charge : pi.latest_charge?.id ?? null;
+
+  const delaiJours = prestation.demande.delaiJours ?? 7;
+  const dateEcheanceFinal = new Date();
+  dateEcheanceFinal.setDate(dateEcheanceFinal.getDate() + delaiJours);
+
+  // Transition atomique : seul l'appel qui fait réellement passer le statut
+  // envoie les notifications, pour éviter le doublon avec /api/payment/confirm.
+  const transition = await prisma.prestation.updateMany({
+    where: { id: prestationId, status: "EN_ATTENTE_PAIEMENT", stripePaymentIntentId: pi.id },
+    data: { status: "EN_COURS", stripeChargeId, dateEcheanceFinal },
+  });
+  if (transition.count === 0) return;
+
+  await prisma.demande.updateMany({
+    where: { prestations: { some: { id: prestationId } } },
+    data: { status: "EN_COURS" },
+  });
+
+  await sendSystemMessageToUser(
+    prestation.demande.client.userId,
+    "✅ Paiement effectué. La prestation est maintenant en cours.",
+    prestationId,
+  ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+
+  await sendSystemMessageToUser(
+    prestation.prestataire.userId,
+    "✅ Paiement reçu. La prestation est maintenant en cours.",
+    prestationId,
+  ).catch((e: any) => console.error("[Tasky-Infos]", e.message));
+
+  notifyOrderConfirmed({
+    clientEmail:          prestation.demande.client.user.email,
+    clientFirstName:      prestation.demande.client.user.firstName,
+    prestataireEmail:     prestation.prestataire.user.email,
+    prestataireFirstName: prestation.prestataire.user.firstName,
+    demandeReference:     prestation.demande.reference,
+    demandeTitre:         prestation.demande.titre,
+    montant:              prestation.montantFinal ?? prestation.montant,
+    demandeId:            prestation.demande.id,
+    prestationId,
+  });
+}
+
+async function handleDisputeCreated(dispute: any) {
+  const chargeId = typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id;
+  if (!chargeId) return;
+  await blockTransferForDispute(chargeId, dispute.reason ?? "inconnu");
 }
