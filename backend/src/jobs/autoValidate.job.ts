@@ -25,10 +25,13 @@ async function runAutoValidation(): Promise<number> {
 
   for (const p of expired) {
     try {
-      await prisma.prestation.update({
-        where: { id: p.id },
+      // Conditionnel : si le client a validé ou contesté depuis la lecture, on ne touche à rien
+      // (sinon une contestation pouvait être écrasée et le transfert parti malgré le litige).
+      const { count: transitioned } = await prisma.prestation.updateMany({
+        where: { id: p.id, status: "A_VALIDER" },
         data: { status: "TERMINEE", validatedAt: now },
       });
+      if (transitioned === 0) continue;
       await sendSystemMessageToUser(
         p.demande.client.user.id,
         "✅ Prestation validée automatiquement.\n\nLe délai de 3 jours est écoulé sans contestation de votre part. La prestation est maintenant terminée.",

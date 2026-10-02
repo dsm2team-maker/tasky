@@ -468,16 +468,19 @@ export const validerPrestation = async (
   if (prestation.status !== "A_VALIDER")
     throw new Error("PRESTATION_NOT_A_VALIDER");
 
-  await prisma.$transaction([
-    prisma.prestation.update({
-      where: { id: prestationId },
+  // Transition conditionnelle : si l'auto-validation ou une contestation est passée
+  // entre-temps, on n'écrase pas le statut (et on ne déclenche pas de 2e transfert).
+  await prisma.$transaction(async (tx) => {
+    const { count } = await tx.prestation.updateMany({
+      where: { id: prestationId, status: "A_VALIDER" },
       data: { status: "TERMINEE", validatedAt: new Date() },
-    }),
-    prisma.demande.update({
+    });
+    if (count === 0) throw new Error("PRESTATION_NOT_A_VALIDER");
+    await tx.demande.update({
       where: { id: prestation.demandeId },
       data: { status: "TERMINEE" },
-    }),
-  ]);
+    });
+  });
 
   await sendSystemMessageToUser(
     prestation.demande.client.userId,
@@ -535,22 +538,25 @@ export const contesterPrestation = async (
   if (!motif || motif.trim().length < 10)
     throw new Error("MOTIF_TROP_COURT");
 
+  // Transition conditionnelle d'abord : si l'auto-validation est passée entre-temps,
+  // la contestation est refusée au lieu d'être silencieusement écrasée.
+  await prisma.$transaction(async (tx) => {
+    const { count } = await tx.prestation.updateMany({
+      where: { id: prestationId, status: "A_VALIDER" },
+      data: { status: "EN_COURS" },
+    });
+    if (count === 0) throw new Error("PRESTATION_NOT_A_VALIDER");
+    await tx.demande.update({
+      where: { id: prestation.demandeId },
+      data: { status: "EN_COURS" },
+    });
+  });
+
   await creerSignalement(
     userId,
     prestation.demandeId,
     `Contestation de prestation — ${motif.trim()}`,
   ).catch((e: any) => console.error("[Signalement]", e.message));
-
-  await prisma.$transaction([
-    prisma.prestation.update({
-      where: { id: prestationId },
-      data: { status: "EN_COURS" },
-    }),
-    prisma.demande.update({
-      where: { id: prestation.demandeId },
-      data: { status: "EN_COURS" },
-    }),
-  ]);
 
   await sendSystemMessageToUser(
     userId,

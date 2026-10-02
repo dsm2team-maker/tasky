@@ -272,6 +272,8 @@ export const accepterDevis = async (userId: string, devisId: string) => {
   if (devis.demande.clientId !== client.id) throw new Error("FORBIDDEN");
   if (devis.status !== "ENVOYE") throw new Error("DEVIS_NON_DISPONIBLE");
   if (!devis.estSelectionnable) throw new Error("DEVIS_NON_SELECTIONNABLE");
+  if (devis.expiresAt <= new Date()) throw new Error("DEVIS_NON_DISPONIBLE");
+  if (devis.demande.status !== "PUBLIEE") throw new Error("DEMANDE_NON_DISPONIBLE");
 
   const isModification = devis.demande.typePrestation === "MODIFICATION";
 
@@ -285,11 +287,20 @@ export const accepterDevis = async (userId: string, devisId: string) => {
       });
 
   const { prestationId } = await prisma.$transaction(async (tx) => {
+    // Transitions conditionnelles (SEC-008) : deux acceptations concurrentes sur la même
+    // demande ne peuvent pas créer deux prestations — la seconde voit count === 0 et annule.
+    const demandeLock = await tx.demande.updateMany({
+      where: { id: devis.demandeId, status: "PUBLIEE" },
+      data: { status: isModification ? "EN_ATTENTE_INSPECTION" : "EN_ATTENTE_PAIEMENT" },
+    });
+    if (demandeLock.count === 0) throw new Error("DEMANDE_NON_DISPONIBLE");
+
     // Accepter ce devis
-    await tx.devis.update({
-      where: { id: devisId },
+    const devisLock = await tx.devis.updateMany({
+      where: { id: devisId, status: "ENVOYE", estSelectionnable: true, expiresAt: { gt: new Date() } },
       data: { status: "ACCEPTE", estSelectionnable: false },
     });
+    if (devisLock.count === 0) throw new Error("DEVIS_NON_DISPONIBLE");
 
     let newPrestation;
 
@@ -298,11 +309,6 @@ export const accepterDevis = async (userId: string, devisId: string) => {
       await tx.devis.updateMany({
         where: { demandeId: devis.demandeId, id: { not: devisId } },
         data: { estSelectionnable: false },
-      });
-
-      await tx.demande.update({
-        where: { id: devis.demandeId },
-        data: { status: "EN_ATTENTE_INSPECTION" },
       });
 
       newPrestation = await tx.prestation.create({
@@ -319,11 +325,6 @@ export const accepterDevis = async (userId: string, devisId: string) => {
       await tx.devis.updateMany({
         where: { demandeId: devis.demandeId, id: { not: devisId } },
         data: { status: "REFUSE", estSelectionnable: false },
-      });
-
-      await tx.demande.update({
-        where: { id: devis.demandeId },
-        data: { status: "EN_ATTENTE_PAIEMENT" },
       });
 
       newPrestation = await tx.prestation.create({
