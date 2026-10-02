@@ -44,6 +44,8 @@ export const recoverEmailSendOtpHandler = async (req: Request, res: Response) =>
     const result = await recoverEmailSendOtp(email.toLowerCase().trim());
     return res.json({ success: true, message: "Code envoyé.", data: result });
   } catch (error: any) {
+    if (error.message === "RECOVER_EMAIL_UNAVAILABLE")
+      return res.status(503).json({ success: false, code: "RECOVER_EMAIL_UNAVAILABLE", message: "La récupération par SMS est momentanément indisponible. Contactez le support via le formulaire de contact." });
     if (error.message === "USER_NOT_FOUND")
       return res.status(404).json({ success: false, message: "Aucun compte trouvé avec cette adresse email." });
     if (error.message === "NO_PHONE")
@@ -68,6 +70,8 @@ export const recoverEmailVerifyOtpHandler = async (req: Request, res: Response) 
     const result = await recoverEmailVerifyOtp(email.toLowerCase().trim(), otp, newEmail.toLowerCase().trim());
     return res.json({ success: true, message: "Email mis à jour. Un lien de connexion a été envoyé sur votre nouvelle adresse.", data: result });
   } catch (error: any) {
+    if (error.message === "RECOVER_EMAIL_UNAVAILABLE")
+      return res.status(503).json({ success: false, code: "RECOVER_EMAIL_UNAVAILABLE", message: "La récupération par SMS est momentanément indisponible. Contactez le support via le formulaire de contact." });
     if (handleOtpError(error, res)) return;
     if (error.message === "SAME_EMAIL")
       return res.status(400).json({ success: false, message: "C'est déjà votre adresse email actuelle" });

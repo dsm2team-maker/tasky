@@ -2,11 +2,43 @@ import { prisma } from "../../lib/prisma";
 import { addEmailJob, EMAIL_PRIORITY } from "../../queues/email.queue";
 import { generateOtp, generateResetToken } from "../../utils/token.utils";
 import { env } from "../../config/env.config";
+import { timingSafeEqual } from "crypto";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 const OTP_COOLDOWN_MS = 2 * 60 * 1000;
 const MAX_OTP_ATTEMPTS = 5;
 const BIO_MIN = 100;
+
+// ─── OTP : tentative atomique ─────────────────────────────────────────────────
+// Le compteur est incrémenté AVANT la comparaison, par une mise à jour conditionnée à la
+// valeur lue (verrouillage optimiste). Avant : N requêtes parallèles lisaient toutes
+// attempts=0 et testaient N codes → la limite de 5 essais était contournable (SEC-001/009).
+const otpEquals = (a: string, b: string) => {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ba.length === bb.length && timingSafeEqual(ba, bb);
+};
+
+export const consumeOtpAttempt = async (
+  record: { id: string; token: string; metadata: unknown },
+  otp: unknown,
+) => {
+  const metadata = (record.metadata ?? {}) as Record<string, unknown>;
+  const attempts = typeof metadata.attempts === "number" ? metadata.attempts : 0;
+  if (attempts >= MAX_OTP_ATTEMPTS) throw new Error("OTP_MAX_ATTEMPTS");
+
+  const remaining = MAX_OTP_ATTEMPTS - (attempts + 1);
+  const { count } = await prisma.verificationToken.updateMany({
+    where: { id: record.id, used: false, metadata: { path: ["attempts"], equals: attempts } },
+    data: { metadata: { ...metadata, attempts: attempts + 1 } as any },
+  });
+  // Une autre tentative concurrente a consommé ce créneau : refus sans comparer le code
+  if (count === 0) throw new Error(`OTP_INVALID:${Math.max(remaining, 0)}`);
+
+  if (typeof otp !== "string" || !otpEquals(record.token, otp)) {
+    throw new Error(`OTP_INVALID:${remaining}`);
+  }
+};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface UpdateProfileData {
@@ -190,17 +222,7 @@ export const verifyPhoneOtp = async (userId: string, otp: string) => {
 
   const metadata = record.metadata as { newPhone: string; attempts: number };
 
-  if (metadata.attempts >= MAX_OTP_ATTEMPTS)
-    throw new Error("OTP_MAX_ATTEMPTS");
-
-  if (record.token !== otp) {
-    await prisma.verificationToken.update({
-      where: { id: record.id },
-      data: { metadata: { ...metadata, attempts: metadata.attempts + 1 } },
-    });
-    const remaining = MAX_OTP_ATTEMPTS - (metadata.attempts + 1);
-    throw new Error(`OTP_INVALID:${remaining}`);
-  }
+  await consumeOtpAttempt(record, otp);
 
   const conflict = await prisma.user.findFirst({
     where: { phone: metadata.newPhone },
@@ -328,17 +350,7 @@ export const verifyEmailOtp = async (userId: string, otp: string) => {
 
   const metadata = record.metadata as { newEmail: string; attempts: number };
 
-  if (metadata.attempts >= MAX_OTP_ATTEMPTS)
-    throw new Error("OTP_MAX_ATTEMPTS");
-
-  if (record.token !== otp) {
-    await prisma.verificationToken.update({
-      where: { id: record.id },
-      data: { metadata: { ...metadata, attempts: metadata.attempts + 1 } },
-    });
-    const remaining = MAX_OTP_ATTEMPTS - (metadata.attempts + 1);
-    throw new Error(`OTP_INVALID:${remaining}`);
-  }
+  await consumeOtpAttempt(record, otp);
 
   const conflict = await prisma.user.findUnique({
     where: { email: metadata.newEmail },
@@ -480,18 +492,7 @@ export const confirmDeleteAccount = async (userId: string, otp: string) => {
 
   if (!record) throw new Error("OTP_EXPIRED_OR_NOT_FOUND");
 
-  const metadata = record.metadata as { attempts: number };
-
-  if (metadata.attempts >= MAX_OTP_ATTEMPTS) throw new Error("OTP_MAX_ATTEMPTS");
-
-  if (record.token !== otp) {
-    await prisma.verificationToken.update({
-      where: { id: record.id },
-      data: { metadata: { ...metadata, attempts: metadata.attempts + 1 } },
-    });
-    const remaining = MAX_OTP_ATTEMPTS - (metadata.attempts + 1);
-    throw new Error(`OTP_INVALID:${remaining}`);
-  }
+  await consumeOtpAttempt(record, otp);
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -585,15 +586,27 @@ const isPrestataireProfileComplete = async (
 };
 
 // =============================================================================
+// RECOVER EMAIL — disponibilité
+// =============================================================================
+// Aucun envoi de SMS n'est implémenté : hors dev, l'OTP n'était livré à personne mais
+// restait vérifiable → prise de contrôle de compte par force brute (SEC-001).
+// Ne réactiver qu'une fois l'envoi SMS réel en place (et le changement d'email confirmé
+// par lien sur la nouvelle adresse plutôt qu'appliqué directement).
+export const isRecoverEmailAvailable = () => env.isDev;
+
+// =============================================================================
 // RECOVER EMAIL — ÉTAPE 1
 // =============================================================================
 export const recoverEmailSendOtp = async (email: string) => {
+  if (!isRecoverEmailAvailable()) throw new Error("RECOVER_EMAIL_UNAVAILABLE");
+
   const user = await prisma.user.findUnique({
     where: { email: email.toLowerCase() },
-    select: { id: true, firstName: true, phone: true },
+    select: { id: true, firstName: true, phone: true, role: true },
   });
 
-  if (!user) throw new Error("USER_NOT_FOUND");
+  // Les comptes ADMIN sont exclus de ce flux (réponse identique à un compte inexistant)
+  if (!user || user.role === "ADMIN") throw new Error("USER_NOT_FOUND");
   if (!user.phone) throw new Error("NO_PHONE");
 
   const lastOtp = await prisma.verificationToken.findFirst({
@@ -644,12 +657,14 @@ export const recoverEmailVerifyOtp = async (
   otp: string,
   newEmail: string,
 ) => {
+  if (!isRecoverEmailAvailable()) throw new Error("RECOVER_EMAIL_UNAVAILABLE");
+
   const user = await prisma.user.findUnique({
     where: { email: email.toLowerCase() },
-    select: { id: true, firstName: true, email: true },
+    select: { id: true, firstName: true, email: true, role: true },
   });
 
-  if (!user) throw new Error("USER_NOT_FOUND");
+  if (!user || user.role === "ADMIN") throw new Error("USER_NOT_FOUND");
   if (user.email.toLowerCase() === newEmail.toLowerCase())
     throw new Error("SAME_EMAIL");
 
@@ -670,19 +685,7 @@ export const recoverEmailVerifyOtp = async (
 
   if (!record) throw new Error("OTP_EXPIRED_OR_NOT_FOUND");
 
-  const metadata = record.metadata as { email: string; attempts: number };
-
-  if (metadata.attempts >= MAX_OTP_ATTEMPTS)
-    throw new Error("OTP_MAX_ATTEMPTS");
-
-  if (record.token !== otp) {
-    await prisma.verificationToken.update({
-      where: { id: record.id },
-      data: { metadata: { ...metadata, attempts: metadata.attempts + 1 } },
-    });
-    const remaining = MAX_OTP_ATTEMPTS - (metadata.attempts + 1);
-    throw new Error(`OTP_INVALID:${remaining}`);
-  }
+  await consumeOtpAttempt(record, otp);
 
   const conflict = await prisma.user.findUnique({
     where: { email: newEmail.toLowerCase() },
