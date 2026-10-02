@@ -16,7 +16,7 @@ Aucune modification de schéma Prisma (le mode d'application du schéma en prod 
 |---|---|
 | SEC-001 | FIXED (mitigé) — flux désactivé hors dev (503), comptes ADMIN exclus, compteur OTP atomique. Ne réactiver qu'avec envoi SMS réel + confirmation par lien. |
 | SEC-002 | FIXED — `payment.verification.ts` (pi.id, metadata.prestationId, devise, montant encaissé) sur confirm **et** webhook ; transition conditionnée à `stripePaymentIntentId`. |
-| SEC-003 | FIXED (code) — script via `ADMIN_EMAIL`/`ADMIN_PASSWORD`, mdp fort exigé, refus si le compte existe. **NON VÉRIFIÉ** : changement du mot de passe admin en production. |
+| SEC-003 | FIXED (code) — script via `ADMIN_EMAIL`/`ADMIN_PASSWORD`, mdp fort exigé, refus si le compte existe. **Mot de passe admin de production NON changé (confirmé le 02/10/2026) — action bloquante avant ouverture.** |
 | SEC-004 | FIXED — `trust proxy` (`TRUST_PROXY_HOPS`, défaut 1) + limiteurs IP+email et IP. **À valider en staging** (`req.ip` = IP client). |
 | SEC-005 | FIXED — `authMiddleware` relit isActive/deletedAt/rôle en BDD ; refresh refusé si suspendu + rotation à usage unique ; `suspendUser` révoque les refresh tokens. |
 | SEC-008 | FIXED — `updateMany` conditionnels (demande PUBLIEE, devis ENVOYE + sélectionnable + non expiré) dans la transaction. |
@@ -31,7 +31,7 @@ Aucune modification de schéma Prisma (le mode d'application du schéma en prod 
 **Actions manuelles requises (hors code)** :
 1. Dashboard Stripe → webhook `/api/payment/webhook` : ajouter l'événement `charge.dispute.created`.
 2. Staging : vérifier dans les logs que `req.ip` est l'IP du client ; ajuster `TRUST_PROXY_HOPS` sinon.
-3. Production : confirmer le changement du mot de passe admin (SEC-003).
+3. **Production : changer le mot de passe admin (SEC-003) — confirmé non fait le 02/10/2026, bloquant.**
 4. Le parcours « email perdu » affiche désormais « momentanément indisponible » en prod : prévoir un renvoi vers le support.
 
 ---
@@ -464,7 +464,7 @@ if (pi.metadata?.prestationId !== prestationId || pi.amount_received !== expecte
   4. Envisager la réécriture de l'historique git (BFG) si le dépôt doit devenir partagé.
   5. 2FA admin à moyen terme.
 - **Test to verify fix** : `git grep -n "Admin@"` vide ; le login avec l'ancien mot de passe en prod échoue (vérifié manuellement par vous).
-- **Status** : FIXED (code) — script via `ADMIN_EMAIL`/`ADMIN_PASSWORD`, mdp fort exigé, refus si le compte existe. **NON VÉRIFIÉ** : changement du mot de passe admin en production. — **NON VÉRIFIÉ** : le mot de passe prod est-il encore celui du script ? (à vérifier par vous, sans me le communiquer)
+- **Status** : FIXED (code) — script via `ADMIN_EMAIL`/`ADMIN_PASSWORD`, mdp fort exigé, refus si le compte existe. **Mot de passe admin de production NON changé (confirmé le 02/10/2026) — action bloquante avant ouverture.** — **NON VÉRIFIÉ** : le mot de passe prod est-il encore celui du script ? (à vérifier par vous, sans me le communiquer)
 
 ### SEC-004 — Rate limiting inopérant derrière le proxy Railway (`trust proxy` absent)
 - **Severity** : HIGH
