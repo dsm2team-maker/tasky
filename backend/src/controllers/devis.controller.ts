@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { handleError } from "../utils/errorHandler";
+import { parseMontant, parseDelai, MONTANT_MIN, MONTANT_MAX, DELAI_MAX_JOURS, DESCRIPTION_DEVIS_MAX } from "../utils/montant.validation";
 import {
   getDemandesDisponibles,
   getDemandeDetail,
@@ -46,16 +47,20 @@ export const envoyerDevisHandler = async (req: AuthRequest, res: Response) => {
   try {
     const { montant, delai, description } = req.body;
 
-    if (!montant || isNaN(parseFloat(montant)) || parseFloat(montant) <= 0)
-      return res.status(400).json({ success: false, message: "Le montant doit être supérieur à 0." });
-    if (!delai || !Number.isInteger(Number(delai)) || parseInt(delai) <= 0)
-      return res.status(400).json({ success: false, message: "Délai invalide (nombre entier de jours requis)" });
-    if (!description || description.trim().length < 20)
+    const montantValide = parseMontant(montant);
+    if (montantValide === null)
+      return res.status(400).json({ success: false, message: `Montant invalide : entre ${MONTANT_MIN} € et ${MONTANT_MAX} €, 2 décimales maximum.` });
+    const delaiValide = parseDelai(delai);
+    if (delaiValide === null)
+      return res.status(400).json({ success: false, message: `Délai invalide : nombre entier de jours entre 1 et ${DELAI_MAX_JOURS}.` });
+    if (typeof description !== "string" || description.trim().length < 20)
       return res.status(400).json({ success: false, message: "Description trop courte (min 20 caractères)" });
+    if (description.trim().length > DESCRIPTION_DEVIS_MAX)
+      return res.status(400).json({ success: false, message: `Description trop longue (max ${DESCRIPTION_DEVIS_MAX} caractères)` });
 
     const devis = await envoyerDevis(req.user!.userId, req.params.id, {
-      montant: parseFloat(montant),
-      delai: parseInt(delai),
+      montant: montantValide,
+      delai: delaiValide,
       description: description.trim(),
     });
     return res.status(201).json({ success: true, message: "Devis envoyé", data: devis });

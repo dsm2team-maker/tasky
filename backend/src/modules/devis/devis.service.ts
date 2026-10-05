@@ -148,7 +148,16 @@ export const envoyerDevis = async (
 ) => {
   const prestataire = await prisma.prestataire.findUnique({
     where: { userId },
-    select: { id: true, disponibilite: true },
+    select: {
+      id: true,
+      disponibilite: true,
+      rating: true,
+      stripePayoutsEnabled: true,
+      bio: true,
+      pointDepotAdresse: true,
+      user: { select: { city: true, codePostal: true } },
+      competences: { select: { categoryId: true, subCategoryId: true, interventionId: true } },
+    },
   });
   if (!prestataire) throw new Error("PRESTATAIRE_NOT_FOUND");
   if (prestataire.disponibilite === "ABSENT")
@@ -158,36 +167,63 @@ export const envoyerDevis = async (
   if (!demande) throw new Error("DEMANDE_NOT_FOUND");
   if (demande.status !== "PUBLIEE") throw new Error("DEMANDE_NON_DISPONIBLE");
 
-  const existant = await prisma.devis.findFirst({
-    where: { demandeId, prestataireId: prestataire.id },
-  });
-  if (existant) throw new Error("DEVIS_DEJA_ENVOYE");
+  // Mêmes filtres que la liste des demandes disponibles (SEC-012) : un prestataire qui ne
+  // voit pas la demande (Connect non actif, profil incomplet, hors catégorie) ne peut pas la deviser.
+  const eligible = calculerScore(
+    {
+      categoryId: demande.categoryId,
+      subCategoryId: demande.subCategoryId,
+      interventionIds: demande.interventionIds,
+      ville: demande.ville,
+      codePostal: demande.codePostal,
+    },
+    prestataire,
+  );
+  if (!eligible) throw new Error("PRESTATAIRE_NON_ELIGIBLE");
 
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
-  const devis = await prisma.devis.create({
-    data: {
-      demandeId,
-      prestataireId: prestataire.id,
-      montant: data.montant,
-      delai: data.delai,
-      description: data.description,
-      status: "ENVOYE",
-      estSelectionnable: true,
-      aVerifier: false,
-      expiresAt,
-    },
-    include: {
-      prestataire: {
-        select: {
-          id: true,
-          rating: true,
-          reviewCount: true,
-          user: { select: { firstName: true, lastName: true, avatar: true, city: true } },
+  // Update conditionnel sans effet métier = verrou de ligne sur la demande jusqu'au commit :
+  // deux envois simultanés du même prestataire ne créent qu'un devis (pas de contrainte unique
+  // en base tant que les migrations ne sont pas baselinées), et un devis ne peut plus arriver
+  // sur une demande acceptée entre-temps (accepterDevis verrouille la même ligne).
+  const devis = await prisma.$transaction(async (tx) => {
+    const lock = await tx.demande.updateMany({
+      where: { id: demandeId, status: "PUBLIEE" },
+      data: { status: "PUBLIEE" },
+    });
+    if (lock.count === 0) throw new Error("DEMANDE_NON_DISPONIBLE");
+
+    const existant = await tx.devis.findFirst({
+      where: { demandeId, prestataireId: prestataire.id },
+      select: { id: true },
+    });
+    if (existant) throw new Error("DEVIS_DEJA_ENVOYE");
+
+    return tx.devis.create({
+      data: {
+        demandeId,
+        prestataireId: prestataire.id,
+        montant: data.montant,
+        delai: data.delai,
+        description: data.description,
+        status: "ENVOYE",
+        estSelectionnable: true,
+        aVerifier: false,
+        expiresAt,
+      },
+      include: {
+        prestataire: {
+          select: {
+            id: true,
+            rating: true,
+            reviewCount: true,
+            user: { select: { firstName: true, lastName: true, avatar: true, city: true } },
+          },
         },
       },
-    },
+    });
   });
 
   // Email + Tasky-Info au client — nouveau devis reçu

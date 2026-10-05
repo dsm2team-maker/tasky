@@ -26,6 +26,7 @@ const ERROR_MAP: Record<string, [number, string]> = {
   // Prestataire
   PRESTATAIRE_NOT_FOUND:     [404, "Prestataire introuvable"],
   PRESTATAIRE_INACTIF:       [403, "Ce prestataire n'est pas encore actif sur la plateforme"],
+  PRESTATAIRE_NON_ELIGIBLE:  [403, "Votre profil ne permet pas encore de répondre à cette demande (paiements Stripe, bio, point de dépôt ou compétence manquants)"],
   INVALID_CATEGORY:          [400, "Catégorie invalide"],
 
   // Client

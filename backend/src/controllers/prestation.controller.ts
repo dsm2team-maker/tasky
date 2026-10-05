@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { handleError } from "../utils/errorHandler";
+import { parseMontant, parsePhotos, MONTANT_MIN, MONTANT_MAX, PHOTOS_MAX } from "../utils/montant.validation";
 import {
   getMesPrestations,
   getPrestationDetail,
@@ -35,13 +36,28 @@ export const getPrestationDetailHandler = async (req: AuthRequest, res: Response
 export const creerEtatDesLieuxHandler = async (req: AuthRequest, res: Response) => {
   try {
     const { description, photos, montantRevise } = req.body;
-    if (!description || description.trim().length < 10)
+    if (typeof description !== "string" || description.trim().length < 10)
       return res.status(400).json({ success: false, message: "Description trop courte (min 10 caractères)" });
+    if (description.trim().length > 5_000)
+      return res.status(400).json({ success: false, message: "Description trop longue (max 5000 caractères)" });
+
+    // Montant révisé facultatif, mais borné comme un devis (SEC-013)
+    let montantValide: number | undefined;
+    if (montantRevise !== undefined && montantRevise !== null && montantRevise !== "") {
+      const parsed = parseMontant(montantRevise);
+      if (parsed === null)
+        return res.status(400).json({ success: false, message: `Montant révisé invalide : entre ${MONTANT_MIN} € et ${MONTANT_MAX} €, 2 décimales maximum.` });
+      montantValide = parsed;
+    }
+
+    const photosValides = parsePhotos(photos);
+    if (photosValides === null)
+      return res.status(400).json({ success: false, message: `Photos invalides (${PHOTOS_MAX} maximum, issues du stockage Tasky)` });
 
     const etat = await creerEtatDesLieux(req.user!.userId, req.params.id, {
       description: description.trim(),
-      photos: photos || [],
-      montantRevise: montantRevise ? parseFloat(montantRevise) : undefined,
+      photos: photosValides,
+      montantRevise: montantValide,
     });
     return res.status(201).json({ success: true, message: "État des lieux créé", data: etat });
   } catch (error) {

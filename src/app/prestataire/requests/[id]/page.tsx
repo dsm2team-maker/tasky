@@ -258,7 +258,8 @@ export default function PrestataireRequestDetailPage() {
                   label="Montant (€) *"
                   type="number"
                   min="1"
-                  step="any"
+                  max="50000"
+                  step="0.01"
                   placeholder="Ex: 45"
                   value={montant}
                   onChange={(e) => setMontant(e.target.value)}
@@ -267,6 +268,7 @@ export default function PrestataireRequestDetailPage() {
                   label="Délai (jours) *"
                   type="number"
                   min="1"
+                  max="365"
                   step="1"
                   placeholder="Ex: 5"
                   value={delai}

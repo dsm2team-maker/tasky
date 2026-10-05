@@ -305,8 +305,9 @@ export default function PrestatairePrestationDetailPage() {
                       <Input
                         label="Nouveau montant (€) — optionnel si objet plus abîmé que prévu"
                         type="number"
-                        min="0"
-                        step="any"
+                        min="1"
+                        max="50000"
+                        step="0.01"
                         placeholder={`Montant initial : ${prestation.montant} €`}
                         value={montantRevise}
                         onChange={(e) => setMontantRevise(e.target.value)}
