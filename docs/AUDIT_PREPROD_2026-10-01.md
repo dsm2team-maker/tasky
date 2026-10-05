@@ -34,6 +34,24 @@ Aucune modification de schéma Prisma (le mode d'application du schéma en prod 
 3. **Production : changer le mot de passe admin (SEC-003) — confirmé non fait le 02/10/2026, bloquant.**
 4. Le parcours « email perdu » affiche désormais « momentanément indisponible » en prod : prévoir un renvoi vers le support.
 
+
+## Suivi des corrections — Phase 2, lot 1 (05/10/2026)
+
+Vérifications : `tsc --noEmit` backend et front OK ; `npm test` backend : 15/15 (dont un test HTTP local du rate limit). Aucune modification de schéma.
+
+| Finding | Statut |
+|---|---|
+| SEC-007 | FIXED — `verify-email` et `reset-password` n'acceptent que le format des liens (64 hex) et le bon type de token ; un token d'un autre type répond comme un token inexistant ; consommation atomique (usage unique même en parallèle). |
+| SEC-012 | FIXED — montant 1 → 50 000 €, 2 décimales ; délai 1 → 365 j ; description ≤ 5 000 car. ; éligibilité = mêmes filtres que la liste (Connect, bio, point de dépôt, catégorie) ; doublon parallèle bloqué par verrou de ligne sur la demande. Contrainte `@@unique` reportée à SEC-026. |
+| SEC-013 | FIXED — `montantRevise` borné comme un devis ; `photos` limitées à 10 URLs du stockage Supabase du projet ; champs de saisie front alignés. |
+| SEC-015 | FIXED (mono-instance) — limiteurs dédiés : envoi d'email (IP + IP/email), inscription, consommation de tokens, refresh, disponibilité, OTP, messages, uploads, contact, signalements. Store mémoire : passer à un store Redis si l'API tourne sur plusieurs instances. |
+
+**Non traités volontairement dans ce lot** :
+- **SEC-006** (vérification d'email obligatoire) : bloquerait les comptes existants non vérifiés. Prérequis : compter ces comptes en prod (requête en lecture seule) et prévoir une campagne de renvoi avant d'activer.
+- **SEC-025** (Next 16 / React 19) : changement majeur, branche dédiée et recette complète en staging obligatoires.
+
+**Décision métier à confirmer** : plafond d'un devis à 50 000 € et délai max 365 jours (`backend/src/utils/montant.validation.ts`).
+
 ---
 
 ## Résumé exécutif
@@ -531,7 +549,7 @@ const loginLimiter = rateLimit({ windowMs: 15*60e3, max: 10, keyGenerator: (req)
 - **Impact** : DoS des flux OTP, vérification d'email non voulue, oracle.
 - **Recommended fix** : `where: { token, type: "EMAIL_VERIFICATION" }`, tokens longs ≥ 32 octets, OTP stockés hashés et indexés par `(userId, type)`, rate limit.
 - **Test to verify fix** : créer un OTP PHONE_CHANGE puis appeler `verify-email` avec sa valeur → 400, et l'OTP reste valide.
-- **Status** : OPEN
+- **Status** : FIXED — `verify-email` et `reset-password` n'acceptent que le format des liens (64 hex) et le bon type de token ; un token d'un autre type répond comme un token inexistant ; consommation atomique (usage unique même en parallèle).
 
 ### SEC-008 — Race condition et contrôles d'état manquants à l'acceptation d'un devis
 - **Severity** : HIGH
@@ -616,7 +634,7 @@ await prisma.$transaction(async (tx) => {
 - **Impact** : devis non payables ; prestataire non payable sélectionné (transfert SKIPPED) ; spam.
 - **Recommended fix** : réutiliser les filtres de `matching.service` comme garde ; `montant` entre 1 et 50 000 (à définir), 2 décimales ; `@@unique([demandeId, prestataireId])`.
 - **Test to verify fix** : devis à 0,01 → 400 ; prestataire sans Connect → 403 ; 2 devis parallèles → 1 créé.
-- **Status** : OPEN
+- **Status** : FIXED — montant 1 → 50 000 €, 2 décimales ; délai 1 → 365 j ; description ≤ 5 000 car. ; éligibilité = mêmes filtres que la liste (Connect, bio, point de dépôt, catégorie) ; doublon parallèle bloqué par verrou de ligne sur la demande. Contrainte `@@unique` reportée à SEC-026.
 
 ### SEC-013 — `montantRevise` non validé (état des lieux)
 - **Severity** : LOW
@@ -626,7 +644,7 @@ await prisma.$transaction(async (tx) => {
 - **Description** : `parseFloat(montantRevise)` accepte les négatifs et les valeurs démesurées ; `photos` n'est pas validé (type, nombre). Si le client accepte un montant négatif, le PI ne peut pas être créé et la prestation est bloquée.
 - **Recommended fix** : bornes identiques à SEC-012 ; `photos` = max N URLs issues du bucket Tasky.
 - **Test to verify fix** : `montantRevise: -50` → 400.
-- **Status** : OPEN
+- **Status** : FIXED — `montantRevise` borné comme un devis ; `photos` limitées à 10 URLs du stockage Supabase du projet ; champs de saisie front alignés.
 
 ### SEC-014 — Énumération de comptes
 - **Severity** : MEDIUM
@@ -651,7 +669,7 @@ await prisma.$transaction(async (tx) => {
 - **Impact** : bombardement d'emails (Resend : quota et réputation du domaine `mail.tasky.fr`), spam de messages, remplissage du stockage.
 - **Recommended fix** : limiter dédié (ex. 5/h par IP + par email) sur les endpoints qui envoient un email ; 30 msg/min par utilisateur ; 20 uploads/jour ; Redis store (`rate-limit-redis`) pour le multi-instance.
 - **Test to verify fix** : 6 `forgot-password` en 1 h pour le même email → le 6e donne 429 et un seul email est enfilé au-delà de la limite.
-- **Status** : OPEN
+- **Status** : FIXED (mono-instance) — limiteurs dédiés : envoi d'email (IP + IP/email), inscription, consommation de tokens, refresh, disponibilité, OTP, messages, uploads, contact, signalements. Store mémoire : passer à un store Redis si l'API tourne sur plusieurs instances.
 
 ### SEC-016 — Politique de mot de passe faible / absente au reset
 - **Severity** : MEDIUM
@@ -909,12 +927,12 @@ await prisma.$transaction(async (tx) => {
 | SEC-011 | Paiement | HIGH | webhook, transfer.service.ts | webhooks | Fonds bloqués, pertes chargeback | Réconciliation + disputes + refunds | PARTIAL |
 | SEC-025 | Dépendances | HIGH | package.json ×2 | — | CVE Next critical, axios/ws high | audit fix + plan Next 16 | PARTIAL |
 | SEC-006 | Auth | MEDIUM | auth.controller.ts | POST /register/* | Comptes non vérifiés actifs | Bloquer les actions sans email vérifié | OPEN |
-| SEC-007 | Auth | MEDIUM | auth.service.ts | GET /verify-email | Oracle/DoS OTP | Filtrer par type + hash | OPEN |
+| SEC-007 | Auth | MEDIUM | auth.service.ts | GET /verify-email | Oracle/DoS OTP | Filtrer par type + hash | FIXED |
 | SEC-009 | Auth | MEDIUM | user.service.ts | /profile/verify-*-otp, confirm-delete | Contournement limite d'essais | Incrément atomique | FIXED |
 | SEC-010 | Logique métier | MEDIUM | autoValidate.job.ts, prestation.service.ts | cron, valider/contester | Versement malgré litige | updateMany conditionnel | FIXED |
-| SEC-012 | Validation | MEDIUM | devis.service.ts | POST /demandes/:id/devis | Devis non payables, prestataire non éligible | Garde éligibilité + bornes + unique | OPEN |
+| SEC-012 | Validation | MEDIUM | devis.service.ts | POST /demandes/:id/devis | Devis non payables, prestataire non éligible | Garde éligibilité + bornes + unique | FIXED |
 | SEC-014 | Auth | MEDIUM | auth.controller.ts… | login, check-*, recover, resend | Énumération | Réponses génériques | OPEN |
-| SEC-015 | Rate limit | MEDIUM | routes/* | register, forgot, contact, upload… | Email bombing, spam | Limiteurs dédiés (Redis) | OPEN |
+| SEC-015 | Rate limit | MEDIUM | routes/* | register, forgot, contact, upload… | Email bombing, spam | Limiteurs dédiés (Redis) | FIXED (mono-instance) |
 | SEC-016 | Auth | MEDIUM | auth.*.controller.ts | register, reset-password | Mots de passe faibles | Politique unique | OPEN |
 | SEC-018 | Session | MEDIUM | auth-store.ts, jwt.ts | refresh, logout | Vol de session long | Access court, refresh HttpOnly hashé | OPEN |
 | SEC-019 | Frontend | MEDIUM | next.config.cjs | toutes pages | Clickjacking, pas d'atténuation XSS | Headers + CSP | OPEN |
@@ -928,7 +946,7 @@ await prisma.$transaction(async (tx) => {
 | SEC-030 | Performance | MEDIUM | devis.service.ts… | /demandes/available, /prestataires | Lenteur/DoS | Pagination | OPEN |
 | SEC-038 | CI/CD | MEDIUM | — | — | Régressions non détectées | Pipeline CI | PARTIAL |
 | SEC-039 | Monitoring | MEDIUM | — | — | Incidents invisibles | Sentry + alertes | OPEN |
-| SEC-013 | Validation | LOW | prestation.controller.ts | POST /prestations/:id/etat-des-lieux | Prestation bloquée | Bornes | OPEN |
+| SEC-013 | Validation | LOW | prestation.controller.ts | POST /prestations/:id/etat-des-lieux | Prestation bloquée | Bornes | FIXED |
 | SEC-017 | Auth | LOW | auth.controller.ts | register, login | Doublons de comptes | lowercase | OPEN |
 | SEC-020 | Upload | LOW | user.controller.ts | /users/avatar, /users/photo | Abus de stockage | Magic bytes, sharp, quota | OPEN |
 | SEC-021 | Validation | LOW | demande.service.ts | POST /demandes | Tracking des prestataires | URLs du bucket uniquement | OPEN |
