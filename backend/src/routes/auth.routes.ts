@@ -4,6 +4,14 @@ import { registerClient, registerPrestataire, login, logout, refreshToken, getMe
 import { verifyEmail, resendVerificationEmail } from "../controllers/auth.verify.controller";
 import { forgotPassword, resetPassword, recoverEmailSendOtpHandler, recoverEmailVerifyOtpHandler } from "../controllers/auth.recovery.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
+import {
+  emailSendIpLimiter,
+  emailSendTargetLimiter,
+  registerLimiter,
+  tokenConsumeLimiter,
+  refreshLimiter,
+  availabilityLimiter,
+} from "../middleware/rateLimit.middleware";
 
 const router = Router();
 
@@ -31,28 +39,28 @@ const loginIpLimiter = rateLimit({
 });
 
 // Inscription
-router.post("/register/client", registerClient);
-router.post("/register/prestataire", registerPrestataire);
+router.post("/register/client", registerLimiter, registerClient);
+router.post("/register/prestataire", registerLimiter, registerPrestataire);
 
 // Connexion
 router.post("/login", loginIpLimiter, loginLimiter, login);
-router.post("/refresh", refreshToken);
+router.post("/refresh", refreshLimiter, refreshToken);
 
 // Verification email
-router.get("/verify-email", verifyEmail);
-router.post("/resend-verification", resendVerificationEmail);
+router.get("/verify-email", tokenConsumeLimiter, verifyEmail);
+router.post("/resend-verification", emailSendIpLimiter, emailSendTargetLimiter, resendVerificationEmail);
 
 // Mot de passe
-router.post("/forgot-password", forgotPassword);
-router.post("/reset-password", resetPassword);
+router.post("/forgot-password", emailSendIpLimiter, emailSendTargetLimiter, forgotPassword);
+router.post("/reset-password", tokenConsumeLimiter, resetPassword);
 
 // Checks disponibilite
-router.get("/check-email", checkEmail);
-router.get("/check-phone", checkPhone);
+router.get("/check-email", availabilityLimiter, checkEmail);
+router.get("/check-phone", availabilityLimiter, checkPhone);
 
 // Récupération email perdu (sans auth)
-router.post("/recover-email/send-otp", recoverEmailSendOtpHandler);
-router.post("/recover-email/verify-otp", recoverEmailVerifyOtpHandler);
+router.post("/recover-email/send-otp", emailSendIpLimiter, emailSendTargetLimiter, recoverEmailSendOtpHandler);
+router.post("/recover-email/verify-otp", tokenConsumeLimiter, recoverEmailVerifyOtpHandler);
 
 // Routes protegees
 router.get("/me", authMiddleware, getMe);

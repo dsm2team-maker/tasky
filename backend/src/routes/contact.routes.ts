@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { resend, emailConfig } from "../config/resend.config";
 import { contactTemplate } from "../emails/contact.template";
 import { authMiddleware, AuthRequest } from "../middleware/auth.middleware";
+import { contactLimiter } from "../middleware/rateLimit.middleware";
 import { escapeHtml } from "../utils/html.utils";
 
 const router = Router();
@@ -14,7 +15,7 @@ const SUJETS = [
   "Autre",
 ];
 
-router.post("/", authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post("/", authMiddleware, contactLimiter, async (req: AuthRequest, res: Response) => {
   try {
     const { sujet, message, reference } = req.body;
 

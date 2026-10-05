@@ -17,15 +17,16 @@ import {
   getPrestataireStatsHandler,
 } from "../controllers/user.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
+import { otpSendLimiter, otpVerifyLimiter, uploadLimiter } from "../middleware/rateLimit.middleware";
 
 const router = Router();
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
-router.post("/avatar", authMiddleware, uploadAvatar);
+router.post("/avatar", authMiddleware, uploadLimiter, uploadAvatar);
 router.delete("/avatar", authMiddleware, deleteAvatar);
 
 // ─── Photo générique (pièces jointes de demande, etc.) ────────────────────────
-router.post("/photo", authMiddleware, uploadPhoto);
+router.post("/photo", authMiddleware, uploadLimiter, uploadPhoto);
 
 // ─── Profil commun (client + prestataire) ────────────────────────────────────
 router.get("/profile", authMiddleware, getMyProfile);
@@ -35,27 +36,31 @@ router.patch("/profile", authMiddleware, updateMyProfile);
 router.post(
   "/profile/request-phone-change",
   authMiddleware,
+  otpSendLimiter,
   requestPhoneChangeHandler,
 );
-router.post("/profile/verify-phone-otp", authMiddleware, verifyPhoneOtpHandler);
+router.post("/profile/verify-phone-otp", authMiddleware, otpVerifyLimiter, verifyPhoneOtpHandler);
 
 // ─── Changement email ─────────────────────────────────────────────────────────
 router.post(
   "/profile/request-email-change",
   authMiddleware,
+  otpSendLimiter,
   requestEmailChangeHandler,
 );
-router.post("/profile/verify-email-otp", authMiddleware, verifyEmailOtpHandler);
+router.post("/profile/verify-email-otp", authMiddleware, otpVerifyLimiter, verifyEmailOtpHandler);
 
 // ─── Suppression de compte ────────────────────────────────────────────────────
 router.post(
   "/profile/request-delete-account",
   authMiddleware,
+  otpSendLimiter,
   requestDeleteAccountHandler,
 );
 router.post(
   "/profile/confirm-delete-account",
   authMiddleware,
+  otpVerifyLimiter,
   confirmDeleteAccountHandler,
 );
 
