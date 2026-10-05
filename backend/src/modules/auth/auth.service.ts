@@ -14,6 +14,13 @@ import { env } from "../../config/env.config";
 
 const BCRYPT_ROUNDS = 12;
 
+// Les liens (vérification email, reset) portent un token de 32 octets hex. Refuser tout autre
+// format empêche de soumettre un OTP à 6 chiffres d'un autre flux sur ces endpoints (SEC-007).
+const LINK_TOKEN_REGEX = /^[a-f0-9]{64}$/;
+const assertLinkTokenFormat = (token: unknown) => {
+  if (typeof token !== "string" || !LINK_TOKEN_REGEX.test(token)) throw new Error("Token invalide");
+};
+
 export const authService = {
   // Vérifier si email disponible
   async isEmailAvailable(email: string): Promise<boolean> {
@@ -59,26 +66,30 @@ export const authService = {
 
   // Vérifier le token email
   async verifyEmailToken(token: string) {
+    assertLinkTokenFormat(token);
+
     const record = await prisma.verificationToken.findUnique({
       where: { token },
       include: { user: true },
     });
 
-    if (!record) throw new Error("Token invalide");
+    // Un token d'un autre type répond exactement comme un token inexistant (pas d'oracle)
+    if (!record || record.type !== "EMAIL_VERIFICATION") throw new Error("Token invalide");
     if (record.expiresAt < new Date()) throw new Error("Token expiré");
     if (record.used) throw new Error("Token déjà utilisé");
 
-    // Marquer email comme vérifié
-    await prisma.$transaction([
-      prisma.user.update({
+    // Consommation atomique : deux clics simultanés ne valident qu'une fois
+    await prisma.$transaction(async (tx) => {
+      const { count } = await tx.verificationToken.updateMany({
+        where: { id: record.id, type: "EMAIL_VERIFICATION", used: false },
+        data: { used: true },
+      });
+      if (count === 0) throw new Error("Token déjà utilisé");
+      await tx.user.update({
         where: { id: record.userId },
         data: { emailVerified: true },
-      }),
-      prisma.verificationToken.update({
-        where: { token },
-        data: { used: true },
-      }),
-    ]);
+      });
+    });
 
     return record.user;
   },
@@ -109,6 +120,8 @@ export const authService = {
 
   // Reset password
   async resetPassword(token: string, newPassword: string) {
+    assertLinkTokenFormat(token);
+
     const record = await prisma.verificationToken.findUnique({
       where: { token },
     });
@@ -120,17 +133,19 @@ export const authService = {
 
     const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
 
-    await prisma.$transaction([
-      prisma.user.update({
+    // Consommation atomique du token : un lien de reset ne sert qu'une fois, même en parallèle
+    await prisma.$transaction(async (tx) => {
+      const { count } = await tx.verificationToken.updateMany({
+        where: { id: record.id, type: "PASSWORD_RESET", used: false },
+        data: { used: true },
+      });
+      if (count === 0) throw new Error("Token déjà utilisé");
+      await tx.user.update({
         where: { id: record.userId },
         data: { password: hashedPassword },
-      }),
-      prisma.verificationToken.update({
-        where: { token },
-        data: { used: true },
-      }),
-      prisma.refreshToken.deleteMany({ where: { userId: record.userId } }),
-    ]);
+      });
+      await tx.refreshToken.deleteMany({ where: { userId: record.userId } });
+    });
   },
 
   // Générer les tokens JWT
