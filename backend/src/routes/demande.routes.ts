@@ -13,7 +13,7 @@ import {
   getDevisDemandeHandler,
   ignorerDemandeHandler,
 } from "../controllers/devis.controller";
-import { authMiddleware } from "../middleware/auth.middleware";
+import { authMiddleware, requireVerifiedEmail } from "../middleware/auth.middleware";
 
 const router = Router();
 
@@ -27,7 +27,7 @@ const createDemandeLimiter = rateLimit({
 });
 
 // ─── Demandes client ──────────────────────────────────────────────────────────
-router.post("/", authMiddleware, createDemandeLimiter, createDemandeHandler);
+router.post("/", authMiddleware, requireVerifiedEmail, createDemandeLimiter, createDemandeHandler);
 router.get("/", authMiddleware, getMyDemandesHandler);
 
 // ─── Prestataire — doit être AVANT /:id ──────────────────────────────────────
@@ -37,7 +37,7 @@ router.get("/available", authMiddleware, getDemandesDisponiblesHandler);
 router.get("/:id", authMiddleware, getDemandeHandler);
 router.get("/:id/detail", authMiddleware, getDemandeDetailHandler);
 router.get("/:id/devis", authMiddleware, getDevisDemandeHandler);
-router.post("/:id/devis", authMiddleware, envoyerDevisHandler);
+router.post("/:id/devis", authMiddleware, requireVerifiedEmail, envoyerDevisHandler);
 router.post("/:id/ignorer", authMiddleware, ignorerDemandeHandler);
 router.delete("/:id", authMiddleware, deleteDemandeHandler);
 

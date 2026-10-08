@@ -11,13 +11,13 @@ import {
   getMesPrestationsClientHandler,
   creerReviewHandler,
 } from "../controllers/prestation.controller";
-import { authMiddleware } from "../middleware/auth.middleware";
+import { authMiddleware, requireVerifiedEmail } from "../middleware/auth.middleware";
 
 const router = Router();
 
 // ─── Client ───────────────────────────────────────────────────────────────────
 router.get("/client", authMiddleware, getMesPrestationsClientHandler);
-router.post("/:id/review", authMiddleware, creerReviewHandler);
+router.post("/:id/review", authMiddleware, requireVerifiedEmail, creerReviewHandler);
 router.patch("/:id/valider", authMiddleware, validerPrestationHandler);
 router.patch("/:id/contester", authMiddleware, contesterPrestationHandler);
 router.patch(

@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { authMiddleware } from "../middleware/auth.middleware";
+import { authMiddleware, requireVerifiedEmail } from "../middleware/auth.middleware";
 import { createPaymentIntentHandler, confirmPaymentHandler, stripeWebhookHandler } from "../controllers/payment.controller";
 
 const router = Router();
 
-router.post("/create-intent", authMiddleware, createPaymentIntentHandler);
+router.post("/create-intent", authMiddleware, requireVerifiedEmail, createPaymentIntentHandler);
 router.post("/confirm", authMiddleware, confirmPaymentHandler);
 
 export { stripeWebhookHandler };

@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma";
 // Étendre le type Request pour inclure l'utilisateur
 export interface AuthRequest extends Request {
   user?: JwtPayload;
+  emailVerified?: boolean; // renseigné par authMiddleware depuis la base
 }
 
 // Middleware de vérification du token JWT.
@@ -39,7 +40,7 @@ export const authMiddleware = async (
   try {
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, email: true, role: true, isActive: true, deletedAt: true },
+      select: { id: true, email: true, role: true, isActive: true, deletedAt: true, emailVerified: true },
     });
 
     if (!user || user.deletedAt) {
@@ -54,11 +55,26 @@ export const authMiddleware = async (
 
     // Rôle et email issus de la base, jamais du token
     req.user = { userId: user.id, email: user.email, role: user.role as JwtPayload["role"] };
+    req.emailVerified = user.emailVerified;
     next();
   } catch (error) {
     console.error("[auth] lecture utilisateur:", error);
     return res.status(500).json({ success: false, message: "Erreur serveur" });
   }
+};
+
+// Email vérifié obligatoire pour les actions qui engagent ou exposent d'autres utilisateurs
+// (SEC-006). À placer APRÈS authMiddleware. Le profil, les uploads, l'onboarding Stripe, le
+// support et les signalements restent accessibles, ainsi que les étapes d'un flux déjà engagé.
+export const requireVerifiedEmail = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (req.emailVerified !== true) {
+    return res.status(403).json({
+      success: false,
+      code: "EMAIL_NOT_VERIFIED",
+      message: "Vérifiez votre adresse email pour effectuer cette action. Vous pouvez renvoyer le lien depuis la page de connexion.",
+    });
+  }
+  next();
 };
 
 // Middleware pour vérifier le rôle
