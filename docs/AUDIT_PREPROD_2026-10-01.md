@@ -47,10 +47,21 @@ Vérifications : `tsc --noEmit` backend et front OK ; `npm test` backend : 15/15
 | SEC-015 | FIXED (mono-instance) — limiteurs dédiés : envoi d'email (IP + IP/email), inscription, consommation de tokens, refresh, disponibilité, OTP, messages, uploads, contact, signalements. Store mémoire : passer à un store Redis si l'API tourne sur plusieurs instances. |
 
 **Non traités volontairement dans ce lot** :
-- **SEC-006** (vérification d'email obligatoire) : bloquerait les comptes existants non vérifiés. Prérequis : compter ces comptes en prod (requête en lecture seule) et prévoir une campagne de renvoi avant d'activer.
+- **SEC-006** : traité au lot 2 ci-dessous, après comptage en prod.
 - **SEC-025** (Next 16 / React 19) : changement majeur, branche dédiée et recette complète en staging obligatoires.
 
 **Décision métier à confirmer** : plafond d'un devis à 50 000 € et délai max 365 jours (`backend/src/utils/montant.validation.ts`).
+
+
+## Suivi des corrections — Phase 2, lot 2 (08/10/2026)
+
+**Comptage prod** (requêtes SELECT lancées par le propriétaire dans Supabase) : 6 comptes actifs non vérifiés sur 39 (2 clients, 4 prestataires ; 4 de plus de 30 jours). Aucun n'a de demande, de devis ni de compte Stripe lié. Comme le login refuse déjà les comptes non vérifiés, la correction ne change rien pour ces comptes : ils gardent la possibilité de renvoyer le lien depuis la page de connexion.
+
+| Finding | Statut |
+|---|---|
+| SEC-006 | FIXED — `requireVerifiedEmail` (403 `EMAIL_NOT_VERIFIED`) sur création de demande, envoi et acceptation de devis, création du paiement, conversations, messages et avis. Profil, uploads, onboarding Stripe, support et signalements restent accessibles. Le login refusait déjà les comptes non vérifiés. |
+
+Vérifications : `tsc --noEmit` backend OK ; `npm test` : 18/18. Aucune modification de schéma ni de front. Les étapes d'un flux déjà engagé (confirmation de paiement, état des lieux, validation) ne sont pas bloquées, pour ne laisser personne au milieu d'une prestation.
 
 ---
 
@@ -535,7 +546,7 @@ const loginLimiter = rateLimit({ windowMs: 15*60e3, max: 10, keyGenerator: (req)
 - **Impact** : spam, fraude, usurpation d'adresses email de tiers.
 - **Recommended fix** : soit ne pas émettre de tokens tant que l'email n'est pas vérifié, soit les émettre avec un scope restreint et bloquer les actions métier (`requireVerifiedEmail` sur create demande, envoyer devis, messages, paiement).
 - **Test to verify fix** : inscription puis `POST /api/demandes` sans vérification → 403 `EMAIL_NOT_VERIFIED`.
-- **Status** : OPEN
+- **Status** : FIXED — `requireVerifiedEmail` (403 `EMAIL_NOT_VERIFIED`) sur création de demande, envoi et acceptation de devis, création du paiement, conversations, messages et avis. Profil, uploads, onboarding Stripe, support et signalements restent accessibles. Le login refusait déjà les comptes non vérifiés.
 
 ### SEC-007 — `verify-email` accepte n'importe quel type de token (oracle et consommation des OTP)
 - **Severity** : MEDIUM
@@ -926,7 +937,7 @@ await prisma.$transaction(async (tx) => {
 | SEC-008 | Logique métier | HIGH | devis.service.ts | PATCH /api/devis/:id/accept | Double prestation / double paiement | Transition conditionnelle en transaction | FIXED |
 | SEC-011 | Paiement | HIGH | webhook, transfer.service.ts | webhooks | Fonds bloqués, pertes chargeback | Réconciliation + disputes + refunds | PARTIAL |
 | SEC-025 | Dépendances | HIGH | package.json ×2 | — | CVE Next critical, axios/ws high | audit fix + plan Next 16 | PARTIAL |
-| SEC-006 | Auth | MEDIUM | auth.controller.ts | POST /register/* | Comptes non vérifiés actifs | Bloquer les actions sans email vérifié | OPEN |
+| SEC-006 | Auth | MEDIUM | auth.controller.ts | POST /register/* | Comptes non vérifiés actifs | Bloquer les actions sans email vérifié | FIXED |
 | SEC-007 | Auth | MEDIUM | auth.service.ts | GET /verify-email | Oracle/DoS OTP | Filtrer par type + hash | FIXED |
 | SEC-009 | Auth | MEDIUM | user.service.ts | /profile/verify-*-otp, confirm-delete | Contournement limite d'essais | Incrément atomique | FIXED |
 | SEC-010 | Logique métier | MEDIUM | autoValidate.job.ts, prestation.service.ts | cron, valider/contester | Versement malgré litige | updateMany conditionnel | FIXED |
