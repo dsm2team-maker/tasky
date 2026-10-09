@@ -1,4 +1,6 @@
+import bcrypt from "bcryptjs";
 import { prisma } from "../../lib/prisma";
+import { emailExists, findUserByEmail } from "../../utils/email.utils";
 import { addEmailJob, EMAIL_PRIORITY } from "../../queues/email.queue";
 import { generateOtp, generateResetToken } from "../../utils/token.utils";
 import { env } from "../../config/env.config";
@@ -267,20 +269,21 @@ export const verifyPhoneOtp = async (userId: string, otp: string) => {
 // =============================================================================
 // REQUEST EMAIL CHANGE
 // =============================================================================
-export const requestEmailChange = async (userId: string, newEmail: string) => {
+// Le mot de passe actuel est exigé : un token de session volé ne suffit plus à détourner
+// l'email du compte puis à faire un "mot de passe oublié" (SEC-022)
+export const requestEmailChange = async (userId: string, newEmail: string, currentPassword: string) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { email: true, firstName: true, phone: true },
+    select: { email: true, firstName: true, phone: true, password: true },
   });
 
   if (!user) throw new Error("USER_NOT_FOUND");
+  if (!(await bcrypt.compare(currentPassword, user.password)))
+    throw new Error("INVALID_CURRENT_PASSWORD");
   if (user.email.toLowerCase() === newEmail.toLowerCase())
     throw new Error("SAME_EMAIL");
 
-  const existing = await prisma.user.findUnique({
-    where: { email: newEmail.toLowerCase() },
-  });
-  if (existing) throw new Error("EMAIL_ALREADY_USED");
+  if (await emailExists(newEmail)) throw new Error("EMAIL_ALREADY_USED");
 
   const lastOtp = await prisma.verificationToken.findFirst({
     where: { userId, type: "EMAIL_CHANGE_OTP", used: false },
@@ -352,10 +355,7 @@ export const verifyEmailOtp = async (userId: string, otp: string) => {
 
   await consumeOtpAttempt(record, otp);
 
-  const conflict = await prisma.user.findUnique({
-    where: { email: metadata.newEmail },
-  });
-  if (conflict) throw new Error("EMAIL_ALREADY_USED");
+  if (await emailExists(metadata.newEmail)) throw new Error("EMAIL_ALREADY_USED");
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -600,10 +600,7 @@ export const isRecoverEmailAvailable = () => env.isDev;
 export const recoverEmailSendOtp = async (email: string) => {
   if (!isRecoverEmailAvailable()) throw new Error("RECOVER_EMAIL_UNAVAILABLE");
 
-  const user = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
-    select: { id: true, firstName: true, phone: true, role: true },
-  });
+  const user = await findUserByEmail(email);
 
   // Les comptes ADMIN sont exclus de ce flux (réponse identique à un compte inexistant)
   if (!user || user.role === "ADMIN") throw new Error("USER_NOT_FOUND");
@@ -659,19 +656,13 @@ export const recoverEmailVerifyOtp = async (
 ) => {
   if (!isRecoverEmailAvailable()) throw new Error("RECOVER_EMAIL_UNAVAILABLE");
 
-  const user = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
-    select: { id: true, firstName: true, email: true, role: true },
-  });
+  const user = await findUserByEmail(email);
 
   if (!user || user.role === "ADMIN") throw new Error("USER_NOT_FOUND");
   if (user.email.toLowerCase() === newEmail.toLowerCase())
     throw new Error("SAME_EMAIL");
 
-  const existing = await prisma.user.findUnique({
-    where: { email: newEmail.toLowerCase() },
-  });
-  if (existing) throw new Error("EMAIL_ALREADY_USED");
+  if (await emailExists(newEmail)) throw new Error("EMAIL_ALREADY_USED");
 
   const record = await prisma.verificationToken.findFirst({
     where: {
@@ -687,10 +678,7 @@ export const recoverEmailVerifyOtp = async (
 
   await consumeOtpAttempt(record, otp);
 
-  const conflict = await prisma.user.findUnique({
-    where: { email: newEmail.toLowerCase() },
-  });
-  if (conflict) throw new Error("EMAIL_ALREADY_USED");
+  if (await emailExists(newEmail)) throw new Error("EMAIL_ALREADY_USED");
 
   const { token: resetToken, expiresAt: resetExpiresAt } = generateResetToken();
   const resetUrl = `${env.frontendUrl}/auth/reset-password?token=${resetToken}`;

@@ -7,10 +7,11 @@ export const emailSchema = z
   .email("Format d'email invalide")
   .toLowerCase();
 
+// Doit rester identique à backend/src/utils/password.policy.ts (SEC-016)
 export const passwordSchema = z
   .string()
   .min(8, "Le mot de passe doit contenir au moins 8 caractères")
-  .max(12, "Le mot de passe ne peut pas dépasser 12 caractères")
+  .max(64, "Le mot de passe ne peut pas dépasser 64 caractères")
   .regex(/[A-Z]/, "Au moins une majuscule requise")
   .regex(/[a-z]/, "Au moins une minuscule requise")
   .regex(/[0-9]/, "Au moins un chiffre requis")
@@ -77,6 +78,7 @@ export type NewPhoneInput = z.infer<typeof newPhoneSchema>;
 
 // ─── Changement email ─────────────────────────────────────────────────────────
 export const newEmailSchema = z.object({
-  newEmail: z.string().email("Format invalide").toLowerCase(),
+  newEmail: z.string().trim().email("Format invalide").toLowerCase(),
+  currentPassword: z.string().min(1, "Saisissez votre mot de passe actuel"),
 });
 export type NewEmailInput = z.infer<typeof newEmailSchema>;

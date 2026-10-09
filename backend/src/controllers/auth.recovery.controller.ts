@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { authService } from "../modules/auth/auth.service";
 import { recoverEmailSendOtp, recoverEmailVerifyOtp } from "../modules/users/user.service";
 import { handleError, handleOtpError } from "../utils/errorHandler";
+import { checkPassword } from "../utils/password.policy";
 
 // ─── Mot de passe oublié ──────────────────────────────────────────────────────
 
@@ -26,6 +27,9 @@ export const resetPassword = async (req: Request, res: Response) => {
   try {
     const { token, password } = req.body;
     if (!token || !password) return res.status(400).json({ success: false, message: "Données invalides" });
+    // Même politique qu'à l'inscription (SEC-016)
+    const passwordError = checkPassword(password);
+    if (passwordError) return res.status(400).json({ success: false, code: "WEAK_PASSWORD", message: passwordError });
     await authService.resetPassword(token, password);
     return res.status(200).json({ success: true, message: "Mot de passe réinitialisé avec succès." });
   } catch (error) {

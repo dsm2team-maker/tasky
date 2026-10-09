@@ -10,6 +10,7 @@ import {
   generateResetToken,
 } from "../../utils/token.utils";
 import { addEmailJob, EMAIL_PRIORITY } from "../../queues/email.queue";
+import { emailExists, findUserByEmail } from "../../utils/email.utils";
 import { env } from "../../config/env.config";
 
 const BCRYPT_ROUNDS = 12;
@@ -24,10 +25,7 @@ const assertLinkTokenFormat = (token: unknown) => {
 export const authService = {
   // Vérifier si email disponible
   async isEmailAvailable(email: string): Promise<boolean> {
-    const existing = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
-    return !existing;
+    return !(await emailExists(email));
   },
 
   // Vérifier si téléphone disponible
@@ -96,8 +94,8 @@ export const authService = {
 
   // Envoyer email reset password
   async sendResetPasswordEmail(email: string) {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) throw new Error("USER_NOT_FOUND");
+    const user = await findUserByEmail(email);
+    if (!user || user.deletedAt) throw new Error("USER_NOT_FOUND");
 
     const { token, expiresAt } = generateResetToken();
 
@@ -110,7 +108,7 @@ export const authService = {
     await addEmailJob(
       {
         type: "reset-password",
-        to: email,
+        to: user.email, // l'adresse du compte, pas la saisie
         userId: user.id,
         payload: { firstName: user.firstName, resetUrl },
       },

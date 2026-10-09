@@ -407,21 +407,33 @@ export const requestEmailChangeHandler = async (
         .status(401)
         .json({ success: false, message: "Non authentifié" });
 
-    const { newEmail } = req.body;
+    const { newEmail, currentPassword } = req.body;
 
     if (!newEmail || typeof newEmail !== "string" || !newEmail.includes("@")) {
       return res
         .status(400)
         .json({ success: false, message: "Email invalide" });
     }
+    if (!currentPassword || typeof currentPassword !== "string") {
+      return res
+        .status(400)
+        .json({ success: false, code: "CURRENT_PASSWORD_REQUIRED", message: "Saisissez votre mot de passe actuel" });
+    }
 
-    await requestEmailChange(userId, newEmail.toLowerCase().trim());
+    await requestEmailChange(userId, newEmail.toLowerCase().trim(), currentPassword);
     return res.json({
       success: true,
       message:
         "Un code de vérification a été envoyé sur votre nouvelle adresse email.",
     });
   } catch (error: any) {
+    // 400 et non 401 : un 401 déconnecterait l'utilisateur côté front (api-client)
+    if (error.message === "INVALID_CURRENT_PASSWORD")
+      return res.status(400).json({
+        success: false,
+        code: "INVALID_CURRENT_PASSWORD",
+        message: "Mot de passe actuel incorrect",
+      });
     if (error.message === "SAME_EMAIL")
       return res.status(400).json({
         success: false,

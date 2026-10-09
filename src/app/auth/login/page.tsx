@@ -70,8 +70,7 @@ export default function LoginPage() {
 
   // États login
   const [errorType, setErrorType] = useState<
-    | "USER_NOT_FOUND"
-    | "WRONG_PASSWORD"
+    | "INVALID_CREDENTIALS"
     | "EMAIL_NOT_VERIFIED"
     | "GENERIC"
     | null
@@ -147,8 +146,9 @@ export default function LoginPage() {
     onError: (error: any) => {
       const code = error.response?.data?.code;
       const message = error.response?.data?.message;
+      const known = code === "INVALID_CREDENTIALS" || code === "EMAIL_NOT_VERIFIED";
       setError(
-        code || "GENERIC",
+        known ? code : "GENERIC",
         message || "Une erreur est survenue",
         emailValue,
       );
@@ -437,21 +437,32 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Pop-up compte inexistant */}
+      {/* Pop-up identifiants incorrects — volontairement identique que le compte existe ou non (SEC-014) */}
       <Modal
-        isOpen={errorType === "USER_NOT_FOUND"}
+        isOpen={errorType === "INVALID_CREDENTIALS"}
         onClose={clearError}
-        title="Compte introuvable"
-        icon="❓"
+        title="Identifiants incorrects"
+        icon="🔑"
         headerVariant="error"
       >
         <div className="text-center">
           <p className={`text-sm ${colors.text.secondary} mb-5`}>
-            Aucun compte Tasky n'est associe a cette adresse email.
+            L'adresse email ou le mot de passe est incorrect.
             <br />
-            Souhaitez-vous creer un compte ?
+            Verifiez votre saisie, reinitialisez votre mot de passe ou creez un compte.
           </p>
           <div className="flex flex-col gap-3">
+            <Link
+              href={`${routes.auth.forgotPassword}?email=${encodeURIComponent(errorEmail || "")}`}
+            >
+              <button
+                type="button"
+                onClick={clearError}
+                className={`w-full py-3 px-4 rounded-xl font-semibold text-white text-sm ${colors.premium.gradient} hover:opacity-90 transition`}
+              >
+                Reinitialiser mon mot de passe
+              </button>
+            </Link>
             <Link href={routes.auth.register.client}>
               <button
                 type="button"
@@ -468,43 +479,6 @@ export default function LoginPage() {
                 className="w-full py-3 px-4 rounded-xl font-semibold text-sm border-2 border-emerald-300 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition"
               >
                 Creer un compte prestataire
-              </button>
-            </Link>
-            <button
-              type="button"
-              onClick={clearError}
-              className={`w-full py-2 text-sm ${colors.text.tertiary} transition`}
-            >
-              Annuler
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Pop-up mot de passe incorrect */}
-      <Modal
-        isOpen={errorType === "WRONG_PASSWORD"}
-        onClose={clearError}
-        title="Mot de passe incorrect"
-        icon="🔑"
-        headerVariant="error"
-      >
-        <div className="text-center">
-          <p className={`text-sm ${colors.text.secondary} mb-5`}>
-            Le mot de passe saisi ne correspond pas a ce compte.
-            <br />
-            Voulez-vous le reinitialiser ?
-          </p>
-          <div className="flex flex-col gap-3">
-            <Link
-              href={`${routes.auth.forgotPassword}?email=${encodeURIComponent(errorEmail || "")}`}
-            >
-              <button
-                type="button"
-                onClick={clearError}
-                className={`w-full py-3 px-4 rounded-xl font-semibold text-white text-sm ${colors.premium.gradient} hover:opacity-90 transition`}
-              >
-                Reinitialiser mon mot de passe
               </button>
             </Link>
             <button

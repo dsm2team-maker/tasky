@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma } from "../lib/prisma";
+import { findUserByEmail } from "../utils/email.utils";
 import { authService } from "../modules/auth/auth.service";
 import { handleError } from "../utils/errorHandler";
 
@@ -18,14 +18,19 @@ export const verifyEmail = async (req: Request, res: Response) => {
 
 // ─── Renvoyer email de vérification ──────────────────────────────────────────
 
+// Réponse identique que le compte existe, soit déjà vérifié ou non (SEC-014)
+const RESEND_GENERIC = "Si un compte en attente de vérification existe pour cette adresse, un nouvel email a été envoyé.";
+
 export const resendVerificationEmail = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(200).json({ success: true, message: "Si ce compte existe, un email a été envoyé." });
-    if (user.emailVerified) return res.status(400).json({ success: false, message: "Cet email est déjà vérifié." });
-    await authService.sendVerificationEmail(user.id, user.email, user.firstName, user.role === "PRESTATAIRE" ? "prestataire" : "client");
-    return res.status(200).json({ success: true, message: "Email de vérification renvoyé." });
+    if (typeof email !== "string" || !email.includes("@"))
+      return res.status(400).json({ success: false, message: "Email invalide" });
+    const user = await findUserByEmail(email);
+    if (user && !user.emailVerified && user.isActive && !user.deletedAt) {
+      await authService.sendVerificationEmail(user.id, user.email, user.firstName, user.role === "PRESTATAIRE" ? "prestataire" : "client");
+    }
+    return res.status(200).json({ success: true, message: RESEND_GENERIC });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Erreur serveur" });
   }

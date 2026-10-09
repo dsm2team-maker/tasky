@@ -198,7 +198,7 @@ export default function VerifyEmailContent() {
         <Modal isOpen={successModal} onClose={() => setSuccessModal(false)} title="Email envoyé !" icon="📧" headerVariant="success">
           <div className="text-center">
             <p className={`text-sm ${colors.text.secondary} mb-4`}>
-              Un nouvel email de vérification a été envoyé à <strong>{userEmail}</strong>.
+              Si votre compte est en attente de vérification, un nouvel email a été envoyé à <strong>{userEmail}</strong>.
             </p>
             <p className={`text-xs ${colors.text.tertiary} mb-5`}>Pensez à vérifier vos spams si vous ne le trouvez pas.</p>
             <Button variant="premium" fullWidth onClick={() => setSuccessModal(false)}>OK</Button>

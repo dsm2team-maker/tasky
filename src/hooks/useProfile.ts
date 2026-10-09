@@ -117,8 +117,8 @@ export const useVerifyPhoneOtp = () => {
 // ─── Mutation changement email ────────────────────────────────────────────────
 export const useRequestEmailChange = () => {
   return useMutation({
-    mutationFn: (newEmail: string) =>
-      userService.requestEmailChange(newEmail).then((r) => r.data),
+    mutationFn: ({ newEmail, currentPassword }: { newEmail: string; currentPassword: string }) =>
+      userService.requestEmailChange(newEmail, currentPassword).then((r) => r.data),
   });
 };
 

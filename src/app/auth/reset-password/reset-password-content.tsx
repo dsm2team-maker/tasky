@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { apiClient, handleApiError } from "@/lib/api-client";
+import { passwordSchema } from "@/lib/schemas";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import AuthLayout from "@/components/layout/AuthLayout";
@@ -17,13 +18,7 @@ import { routes } from "@/config/routes";
 
 const resetPasswordSchema = z
   .object({
-    password: z
-      .string()
-      .min(8, "Le mot de passe doit contenir au moins 8 caractères")
-      .regex(/[A-Z]/, "Au moins une majuscule requise")
-      .regex(/[a-z]/, "Au moins une minuscule requise")
-      .regex(/[0-9]/, "Au moins un chiffre requis")
-      .regex(/[^A-Za-z0-9]/, "Au moins un caractère spécial requis"),
+    password: passwordSchema,
     confirmPassword: z.string().min(1, "Confirmez votre mot de passe"),
   })
   .refine((data) => data.password === data.confirmPassword, {

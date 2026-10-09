@@ -134,10 +134,10 @@ export const userService = {
       { otp },
     ),
 
-  requestEmailChange: (newEmail: string) =>
+  requestEmailChange: (newEmail: string, currentPassword: string) =>
     apiClient.post<{ success: boolean; message: string }>(
       routes.api.users.requestEmailChange,
-      { newEmail },
+      { newEmail, currentPassword },
     ),
 
   verifyEmailOtp: (otp: string) =>

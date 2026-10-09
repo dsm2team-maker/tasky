@@ -438,6 +438,8 @@ export const EmailModal: React.FC<EmailModalProps> = ({ isOpen, onClose }) => {
   const [step, setStep] = useState<"request" | "otp" | "success">("request");
   const [error, setError] = useState<string | null>(null);
   const [newEmailValue, setNewEmailValue] = useState("");
+  // Gardé en mémoire uniquement le temps de la modale, pour le bouton "Renvoyer"
+  const [currentPasswordValue, setCurrentPasswordValue] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [otpExpired, setOtpExpired] = useState(false);
 
@@ -457,6 +459,7 @@ export const EmailModal: React.FC<EmailModalProps> = ({ isOpen, onClose }) => {
   const handleClose = () => {
     setStep("request");
     setError(null);
+    setCurrentPasswordValue("");
     emailForm.reset();
     otpForm.reset();
     onClose();
@@ -464,16 +467,20 @@ export const EmailModal: React.FC<EmailModalProps> = ({ isOpen, onClose }) => {
 
   const onRequest = (data: NewEmailFormData) => {
     setError(null);
-    requestEmailChange.mutate(data.newEmail, {
-      onSuccess: () => {
-        setNewEmailValue(data.newEmail);
-        setStep("otp");
-        setOtpExpired(false);
-        setCooldown(120);
-        emailForm.reset();
+    requestEmailChange.mutate(
+      { newEmail: data.newEmail, currentPassword: data.currentPassword },
+      {
+        onSuccess: () => {
+          setNewEmailValue(data.newEmail);
+          setCurrentPasswordValue(data.currentPassword);
+          setStep("otp");
+          setOtpExpired(false);
+          setCooldown(120);
+          emailForm.reset();
+        },
+        onError: (err: any) => setError(err.response?.data?.message || "Erreur"),
       },
-      onError: (err: any) => setError(err.response?.data?.message || "Erreur"),
-    });
+    );
   };
 
   const onVerify = (data: OtpFormData) => {
@@ -481,6 +488,7 @@ export const EmailModal: React.FC<EmailModalProps> = ({ isOpen, onClose }) => {
     verifyEmailOtp.mutate(data.otp, {
       onSuccess: () => {
         setStep("success");
+        setCurrentPasswordValue("");
         otpForm.reset();
       },
       onError: (err: any) =>
@@ -490,7 +498,7 @@ export const EmailModal: React.FC<EmailModalProps> = ({ isOpen, onClose }) => {
 
   const onResend = () => {
     if (cooldown > 0) return;
-    requestEmailChange.mutate(newEmailValue, {
+    requestEmailChange.mutate({ newEmail: newEmailValue, currentPassword: currentPasswordValue }, {
       onSuccess: () => {
         setOtpExpired(false);
         setCooldown(120);
@@ -519,7 +527,8 @@ export const EmailModal: React.FC<EmailModalProps> = ({ isOpen, onClose }) => {
           className="space-y-4"
         >
           <p className={`text-sm ${colors.text.secondary}`}>
-            🔒 Un code sera envoyé sur votre nouvelle adresse email.
+            🔒 Un code sera envoyé sur votre nouvelle adresse email. Pour votre
+            sécurité, confirmez avec votre mot de passe actuel.
           </p>
           <Input
             label="Nouvelle adresse email"
@@ -527,6 +536,13 @@ export const EmailModal: React.FC<EmailModalProps> = ({ isOpen, onClose }) => {
             placeholder="nouveau@email.com"
             error={emailForm.formState.errors.newEmail?.message}
             {...emailForm.register("newEmail")}
+          />
+          <Input
+            label="Mot de passe actuel"
+            type="password"
+            autoComplete="current-password"
+            error={emailForm.formState.errors.currentPassword?.message}
+            {...emailForm.register("currentPassword")}
           />
           {error && <p className={`text-sm ${colors.error.text}`}>{error}</p>}
           <div className="flex gap-3 pt-2">

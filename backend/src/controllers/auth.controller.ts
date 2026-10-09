@@ -5,12 +5,23 @@ import { generateAccessToken, generateRefreshToken, verifyRefreshToken, getRefre
 import { z } from "zod";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { authService } from "../modules/auth/auth.service";
+import { passwordSchema } from "../utils/password.policy";
+import { emailExists, findUserByEmail } from "../utils/email.utils";
 
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || "12");
 
+// Hash factice : le login exécute bcrypt même pour un email inconnu, pour que le temps de
+// réponse ne révèle pas l'existence du compte (SEC-014)
+const DUMMY_HASH = bcrypt.hashSync("tasky-dummy-password-timing", BCRYPT_ROUNDS);
+
+const emailField = z.string().trim().toLowerCase().email("Email invalide");
+
+// Inscription concurrente avec le même email : la contrainte unique tranche → 409, pas 500
+const isUniqueViolation = (e: any) => e?.code === "P2002";
+
 const registerClientSchema = z.object({
-  email: z.string().email("Email invalide"),
-  password: z.string().min(8, "Mot de passe trop court (min 8 caractères)"),
+  email: emailField,
+  password: passwordSchema,
   firstName: z.string().min(2, "Prénom trop court"),
   lastName: z.string().min(2, "Nom trop court"),
   city: z.string().min(2, "Ville requise"),
@@ -19,8 +30,8 @@ const registerClientSchema = z.object({
 });
 
 const registerPrestataireSchema = z.object({
-  email: z.string().email("Email invalide"),
-  password: z.string().min(8, "Mot de passe trop court (min 8 caractères)"),
+  email: emailField,
+  password: passwordSchema,
   firstName: z.string().min(2, "Prénom trop court"),
   lastName: z.string().min(2, "Nom trop court"),
   city: z.string().min(2, "Ville requise"),
@@ -31,7 +42,7 @@ const registerPrestataireSchema = z.object({
 });
 
 const loginSchema = z.object({
-  email: z.string().email("Email invalide"),
+  email: z.string().trim().email("Email invalide"),
   password: z.string().min(1, "Mot de passe requis"),
 });
 
@@ -45,7 +56,7 @@ export const registerClient = async (req: Request, res: Response) => {
 
     const { email, password, firstName, lastName, city, codePostal, phone } = validation.data;
 
-    if (await prisma.user.findUnique({ where: { email } }))
+    if (await emailExists(email))
       return res.status(409).json({ success: false, message: "Un compte existe déjà avec cet email" });
 
     if (phone && await prisma.user.findFirst({ where: { phone } }))
@@ -71,6 +82,8 @@ export const registerClient = async (req: Request, res: Response) => {
       data: { user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName, city: user.city, codePostal: user.codePostal, phone: user.phone, emailVerified: user.emailVerified, createdAt: user.createdAt }, tokens: { accessToken, refreshToken } },
     });
   } catch (error) {
+    if (isUniqueViolation(error))
+      return res.status(409).json({ success: false, message: "Un compte existe déjà avec cet email ou ce numéro de téléphone" });
     console.error("Erreur registerClient:", error);
     return res.status(500).json({ success: false, message: "Erreur serveur lors de l'inscription" });
   }
@@ -86,7 +99,7 @@ export const registerPrestataire = async (req: Request, res: Response) => {
 
     const { email, password, firstName, lastName, city, codePostal, phone, competences } = validation.data;
 
-    if (await prisma.user.findUnique({ where: { email } }))
+    if (await emailExists(email))
       return res.status(409).json({ success: false, message: "Un compte existe déjà avec cet email" });
 
     if (phone && await prisma.user.findFirst({ where: { phone } }))
@@ -119,6 +132,8 @@ export const registerPrestataire = async (req: Request, res: Response) => {
       data: { user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName, city: user.city, codePostal: user.codePostal, phone: user.phone, emailVerified: user.emailVerified, createdAt: user.createdAt }, tokens: { accessToken, refreshToken } },
     });
   } catch (error) {
+    if (isUniqueViolation(error))
+      return res.status(409).json({ success: false, message: "Un compte existe déjà avec cet email ou ce numéro de téléphone" });
     console.error("Erreur registerPrestataire:", error);
     return res.status(500).json({ success: false, message: "Erreur serveur lors de l'inscription" });
   }
@@ -133,12 +148,14 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: "Données invalides", errors: validation.error.flatten().fieldErrors });
 
     const { email, password } = validation.data;
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await findUserByEmail(email);
 
-    if (!user)             return res.status(404).json({ success: false, message: "Aucun compte trouvé avec cet email.", code: "USER_NOT_FOUND" });
+    // Même réponse (code, corps, temps de calcul) pour un compte inexistant, supprimé ou un
+    // mauvais mot de passe. Le statut du compte n'est révélé qu'avec le bon mot de passe (SEC-014).
+    const passwordOk = await bcrypt.compare(password, user?.password ?? DUMMY_HASH);
+    if (!user || user.deletedAt || !passwordOk)
+      return res.status(401).json({ success: false, message: "Email ou mot de passe incorrect.", code: "INVALID_CREDENTIALS" });
     if (!user.isActive)    return res.status(403).json({ success: false, message: "Votre compte a été désactivé. Contactez le support." });
-    if (!await bcrypt.compare(password, user.password))
-                           return res.status(401).json({ success: false, message: "Mot de passe incorrect.", code: "WRONG_PASSWORD" });
     if (!user.emailVerified) return res.status(403).json({ success: false, message: "Veuillez vérifier votre email avant de vous connecter.", code: "EMAIL_NOT_VERIFIED" });
 
     const payload = { userId: user.id, email: user.email, role: user.role as "CLIENT" | "PRESTATAIRE" | "ADMIN" };
@@ -237,8 +254,7 @@ export const checkEmail = async (req: Request, res: Response) => {
   try {
     const { email } = req.query as { email: string };
     if (!email) return res.status(400).json({ success: false, message: "Email requis" });
-    const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-    return res.status(200).json({ success: true, available: !existing });
+    return res.status(200).json({ success: true, available: !(await emailExists(email)) });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Erreur serveur" });
   }
