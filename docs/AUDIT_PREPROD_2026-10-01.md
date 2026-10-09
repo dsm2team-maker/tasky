@@ -63,6 +63,27 @@ Vérifications : `tsc --noEmit` backend et front OK ; `npm test` backend : 15/15
 
 Vérifications : `tsc --noEmit` backend OK ; `npm test` : 18/18. Aucune modification de schéma ni de front. Les étapes d'un flux déjà engagé (confirmation de paiement, état des lieux, validation) ne sont pas bloquées, pour ne laisser personne au milieu d'une prestation.
 
+
+## Suivi des corrections — Phase 2, lot 3 (09/10/2026)
+
+Comptes utilisateurs : énumération, mots de passe, casse des emails, changement d'email.
+
+| Finding | Statut |
+|---|---|
+| SEC-014 | PARTIAL — login : réponse unique 401 `INVALID_CREDENTIALS` (compte inexistant, supprimé ou mauvais mot de passe), bcrypt factice pour un temps comparable, statut suspendu/non vérifié révélé seulement avec le bon mot de passe ; `resend-verification` répond toujours pareil. Résiduel accepté : `check-email`/`check-phone` (nécessaires au formulaire d'inscription, limités à 150/15 min/IP) ; `recover-email` désactivé en prod (SEC-001). |
+| SEC-016 | FIXED — politique unique backend (`utils/password.policy.ts`) à l'inscription et au reset : 8 à 64 caractères, majuscule, minuscule, chiffre, spécial. Front aligné (le plafond de 12 caractères est passé à 64 ; la page reset utilise le schéma partagé). Le login n'applique pas la politique : les mots de passe existants restent valides. Amélioration possible : refus des mots de passe compromis (HIBP). |
+| SEC-017 | FIXED — nouveaux emails stockés en minuscules ; recherches insensibles à la casse (`utils/email.utils.ts`) pour login, inscription, renvoi de vérification, mot de passe oublié, changement d'email. Comptes historiques en majuscules retrouvés sans migration ; doublons éventuels : correspondance exacte uniquement. Inscription concurrente → 409 au lieu de 500. |
+| SEC-022 | FIXED — `request-email-change` exige le mot de passe actuel (400 si absent ou faux, pas 401 pour ne pas déconnecter) ; l'ancienne adresse reçoit déjà une alerte après le changement. Non fait : lien d'annulation de 7 jours. |
+
+Vérifications : `tsc --noEmit` backend et front OK ; `npm test` backend : 27/27 (politique de mot de passe, recherche d'email insensible à la casse avec Prisma simulé). Aucune modification de schéma ni de données.
+
+**Changements visibles côté utilisateur** :
+- Login : les deux pop-ups « Compte introuvable » / « Mot de passe incorrect » sont remplacées par « Identifiants incorrects » (réinitialiser / créer un compte / réessayer).
+- Changement d'email : le mot de passe actuel est demandé.
+- Nouveaux mots de passe : jusqu'à 64 caractères (au lieu de 12).
+
+**À vérifier en prod (lecture seule)** : présence d'emails avec majuscules ou de doublons ne différant que par la casse.
+
 ---
 
 ## Résumé exécutif
@@ -669,7 +690,7 @@ await prisma.$transaction(async (tx) => {
 - **Impact** : constitution de listes d'emails et téléphones clients, ciblage du phishing et de SEC-001.
 - **Recommended fix** : message unique "Identifiants invalides" ; check-email/phone seulement à l'étape finale de l'inscription, avec rate limit strict, ou suppression ; réponses génériques sur resend et recover.
 - **Test to verify fix** : login avec un email inexistant et avec un mauvais mot de passe → même code, même corps, temps comparable (±50 ms).
-- **Status** : OPEN
+- **Status** : PARTIAL — login : réponse unique 401 `INVALID_CREDENTIALS` (compte inexistant, supprimé ou mauvais mot de passe), bcrypt factice pour un temps comparable, statut suspendu/non vérifié révélé seulement avec le bon mot de passe ; `resend-verification` répond toujours pareil. Résiduel accepté : `check-email`/`check-phone` (nécessaires au formulaire d'inscription, limités à 150/15 min/IP) ; `recover-email` désactivé en prod (SEC-001).
 
 ### SEC-015 — Absence de rate limit sur les endpoints sensibles
 - **Severity** : MEDIUM
@@ -690,7 +711,7 @@ await prisma.$transaction(async (tx) => {
 - **Description** : 8 caractères minimum à l'inscription ; **aucune** contrainte au reset (`"a"` est accepté).
 - **Recommended fix** : schéma Zod partagé (≥ 10-12 caractères, max 128, refus des mots de passe courants / HIBP k-anonymity) appliqué partout.
 - **Test to verify fix** : reset avec `"a"` → 400.
-- **Status** : OPEN
+- **Status** : FIXED — politique unique backend (`utils/password.policy.ts`) à l'inscription et au reset : 8 à 64 caractères, majuscule, minuscule, chiffre, spécial. Front aligné (le plafond de 12 caractères est passé à 64 ; la page reset utilise le schéma partagé). Le login n'applique pas la politique : les mots de passe existants restent valides. Amélioration possible : refus des mots de passe compromis (HIBP).
 
 ### SEC-017 — Emails sensibles à la casse
 - **Severity** : LOW
@@ -700,7 +721,7 @@ await prisma.$transaction(async (tx) => {
 - **Description** : `Jean@x.fr` et `jean@x.fr` donnent deux comptes, et le login échoue si la casse diffère.
 - **Recommended fix** : `email.trim().toLowerCase()` partout + migration des données existantes (vérifier les doublons avant).
 - **Test to verify fix** : inscription `A@x.fr` puis `a@x.fr` → 409.
-- **Status** : OPEN
+- **Status** : FIXED — nouveaux emails stockés en minuscules ; recherches insensibles à la casse (`utils/email.utils.ts`) pour login, inscription, renvoi de vérification, mot de passe oublié, changement d'email. Comptes historiques en majuscules retrouvés sans migration ; doublons éventuels : correspondance exacte uniquement. Inscription concurrente → 409 au lieu de 500.
 
 ### SEC-018 — Gestion des tokens : stockage et révocation
 - **Severity** : MEDIUM
@@ -764,7 +785,7 @@ await prisma.$transaction(async (tx) => {
 - **Description** : un token volé suffit à changer l'email (OTP envoyé à la **nouvelle** adresse contrôlée par l'attaquant), puis à faire forgot-password : prise de contrôle **persistante**.
 - **Recommended fix** : exiger le mot de passe actuel ; notifier l'ancienne adresse avec un lien d'annulation valable 7 j.
 - **Test to verify fix** : `request-email-change` sans `currentPassword` → 400 ; email de notification reçu sur l'ancienne adresse.
-- **Status** : OPEN
+- **Status** : FIXED — `request-email-change` exige le mot de passe actuel (400 si absent ou faux, pas 401 pour ne pas déconnecter) ; l'ancienne adresse reçoit déjà une alerte après le changement. Non fait : lien d'annulation de 7 jours.
 
 ### SEC-023 — Données personnelles publiques des prestataires
 - **Severity** : MEDIUM
@@ -942,12 +963,12 @@ await prisma.$transaction(async (tx) => {
 | SEC-009 | Auth | MEDIUM | user.service.ts | /profile/verify-*-otp, confirm-delete | Contournement limite d'essais | Incrément atomique | FIXED |
 | SEC-010 | Logique métier | MEDIUM | autoValidate.job.ts, prestation.service.ts | cron, valider/contester | Versement malgré litige | updateMany conditionnel | FIXED |
 | SEC-012 | Validation | MEDIUM | devis.service.ts | POST /demandes/:id/devis | Devis non payables, prestataire non éligible | Garde éligibilité + bornes + unique | FIXED |
-| SEC-014 | Auth | MEDIUM | auth.controller.ts… | login, check-*, recover, resend | Énumération | Réponses génériques | OPEN |
+| SEC-014 | Auth | MEDIUM | auth.controller.ts… | login, check-*, recover, resend | Énumération | Réponses génériques | PARTIAL |
 | SEC-015 | Rate limit | MEDIUM | routes/* | register, forgot, contact, upload… | Email bombing, spam | Limiteurs dédiés (Redis) | FIXED (mono-instance) |
-| SEC-016 | Auth | MEDIUM | auth.*.controller.ts | register, reset-password | Mots de passe faibles | Politique unique | OPEN |
+| SEC-016 | Auth | MEDIUM | auth.*.controller.ts | register, reset-password | Mots de passe faibles | Politique unique | FIXED |
 | SEC-018 | Session | MEDIUM | auth-store.ts, jwt.ts | refresh, logout | Vol de session long | Access court, refresh HttpOnly hashé | OPEN |
 | SEC-019 | Frontend | MEDIUM | next.config.cjs | toutes pages | Clickjacking, pas d'atténuation XSS | Headers + CSP | OPEN |
-| SEC-022 | Auth | MEDIUM | user.service.ts | request-email-change | Takeover persistant après vol de session | Mot de passe + notif ancienne adresse | OPEN |
+| SEC-022 | Auth | MEDIUM | user.service.ts | request-email-change | Takeover persistant après vol de session | Mot de passe + notif ancienne adresse | FIXED |
 | SEC-023 | RGPD | MEDIUM | prestataires.controller.ts | GET /api/prestataires/:id | Adresse publique, bannis visibles | Masquer, filtrer isActive | OPEN |
 | SEC-024 | RGPD | MEDIUM | user.service.ts | confirm-delete-account | Données résiduelles | Suppression complète + export | OPEN |
 | SEC-026 | BDD / Déploiement | MEDIUM | railway.toml | — | Perte de données, pas de rollback | migrate deploy | OPEN |
@@ -958,7 +979,7 @@ await prisma.$transaction(async (tx) => {
 | SEC-038 | CI/CD | MEDIUM | — | — | Régressions non détectées | Pipeline CI | PARTIAL |
 | SEC-039 | Monitoring | MEDIUM | — | — | Incidents invisibles | Sentry + alertes | OPEN |
 | SEC-013 | Validation | LOW | prestation.controller.ts | POST /prestations/:id/etat-des-lieux | Prestation bloquée | Bornes | FIXED |
-| SEC-017 | Auth | LOW | auth.controller.ts | register, login | Doublons de comptes | lowercase | OPEN |
+| SEC-017 | Auth | LOW | auth.controller.ts | register, login | Doublons de comptes | lowercase | FIXED |
 | SEC-020 | Upload | LOW | user.controller.ts | /users/avatar, /users/photo | Abus de stockage | Magic bytes, sharp, quota | OPEN |
 | SEC-021 | Validation | LOW | demande.service.ts | POST /demandes | Tracking des prestataires | URLs du bucket uniquement | OPEN |
 | SEC-031 | Résilience | LOW | index.ts | — | Doublons multi-instance | Verrou / jobs BullMQ | OPEN |
