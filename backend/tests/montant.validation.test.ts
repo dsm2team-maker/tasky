@@ -16,10 +16,11 @@ test("montants hors bornes ou mal formés refusés (SEC-012 / SEC-013)", () => {
   }
 });
 
-test("délai : entier entre 1 et 365 jours", () => {
+test("délai : entier entre 1 et 90 jours", () => {
   assert.equal(parseDelai(5), 5);
+  assert.equal(parseDelai(90), 90);
   assert.equal(parseDelai("7"), 7);
-  for (const v of [0, -1, 366, 2.5, "abc", null, undefined]) {
+  for (const v of [0, -1, 91, 365, 2.5, "abc", null, undefined]) {
     assert.equal(parseDelai(v), null, `devrait refuser ${String(v)}`);
   }
 });

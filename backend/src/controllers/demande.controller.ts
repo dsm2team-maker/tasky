@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { handleError } from "../utils/errorHandler";
+import { DELAI_MAX_JOURS } from "../utils/montant.validation";
 import { createDemande, getMyDemandes, getDemande, deleteDemande } from "../modules/demandes/demande.service";
 
 export const createDemandeHandler = async (req: AuthRequest, res: Response) => {
@@ -26,8 +27,8 @@ export const createDemandeHandler = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ success: false, message: "Le budget doit être supérieur à 0 €" });
 
     const delaiJoursParsed = delaiJours !== undefined ? parseInt(delaiJours, 10) : undefined;
-    if (!delaiJoursParsed || isNaN(delaiJoursParsed) || delaiJoursParsed < 1 || delaiJoursParsed > 365)
-      return res.status(400).json({ success: false, message: "Délai requis (entre 1 et 365 jours)" });
+    if (!delaiJoursParsed || isNaN(delaiJoursParsed) || delaiJoursParsed < 1 || delaiJoursParsed > DELAI_MAX_JOURS)
+      return res.status(400).json({ success: false, message: `Délai requis (entre 1 et ${DELAI_MAX_JOURS} jours)` });
 
     const demande = await createDemande(req.user!.userId, {
       titre: titre.trim(),

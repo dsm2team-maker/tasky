@@ -268,7 +268,7 @@ export default function PrestataireRequestDetailPage() {
                   label="Délai (jours) *"
                   type="number"
                   min="1"
-                  max="365"
+                  max="90"
                   step="1"
                   placeholder="Ex: 5"
                   value={delai}

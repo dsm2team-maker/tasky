@@ -4,7 +4,7 @@
 // prestations artisanales) : à garder alignées avec les formulaires prestataire du front.
 export const MONTANT_MIN = 5;
 export const MONTANT_MAX = 1_500;
-export const DELAI_MAX_JOURS = 365;
+export const DELAI_MAX_JOURS = 90;
 export const DESCRIPTION_DEVIS_MAX = 5_000;
 export const PHOTOS_MAX = 10;
 
