@@ -1,8 +1,9 @@
 // Bornes communes aux montants saisis par les prestataires (devis, révision d'état des lieux).
 // Stripe refuse < 0,50 € et > 999 999,99 € : un montant hors bornes rendait la prestation
-// impayable et bloquée (SEC-012 / SEC-013). Le plafond est une décision métier à ajuster.
-export const MONTANT_MIN = 1;
-export const MONTANT_MAX = 50_000;
+// impayable et bloquée (SEC-012 / SEC-013). Bornes métier décidées le 12/10/2026 (petites
+// prestations artisanales) : à garder alignées avec les formulaires prestataire du front.
+export const MONTANT_MIN = 5;
+export const MONTANT_MAX = 1_500;
 export const DELAI_MAX_JOURS = 365;
 export const DESCRIPTION_DEVIS_MAX = 5_000;
 export const PHOTOS_MAX = 10;

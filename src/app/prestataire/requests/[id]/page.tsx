@@ -257,8 +257,8 @@ export default function PrestataireRequestDetailPage() {
                 <Input
                   label="Montant (€) *"
                   type="number"
-                  min="1"
-                  max="50000"
+                  min="5"
+                  max="1500"
                   step="0.01"
                   placeholder="Ex: 45"
                   value={montant}

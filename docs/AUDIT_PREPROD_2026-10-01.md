@@ -50,7 +50,7 @@ Vérifications : `tsc --noEmit` backend et front OK ; `npm test` backend : 15/15
 - **SEC-006** : traité au lot 2 ci-dessous, après comptage en prod.
 - **SEC-025** (Next 16 / React 19) : changement majeur, branche dédiée et recette complète en staging obligatoires.
 
-**Décision métier à confirmer** : plafond d'un devis à 50 000 € et délai max 365 jours (`backend/src/utils/montant.validation.ts`).
+**Décision métier (12/10/2026)** : montant d'un devis ou d'une révision entre 5 € et 1 500 € (`backend/src/utils/montant.validation.ts` + formulaires prestataire). Délai max 365 jours : à confirmer.
 
 
 ## Suivi des corrections — Phase 2, lot 2 (08/10/2026)

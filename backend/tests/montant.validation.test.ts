@@ -6,12 +6,12 @@ test("montants valides acceptés (nombre ou chaîne)", () => {
   assert.equal(parseMontant(45), 45);
   assert.equal(parseMontant("45.5"), 45.5);
   assert.equal(parseMontant(19.99), 19.99);
-  assert.equal(parseMontant(1), 1);
-  assert.equal(parseMontant(50_000), 50_000);
+  assert.equal(parseMontant(5), 5);
+  assert.equal(parseMontant(1_500), 1_500);
 });
 
 test("montants hors bornes ou mal formés refusés (SEC-012 / SEC-013)", () => {
-  for (const v of [0, 0.01, 0.5, -50, "-50", 50_000.01, 1e308, Infinity, NaN, "1e3", "12,50", 12.345, "abc", "", null, undefined, {}, [45], true]) {
+  for (const v of [0, 0.01, 0.5, 1, 4.99, -50, "-50", 1_500.01, 50_000, 1e308, Infinity, NaN, "1e3", "12,50", 12.345, "abc", "", null, undefined, {}, [45], true]) {
     assert.equal(parseMontant(v), null, `devrait refuser ${String(v)}`);
   }
 });
