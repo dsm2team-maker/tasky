@@ -82,7 +82,7 @@ Vérifications : `tsc --noEmit` backend et front OK ; `npm test` backend : 27/27
 - Changement d'email : le mot de passe actuel est demandé.
 - Nouveaux mots de passe : jusqu'à 64 caractères (au lieu de 12).
 
-**À vérifier en prod (lecture seule)** : présence d'emails avec majuscules ou de doublons ne différant que par la casse.
+**Vérifié en prod (lecture seule, 12/10/2026)** : 0 email contenant des majuscules, 0 doublon ne différant que par la casse. Aucune migration de données nécessaire.
 
 ---
 
